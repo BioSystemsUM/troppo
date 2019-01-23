@@ -15,9 +15,7 @@ class GIMME():
 			self.properties['obj_frac'] = 0.9
 
 		exp_rxns = self.properties['expression_rxns']
-		flux_thres = self.properties['flux_threshold']
 		obj_exps = self.properties['objectives']
-		obj_frac = self.properties['obj_frac']
 
 		M,N = self.S.shape
 
@@ -34,18 +32,44 @@ class GIMME():
 		## adjust objectives for irreversible model
 		objectives = [self.adjust_objective_to_irreversible(Sn, obj) for obj in obj_exps]
 
-		return Sn, lb_n, ub_n, irrev_mapping, exp_vector, objectives
+		return Sn, np.array(lb_n), np.array(ub_n), irrev_mapping, exp_vector, objectives
 
 	def run(self):
-		S, lb, ub, irrev_mapping, exp_vector, objectives = self.preprocess()
 
+		obj_frac = self.properties['obj_frac']
+		flux_thres = self.properties['flux_threshold']
+
+		S, lb, ub, irrev_mapping, exp_vector, objectives = self.preprocess()
+		M,N = S.shape
 		## FBA for each objective
 		lsystem = SteadyStateLinearSystem(S, lb, ub, ['V'+str(i) for i in range(S.shape[1])])
 		lso = LinearSystemOptimizer(lsystem)
-		for obj in objectives:
+
+		def find_objective_value(obj):
 			lsystem.set_objective(obj, False)
 			sol = lso.optimize()
-			sol.objective_value() ## TODO: Must implement
+			return sol.objective_value() ## TODO: Must implement
+
+		objective_values = list(map(find_objective_value, objectives))
+
+		gimme_model_objective = np.array([flux_thres - exp_vector[i] if -1 < exp_vector[i] < flux_thres else 0 for i in range(N)])
+
+		objective_lbs = sum(list(map(lambda a,b: a*b, objectives, objective_values)))
+		objective_ids = np.nonzero(objective_lbs)[0]
+		lb[objective_ids] = objective_lbs[objective_ids]
+
+		gimme_system = SteadyStateLinearSystem(S, lb, ub, var_names=['GIMME'+str(i) for i in range(N)])
+		gimme_lso = LinearSystemOptimizer(gimme_system)
+		gimme_system.set_objective(gimme_model_objective)
+
+		gimme_solution = gimme_lso.optimize()
+
+		reaction_activity_irrev_model = self.get_reaction_activity(gimme_solution, exp_vector, flux_thres)
+		reaction_activity_original = [np.max(reaction_activity_irrev_model[new]) for orig, new in irrev_mapping]
+
+		return reaction_activity_original
+
+
 
 	def adjust_objective_to_irreversible(self, S_new, objective, mapping):
 		objective_new = np.zeros(S_new.shape[1],)
@@ -71,5 +95,13 @@ class GIMME():
 			else:
 				nlb[new_rx], nub[new_rx] = lb[orig_rx], ub[orig_rx]
 
-		return S_new, lb, ub, rx_mapping
+		return S_new, nlb, nub, rx_mapping
 
+	def get_reaction_activity(self, solution, exp_vector, flux_threshold):
+		gimme_fluxes = np.array([kv[0] for i, kv in enumerate(solution.var_values().items())])
+		activity = np.zeros(gimme_fluxes.shape)
+
+		activity[(exp_vector > flux_threshold) | (exp_vector == -1)] = 1
+		activity[gimme_fluxes > 0] = 2
+
+		return activity
