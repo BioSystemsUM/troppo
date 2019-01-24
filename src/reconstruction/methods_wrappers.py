@@ -25,11 +25,12 @@ class ReconstructionWrapper(object):
 		pass
 
 	def run(self, properties):
-		if properties['core']:
-			properties['core_idx'] = np.array([self.model_reader.reaction_id_to_index(reaction) for reaction in properties['core']])
-			map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
-		else:
-			map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
+		# if properties['core']:
+		# 	properties.add_new_properties({'core_idx': lambda x: isinstance(x, list) and len(x) > 0})
+		# 	properties['core_idx'] = np.array([self.model_reader.reaction_id_to_index(reaction) for reaction in properties['core']])
+		map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
+		# else:
+		# 	map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
 		pass
 
 # class FASTcoreWrapper(ReconstructionWrapper):
