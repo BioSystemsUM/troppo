@@ -6,8 +6,8 @@ from cobamp.core.optimization import LinearSystemOptimizer
 
 class GIMME():
 	def __init__(self, S, lb, ub, properties):
-		self.S = S
-		self.lb, self.ub = lb, ub
+		self.S = np.array(S)
+		self.lb, self.ub = np.array(lb), np.array(ub)
 		self.properties = properties
 
 	def preprocess(self, S, lb, ub, exp_vector, objectives):
