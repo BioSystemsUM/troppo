@@ -3,73 +3,77 @@ import numpy as np
 from cobamp.core.linear_systems import SteadyStateLinearSystem
 from cobamp.core.optimization import LinearSystemOptimizer
 
+
 class GIMME():
 	def __init__(self, S, lb, ub, properties):
 		self.S = S
 		self.lb, self.ub = lb, ub
 		self.properties = properties
 
-	def preprocess(self):
-
-		if 'obj_frac' not in self.properties:
-			self.properties['obj_frac'] = 0.9
-
-		exp_rxns = self.properties['expression_rxns']
-		obj_exps = self.properties['objectives']
-
-		M,N = self.S.shape
-
+	def preprocess(self, S, lb, ub, exp_vector, objectives):
 		## make irreversible model
 		Sn, lb_n, ub_n, irrev_mapping = self.make_irreversible(S, lb, ub)
 
 		## check for expression data size
-		exp_vector = np.zeros(Sn.shape[1],)
-		for rxn, val in exp_rxns.items():
+		exp_vector_n = np.zeros(Sn.shape[1],)
+		for rxn, val in enumerate(exp_vector):
 			rxmap = irrev_mapping[rxn]
 			if isinstance(rxmap, tuple):
-				exp_vector[rxmap[0]] = exp_vector[rxmap[1]] = val
+				exp_vector_n[rxmap[0]] = exp_vector_n[rxmap[1]] = val
 
 		## adjust objectives for irreversible model
-		objectives = [self.adjust_objective_to_irreversible(Sn, obj) for obj in obj_exps]
+		objectives = [self.adjust_objective_to_irreversible(Sn, obj, irrev_mapping) for obj in objectives]
 
 		return Sn, np.array(lb_n), np.array(ub_n), irrev_mapping, exp_vector, objectives
 
 	def run(self):
 
+		if 'obj_frac' not in self.properties:
+			self.properties['obj_frac'] = 0.9
+
+		S, lb, ub, exp_vector, objectives = self.S, self.lb, self.ub, self.properties['exp_vector'], self.properties['objectives']
+
+		if self.properties['preprocess']:
+			S, lb, ub, irrev_mapping, exp_vector, objectives = self.preprocess(S, lb, ub, exp_vector, objectives)
+
+		gimme_solution = self.solve_gimme_problem(S, lb, ub, exp_vector, objectives)
+
+		if self.properties['preprocess']:
+			gimme_solution = np.array([np.max(gimme_solution[new]) for orig, new in irrev_mapping])
+
+		return gimme_solution
+
+	def solve_gimme_problem(self, S, lb, ub, exp_vector, objectives):
+
 		obj_frac = self.properties['obj_frac']
 		flux_thres = self.properties['flux_threshold']
 
-		S, lb, ub, irrev_mapping, exp_vector, objectives = self.preprocess()
-		M,N = S.shape
+		M, N = S.shape
 		## FBA for each objective
-		lsystem = SteadyStateLinearSystem(S, lb, ub, ['V'+str(i) for i in range(S.shape[1])])
+		lsystem = SteadyStateLinearSystem(S, lb, ub, ['V' + str(i) for i in range(S.shape[1])])
 		lso = LinearSystemOptimizer(lsystem)
 
 		def find_objective_value(obj):
 			lsystem.set_objective(obj, False)
 			sol = lso.optimize()
-			return sol.objective_value() ## TODO: Must implement
+			return sol.objective_value()
 
 		objective_values = list(map(find_objective_value, objectives))
 
-		gimme_model_objective = np.array([flux_thres - exp_vector[i] if -1 < exp_vector[i] < flux_thres else 0 for i in range(N)])
+		gimme_model_objective = np.array(
+			[flux_thres - exp_vector[i] if -1 < exp_vector[i] < flux_thres else 0 for i in range(N)])
 
-		objective_lbs = sum(list(map(lambda a,b: a*b, objectives, objective_values)))
+		objective_lbs = sum(list(map(lambda a, b: a * b, obj_frac if len(obj_frac) == len(objective_values) else [obj_frac]*len(objective_values), objective_values)))
 		objective_ids = np.nonzero(objective_lbs)[0]
 		lb[objective_ids] = objective_lbs[objective_ids]
 
-		gimme_system = SteadyStateLinearSystem(S, lb, ub, var_names=['GIMME'+str(i) for i in range(N)])
+		gimme_system = SteadyStateLinearSystem(S, lb, ub, var_names=['GIMME' + str(i) for i in range(N)])
 		gimme_lso = LinearSystemOptimizer(gimme_system)
 		gimme_system.set_objective(gimme_model_objective)
 
 		gimme_solution = gimme_lso.optimize()
 
-		reaction_activity_irrev_model = self.get_reaction_activity(gimme_solution, exp_vector, flux_thres)
-		reaction_activity_original = [np.max(reaction_activity_irrev_model[new]) for orig, new in irrev_mapping]
-
-		return reaction_activity_original
-
-
+		return self.get_reaction_activity(gimme_solution, exp_vector, flux_thres)
 
 	def adjust_objective_to_irreversible(self, S_new, objective, mapping):
 		objective_new = np.zeros(S_new.shape[1],)
@@ -80,11 +84,11 @@ class GIMME():
 
 	def make_irreversible(self, S, lb, ub):
 		irrev = np.array([i for i in range(self.S.shape[1]) if not (lb[i] < 0 and ub[i] > 0)])
-		Si, Sr = S[:,irrev], S[:,-irrev]
+		Si, Sr = S[:, irrev], S[:, -irrev]
 		offset = Si.shape[1]
-
-		rx_mapping.update({ii:(offset+n, offset+n+Sr.shape[1]) for n,ii in enumerate([i for i in range(S.shape[1]) if i not in irrev])]})
-		rx_mapping.update(irrev_mapping)
+		rx_mapping = dict(zip(irrev, range))
+		rx_mapping.update({ii: (offset + n, offset + n + Sr.shape[1]) for n, ii in
+						   enumerate([i for i in range(S.shape[1]) if i not in irrev])})
 
 		S_new = np.hstack([Si, Sr, -Sr])
 		nlb, nub = np.zeros(S_new.shape[1])
