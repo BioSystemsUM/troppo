@@ -26,6 +26,22 @@ class FastcoreProperties(PropertiesReconstruction):
 		self['core_idx'] = core
 		# self['core_idx'] = [model_readers.reaction_id_to_index(reaction) for reaction in core]
 
+class GIMMEProperties(PropertiesReconstruction):
+	def __init__(self, exp_vector, objectives, obj_frac=0.9, preprocess=False, flux_threshold=None):
+		new_mandatory = {
+			'exp_vector': lambda x: isinstance(x, list) and len(x) > 0 or isinstance(x, ndarray),
+			'preprocess': lambda x: isinstance(x, bool) or x is None,
+			'objectives': lambda x: type(x) in [list, ndarray]}
+		new_optional = {'obj_frac': lambda x: type(x) in [ndarray, list, tuple, float]}
+		super().__init__()
+
+		self.add_new_properties(new_mandatory, new_optional)
+
+		self['objectives'] = objectives
+		self['exp_vector'] = exp_vector
+		self['obj_frac'] = obj_frac if isinstance(obj_frac, ndarray) else array([obj_frac]*len(objectives))
+		self['preprocess'] = True if preprocess else False
+		self['flux_threshold'] = 1e-4 if flux_threshold is None else flux_threshold
 
 if __name__ == '__main__':
 	properties = PropertiesReconstruction()
