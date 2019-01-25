@@ -196,7 +196,7 @@ class FASTcore():
 
 			# print(A, supp)
 
-			A = np.union1d(A, supp)
+			A = np.union1d(A, supp).astype(int)
 
 			if np.intersect1d(J, A) != np.array([]):
 				J = np.setdiff1d(J, A)
@@ -214,7 +214,8 @@ class FASTcore():
 				if flipped or JiRev == np.array([]):
 					if singleton:
 						print('Error: Global network is not consistent')
-						return sorted(A)
+						print(J)
+						return sorted(np.union1d(A,J))
 					else:
 						flipped = False
 						singleton = True
@@ -233,6 +234,7 @@ class FASTcore():
 
 if __name__ == '__main__':
 	from reconstruction.reconstruction_properties import FastcoreProperties
+	import pandas as pd
 
 	path, content = urlretrieve('http://bigg.ucsd.edu/static/models/iAF1260.xml')
 
@@ -258,7 +260,33 @@ if __name__ == '__main__':
 	#
 	# names = ['R' + str(i + 1) for i in range(N)]
 
-	f = FASTcore(S, lb, ub, FastcoreProperties(core=[142,133,573, 354, 656, 128,1200]))
+	f = FASTcore(S, lb, ub, FastcoreProperties(core=[1004]))
 	# f = FASTcore(S, lb, ub, FastcoreProperties(core=[8]))
 	tissue_reactions = f.fastcore()
+
+	matlab_test = pd.read_csv('./tests/fastcore_matlab_iAF1260.txt', header=None)
+	matlab_test_array = np.array(matlab_test.loc[:,0])
+	matlab_test_array_idx = [cobamp_model.reaction_id_to_index(i) for i in matlab_test_array]
+
+	diff = np.setdiff1d(tissue_reactions, matlab_test_array_idx)
+	diff2 = np.setdiff1d(matlab_test_array_idx, tissue_reactions)
+	[rx_names[i] for i in diff]
+	[rx_names[i] for i in diff2]
+
 	print([i + 1 for i in tissue_reactions])
+	names_to_test = [rx_names[i] for i in f.properties['core_idx']]
+	with model:
+		model.remove_reactions([rx_names[int(i)] for i in range(S.shape[1]) if i not in tissue_reactions])
+		sol1 = model.optimize()
+		print(sol1.to_frame())
+		print(sol1.to_frame().loc[pd.Series(names_to_test),:])
+
+	with model:
+		model.remove_reactions([rx_names[int(i)] for i in range(S.shape[1]) if i not in matlab_test_array_idx])
+		sol2 = model.optimize()
+		print(sol2.to_frame())
+		print(sol2.to_frame().loc[pd.Series(names_to_test),:])
+
+	sol_f = sol1.to_frame().join(sol2.to_frame(), lsuffix = str(1), rsuffix = str(2), how = 'outer')
+	sol_f['diff'] = (sol_f['fluxes1'] - sol_f['fluxes2']).abs()
+	sol_f[sol_f['diff'] >= 1e3]
