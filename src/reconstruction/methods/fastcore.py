@@ -116,8 +116,8 @@ class FASTcore():
 
 		lso = LinearSystemOptimizer(problem)
 		problem.set_objective(f, True)
-		problem.write_to_lp('Test_LP9_'+str(self.counter))
-		self.counter+=1
+		# problem.write_to_lp('Test_LP9_'+str(self.counter))
+		# self.counter+=1
 		solution = lso.optimize()
 
 		if solution.status() != 'optimal':
@@ -189,12 +189,12 @@ class FASTcore():
 		J, A, P, irreversible_reactions_idx = self.preprocessing()
 
 		while J.size > 0:
-			print(J)
+			# print(J)
 			P = np.setdiff1d(P, A)
 
 			supp = self.findSparseMode(J, P, singleton)
 
-			print(A, supp)
+			# print(A, supp)
 
 			A = np.union1d(A, supp)
 
@@ -214,6 +214,7 @@ class FASTcore():
 				if flipped or JiRev == np.array([]):
 					if singleton:
 						print('Error: Global network is not consistent')
+						return sorted(A)
 					else:
 						flipped = False
 						singleton = True
