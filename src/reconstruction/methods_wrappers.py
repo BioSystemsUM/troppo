@@ -1,13 +1,17 @@
 import abc
 import numpy as np
 from cobamp.wrappers.external_wrappers import model_readers
+
 from .methods.fastcore import FASTcore
 from .methods.gimme import GIMME
-from .reconstruction_properties import FastcoreProperties, GIMMEProperties
+from .methods.imat import IMAT
+
+from .reconstruction_properties import FastcoreProperties, GIMMEProperties, IMATProperties
 
 map_properties_algorithms = {
 	FastcoreProperties : FASTcore,
-	GIMME : GIMMEProperties
+	GIMMEProperties : GIMME,
+	IMATProperties : IMAT
 }
 
 class ReconstructionWrapper(object):

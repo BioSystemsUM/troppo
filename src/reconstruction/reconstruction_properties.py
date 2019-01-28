@@ -46,7 +46,7 @@ class GIMMEProperties(PropertiesReconstruction):
 		self['flux_threshold'] = 1e-4 if flux_threshold is None else flux_threshold
 
 
-class IMATFamilyProperties(PropertiesReconstruction):
+class IMATProperties(PropertiesReconstruction):
 	def __init__(self, exp_vector, exp_thresholds, core=None, tolerance=1e-8, epsilon=1):
 		new_mandatory = {
 			'exp_vector': lambda x: isinstance(x, list) and len(x) > 0 or isinstance(x, ndarray),
