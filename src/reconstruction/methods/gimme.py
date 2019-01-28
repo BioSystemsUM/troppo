@@ -85,6 +85,7 @@ class GIMME():
 		return objective_new
 
 	def make_irreversible(self, S, lb, ub):
+		## TODO: Order should be S, Srb
 		irrev = np.array([i for i in range(self.S.shape[1]) if not (lb[i] < 0 and ub[i] > 0)])
 		rev = np.array([i for i in range(self.S.shape[1]) if i not in irrev])
 		Si, Sr = S[:, irrev], S[:, rev]
