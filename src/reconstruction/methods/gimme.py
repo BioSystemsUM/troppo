@@ -65,7 +65,7 @@ class GIMME():
 		gimme_model_objective = np.array(
 			[flux_thres - exp_vector[i] if -1 < exp_vector[i] < flux_thres else 0 for i in range(N)])
 
-		objective_lbs = sum(list(map(lambda a, b: a * b, objectives, objective_values)))
+		objective_lbs = sum(list(map(lambda a, b: a * b * obj_frac, objectives, objective_values)))
 		objective_ids = np.nonzero(objective_lbs)[0]
 		lb[objective_ids] = objective_lbs[objective_ids]
 
