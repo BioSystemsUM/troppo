@@ -47,16 +47,17 @@ class GIMMEProperties(PropertiesReconstruction):
 
 
 class IMATFamilyProperties(PropertiesReconstruction):
-	def __init__(self, exp_vector, exp_thresholds, core=None, tolerance=1e-8):
+	def __init__(self, exp_vector, exp_thresholds, core=None, tolerance=1e-8, epsilon=1):
 		new_mandatory = {
 			'exp_vector': lambda x: isinstance(x, list) and len(x) > 0 or isinstance(x, ndarray),
 			'objectives': lambda x: type(x) in [list, ndarray],
-			'exp_threshold': lambda x: type(x) in (tuple, list, ndarray) and type(x[0]) in [float, int] and type(
+			'exp_thresholds': lambda x: type(x) in (tuple, list, ndarray) and type(x[0]) in [float, int] and type(
 				x[1]) in [float, int]
 		}
 		new_optional = {
 			'core': lambda x: type(x) in [ndarray, list, tuple],
-			'tolerance': float
+			'tolerance': float,
+			'epsilon': lambda x: type(x) in [int, float]
 		}
 		super().__init__()
 
@@ -68,6 +69,9 @@ class IMATFamilyProperties(PropertiesReconstruction):
 			self['core'] = core
 		if tolerance:
 			self['tolerance'] = tolerance
+		if epsilon:
+			self['epsilon'] = epsilon
+
 
 
 class tINITProperties(PropertiesReconstruction):
