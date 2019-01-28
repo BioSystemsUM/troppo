@@ -4,6 +4,7 @@ from cobamp.wrappers.external_wrappers import model_readers
 from reconstruction.methods_reconstruction import MethodsReconstruction
 from numpy import ndarray, array
 
+
 class PropertiesReconstruction(PropertyDictionary):
 	def __init__(self):
 		self.base_mandatory = {'solver': str, 'template_model': model_readers, 'method': MethodsReconstruction,
@@ -22,9 +23,10 @@ class FastcoreProperties(PropertiesReconstruction):
 		self.add_new_properties(new_mandatory, new_optional)
 		self['flux_threshold'] = flux_threshold
 		self['core'] = core
-		#TODO change this later, this is only for testing
+		# TODO change this later, this is only for testing
 		self['core_idx'] = core
-		# self['core_idx'] = [model_readers.reaction_id_to_index(reaction) for reaction in core]
+	# self['core_idx'] = [model_readers.reaction_id_to_index(reaction) for reaction in core]
+
 
 class GIMMEProperties(PropertiesReconstruction):
 	def __init__(self, exp_vector, objectives, obj_frac=0.9, preprocess=False, flux_threshold=None):
@@ -39,7 +41,7 @@ class GIMMEProperties(PropertiesReconstruction):
 
 		self['objectives'] = objectives
 		self['exp_vector'] = exp_vector
-		self['obj_frac'] = obj_frac if isinstance(obj_frac, ndarray) else array([obj_frac]*len(objectives))
+		self['obj_frac'] = obj_frac if isinstance(obj_frac, ndarray) else array([obj_frac] * len(objectives))
 		self['preprocess'] = True if preprocess else False
 		self['flux_threshold'] = 1e-4 if flux_threshold is None else flux_threshold
 
@@ -69,6 +71,27 @@ class IMATFamilyProperties(PropertiesReconstruction):
 			self['tolerance'] = tolerance
 		if epsilon:
 			self['epsilon'] = epsilon
+
+
+
+class tINITProperties(PropertiesReconstruction):
+	def __init__(self, reactions_scores, present_metabolites, essential_reactions, production_weight, allow_excretion,
+				 no_reverse_loops, params):
+		new_mandatory = {
+			'reactions_scores': lambda x: is_list(x),
+			'present_metabolites': lambda x: is_list(x),
+		}
+		new_optional = {}
+
+		super.__init__()
+
+
+		self.add_new_properties(new_mandatory, new_optional)
+
+
+def is_list(x):
+	return type(x) in [list, tuple] and len(x) > 0 or isinstance(x, ndarray) and x.size > 0
+
 
 
 if __name__ == '__main__':
