@@ -88,13 +88,15 @@ class GIMME():
 		## TODO: Order should be S, Srb
 		irrev = np.array([i for i in range(self.S.shape[1]) if not (lb[i] < 0 and ub[i] > 0)])
 		rev = np.array([i for i in range(self.S.shape[1]) if i not in irrev])
-		Si, Sr = S[:, irrev], S[:, rev]
-		offset = Si.shape[1]
-		rx_mapping = dict(zip(irrev, range(offset)))
-		rx_mapping.update({ii: (offset + n, offset + n + Sr.shape[1]) for n, ii in
-						   enumerate([i for i in range(S.shape[1]) if i not in irrev])})
+		Sr = S[:, rev]
+		offset = S.shape[1]
 
-		S_new = np.hstack([Si, Sr, -Sr])
+		rx_mapping = {k:v if k in irrev else [v] for k,v in dict(zip(range(offset), range(offset))).items()}
+		for i,rx in enumerate(rev):
+			rx_mapping[rx].append(offset+i)
+		rx_mapping = {k:tuple(v) if isinstance(v, list) else v for k,v in rx_mapping.items()}
+
+		S_new = np.hstack([S, -Sr])
 		nlb, nub = np.zeros(S_new.shape[1]), np.zeros(S_new.shape[1])
 		for orig_rx, new_rx in rx_mapping.items():
 			if isinstance(new_rx, tuple):
