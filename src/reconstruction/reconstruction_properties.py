@@ -1,8 +1,10 @@
 from cobamp.utilities.property_management import PropertyDictionary
 from cobamp.wrappers.external_wrappers import model_readers
 
+from numbers import Number
 from reconstruction.methods_reconstruction import MethodsReconstruction
 from numpy import ndarray, array
+
 
 
 class PropertiesReconstruction(PropertyDictionary):
@@ -72,6 +74,40 @@ class IMATProperties(PropertiesReconstruction):
 		if epsilon:
 			self['epsilon'] = epsilon
 
+class CORDAProperties(PropertiesReconstruction):
+	CONSTRAINBY_VAL = 'val'
+	CONSTRAINBY_PERC = 'perc'
+	def __init__(self, high_conf_rx, medium_conf_rx, neg_conf_rx,
+				 met_tests=None, pr_to_np=2, constraint=1, constrainby=CONSTRAINBY_VAL,
+				 om=1e4, ntimes=5, nl=1):
+		'''
+		:param high_conf_rx: High confidence reactions
+		:param medium_conf_rx: Medium confidence reactions
+		:param neg_conf_rx: Negative confidence reactions
+
+		:param met_tests: Reaction ids to test (optional)
+		'''
+		new_mandatory = {k: is_list for k in ['high_conf_rx','medium_conf_rx','neg_conf_rx']}
+
+		new_optional = {
+			'met_tests': lambda x: is_list(x) or x is None,
+			'pr_to_np': Number,
+			'constraint': Number,
+			'constrainby': [self.CONSTRAINBY_VAL, self.CONSTRAINBY_PERC],
+			'om': Number,
+			'ntimes': lambda x: isinstance(x, int) and x > 0,
+			'nl': lambda x: isinstance(x, Number) and x >= 0
+		}
+
+		super().__init__()
+
+		self.add_new_properties(new_mandatory, new_optional)
+
+		vars = [high_conf_rx, medium_conf_rx, neg_conf_rx,met_tests, pr_to_np, constraint, constrainby, om, ntimes, nl]
+		names = ['high_conf_rx','medium_conf_rx','neg_conf_rx','met_tests', 'pr_to_np', 'constraint', 'constrainby', 'om', 'ntimes', 'nl']
+
+		for v,k in zip(vars,names):
+			self[k] = v
 
 
 class tINITProperties(PropertiesReconstruction):
@@ -92,6 +128,8 @@ class tINITProperties(PropertiesReconstruction):
 def is_list(x):
 	return type(x) in [list, tuple] and len(x) > 0 or isinstance(x, ndarray) and x.size > 0
 
+def is_number(x):
+	return
 
 
 if __name__ == '__main__':
