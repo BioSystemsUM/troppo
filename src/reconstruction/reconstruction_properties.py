@@ -1,8 +1,10 @@
 from cobamp.utilities.property_management import PropertyDictionary
 from cobamp.wrappers.external_wrappers import model_readers
 
+from numbers import Number
 from reconstruction.methods_reconstruction import MethodsReconstruction
 from numpy import ndarray, array
+
 
 
 class PropertiesReconstruction(PropertyDictionary):
@@ -46,7 +48,7 @@ class GIMMEProperties(PropertiesReconstruction):
 		self['flux_threshold'] = 1e-4 if flux_threshold is None else flux_threshold
 
 
-class IMATFamilyProperties(PropertiesReconstruction):
+class IMATProperties(PropertiesReconstruction):
 	def __init__(self, exp_vector, exp_thresholds, core=None, tolerance=1e-8, epsilon=1):
 		new_mandatory = {
 			'exp_vector': lambda x: isinstance(x, list) and len(x) > 0 or isinstance(x, ndarray),
@@ -72,6 +74,43 @@ class IMATFamilyProperties(PropertiesReconstruction):
 		if epsilon:
 			self['epsilon'] = epsilon
 
+class CORDAProperties(PropertiesReconstruction):
+	CONSTRAINBY_VAL = 'val'
+	CONSTRAINBY_PERC = 'perc'
+	def __init__(self, high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np=None, constraint=None, constrainby=None,
+				 om=None, ntimes=None, nl=None):
+		'''
+		:param high_conf_rx: High confidence reactions
+		:param medium_conf_rx: Medium confidence reactions
+		:param neg_conf_rx: Negative confidence reactions
+		:param pr_to_np: Threshold to include NP reactions if PR reactions depend of them
+		:param constraint: Constraint value
+		:param constrainby: either 'val' (constrain fluxes by value) or 'perc' (constraint by percentage)
+		:param om: cost assigned to reactions when calculating dependencies
+		:param ntimes: Number of CORSO FBA simulations performed per dependency assessment
+		:param nl: Noise added to reaction costs
+		'''
+		new_mandatory = {k: is_list for k in ['high_conf_rx','medium_conf_rx','neg_conf_rx']}
+
+		new_optional = {
+			#'met_tests': lambda x: is_list(x) or x is None,
+			'pr_to_np': lambda x: isinstance(x,Number),
+			'constraint': lambda x: isinstance(x,Number),
+			'constrainby': [self.CONSTRAINBY_VAL, self.CONSTRAINBY_PERC],
+			'om': lambda x: isinstance(x,Number),
+			'ntimes': lambda x: isinstance(x, int) and x > 0,
+			'nl': lambda x: isinstance(x, Number) and x >= 0
+		}
+
+		super().__init__()
+		self.add_new_properties(new_mandatory, new_optional)
+
+		vars = [high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np, constraint, constrainby, om, ntimes, nl]
+		defaults = [None, None, None, 2, 1, CORDAProperties.CONSTRAINBY_VAL, 1e4, 5, 1e-2]
+		names = ['high_conf_rx','medium_conf_rx','neg_conf_rx', 'pr_to_np', 'constraint', 'constrainby', 'om', 'ntimes', 'nl']
+
+		for v,k,d in zip(vars,names,defaults):
+			self[k] = v if v is not None else d
 
 
 class tINITProperties(PropertiesReconstruction):
@@ -92,6 +131,8 @@ class tINITProperties(PropertiesReconstruction):
 def is_list(x):
 	return type(x) in [list, tuple] and len(x) > 0 or isinstance(x, ndarray) and x.size > 0
 
+def is_number(x):
+	return
 
 
 if __name__ == '__main__':
