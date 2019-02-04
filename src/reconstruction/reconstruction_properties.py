@@ -77,20 +77,23 @@ class IMATProperties(PropertiesReconstruction):
 class CORDAProperties(PropertiesReconstruction):
 	CONSTRAINBY_VAL = 'val'
 	CONSTRAINBY_PERC = 'perc'
-	def __init__(self, high_conf_rx, medium_conf_rx, neg_conf_rx,
-				 met_tests=None, pr_to_np=2, constraint=1, constrainby=CONSTRAINBY_VAL,
+	def __init__(self, high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np=2, constraint=1, constrainby=CONSTRAINBY_VAL,
 				 om=1e4, ntimes=5, nl=1):
 		'''
 		:param high_conf_rx: High confidence reactions
 		:param medium_conf_rx: Medium confidence reactions
 		:param neg_conf_rx: Negative confidence reactions
-
-		:param met_tests: Reaction ids to test (optional)
+		:param pr_to_np: Threshold to include NP reactions if PR reactions depend of them
+		:param constraint: Constraint value
+		:param constrainby: either 'val' (constrain fluxes by value) or 'perc' (constraint by percentage)
+		:param om: cost assigned to reactions when calculating dependencies
+		:param ntimes: Number of CORSO FBA simulations performed per dependency assessment
+		:param nl: Noise added to reaction costs
 		'''
 		new_mandatory = {k: is_list for k in ['high_conf_rx','medium_conf_rx','neg_conf_rx']}
 
 		new_optional = {
-			'met_tests': lambda x: is_list(x) or x is None,
+			#'met_tests': lambda x: is_list(x) or x is None,
 			'pr_to_np': Number,
 			'constraint': Number,
 			'constrainby': [self.CONSTRAINBY_VAL, self.CONSTRAINBY_PERC],
@@ -103,11 +106,12 @@ class CORDAProperties(PropertiesReconstruction):
 
 		self.add_new_properties(new_mandatory, new_optional)
 
-		vars = [high_conf_rx, medium_conf_rx, neg_conf_rx,met_tests, pr_to_np, constraint, constrainby, om, ntimes, nl]
-		names = ['high_conf_rx','medium_conf_rx','neg_conf_rx','met_tests', 'pr_to_np', 'constraint', 'constrainby', 'om', 'ntimes', 'nl']
+		vars = [high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np, constraint, constrainby, om, ntimes, nl]
+		defaults = [None, None, None, 2, 1, CORDAProperties.CONSTRAINBY_VAL, 1e4, 5, 1e-2]
+		names = ['high_conf_rx','medium_conf_rx','neg_conf_rx', 'pr_to_np', 'constraint', 'constrainby', 'om', 'ntimes', 'nl']
 
-		for v,k in zip(vars,names):
-			self[k] = v
+		for v,k,d in zip(vars,names,defaults):
+			self[k] = v if v is not None else d
 
 
 class tINITProperties(PropertiesReconstruction):
