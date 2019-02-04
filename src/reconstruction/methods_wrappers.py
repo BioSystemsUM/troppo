@@ -5,13 +5,18 @@ from cobamp.wrappers.external_wrappers import model_readers
 from .methods.fastcore import FASTcore
 from .methods.gimme import GIMME
 from .methods.imat import IMAT
+from .methods.corda import CORDA
+from .methods.tINIT import tINIT
 
-from .reconstruction_properties import FastcoreProperties, GIMMEProperties, IMATProperties
+from .reconstruction_properties import FastcoreProperties, GIMMEProperties, IMATProperties, tINITProperties, \
+	CORDAProperties
 
 map_properties_algorithms = {
 	FastcoreProperties : FASTcore,
 	GIMMEProperties : GIMME,
-	IMATProperties : IMAT
+	IMATProperties : IMAT,
+	tINITProperties : tINIT,
+	CORDAProperties : CORDA
 }
 
 class ReconstructionWrapper(object):
