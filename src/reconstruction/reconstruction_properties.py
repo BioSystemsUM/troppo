@@ -77,8 +77,8 @@ class IMATProperties(PropertiesReconstruction):
 class CORDAProperties(PropertiesReconstruction):
 	CONSTRAINBY_VAL = 'val'
 	CONSTRAINBY_PERC = 'perc'
-	def __init__(self, high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np=2, constraint=1, constrainby=CONSTRAINBY_VAL,
-				 om=1e4, ntimes=5, nl=1):
+	def __init__(self, high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np=None, constraint=None, constrainby=None,
+				 om=None, ntimes=None, nl=None):
 		'''
 		:param high_conf_rx: High confidence reactions
 		:param medium_conf_rx: Medium confidence reactions
@@ -94,16 +94,15 @@ class CORDAProperties(PropertiesReconstruction):
 
 		new_optional = {
 			#'met_tests': lambda x: is_list(x) or x is None,
-			'pr_to_np': Number,
-			'constraint': Number,
+			'pr_to_np': lambda x: isinstance(x,Number),
+			'constraint': lambda x: isinstance(x,Number),
 			'constrainby': [self.CONSTRAINBY_VAL, self.CONSTRAINBY_PERC],
-			'om': Number,
+			'om': lambda x: isinstance(x,Number),
 			'ntimes': lambda x: isinstance(x, int) and x > 0,
 			'nl': lambda x: isinstance(x, Number) and x >= 0
 		}
 
 		super().__init__()
-
 		self.add_new_properties(new_mandatory, new_optional)
 
 		vars = [high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np, constraint, constrainby, om, ntimes, nl]

@@ -1,176 +1,194 @@
-from numpy import array, zeros, sqrt, hstack, vstack, append, ones, where, floor, random, intersect1d
+from numpy import array, zeros, sqrt, vstack, where, floor, random, unique, \
+	apply_along_axis, nan, empty
 
-from cobamp.core.linear_systems import SteadyStateLinearSystem
-from cobamp.core.optimization import LinearSystemOptimizer
+from cobamp.core.models import CORSOModel
+from cobamp.core.models import ConstraintBasedModel
 
 
 class CORDA():
+	def costfx_factory(self, nl, om, costbase):
+		return lambda: nl * floor(om * random.rand(len(costbase), )) / om
+
 	def __init__(self, S, lb, ub, properties):
 		self.S = array(S)
 		self.lb, self.ub = array(lb), array(ub)
 		self.properties = properties
 
-	def step_one(self, S, lb, ub, es, pr, np, om, met_tests, current_reactions, constraint, constraintby, nl, ntimes):
-		S, lb, ub = S.copy(), lb.copy(), ub.copy()
-		m, n = self.S.shape
-		costbase = zeros(n, )
-		costbase[pr] = sqrt(om)
-		costbase[np] = om
+		rx_names, mt_names = ['V' + str(i) for i in range(S.shape[1])], ['M' + str(i) for i in range(S.shape[0])]
+		cbmodel = ConstraintBasedModel(S, list(zip(lb, ub)), reaction_names=rx_names,
+									   metabolite_names=mt_names, optimizer=True)
+		self._m, self._n = self.S.shape
+		self.corso_fba = CORSOModel(cbmodel)
 
-		es_fwd_del, es_bkw_del, pr_p, np_p = [zeros(dim,) for dim in [len(es), len(es), len(pr), len(np)]]
-		hc_to_mc, hc_to_nc = zeros(len(es), len(pr)), zeros(len(es), len(np))
+	def run(self):
+		rx_cat = zeros(self._n,)
+		rx_cat[self.properties['high_conf_rx']] = 1
+		rx_cat[self.properties['medium_conf_rx']] = 2
+		rx_cat[self.properties['neg_conf_rx']] = 3
 
-		met_test_ids = None
+		constraint = self.properties['constraint']
+		constrainby = self.properties['constrainby']
+		nl = self.properties['nl']
+		ntimes = self.properties['ntimes']
+		om = self.properties['om']
+		pr_to_np = self.properties['pr_to_np']
 
-		# add test reactions to the S matrix as inactive irreversible reactions
-		# when it's necessary to add them to the model, simply change the bounds
-		# using met_test_ids as an
-
-		if met_tests:
-			met_test_ids = array([S.shape[1] + i for i in range(len(met_tests))])
-			S = hstack([S, self.get_tests_stoichiometry(S.shape[0], met_tests)])
-			append(lb, array([0 for _ in range(len(met_tests))]))
-			append(ub, array([0 for _ in range(len(met_tests))]))
-			append(costbase, array([0 for _ in range(len(met_tests))]))
-
-		# TODO: missing the steps on lines 108-115
-
-		# check for dependencies
+		return self.step_two(rx_cat, constraint, constrainby, nl, ntimes, om, pr_to_np)
 
 
-		def update_dependency(x):
-			active_idx = where(abs(x) > 1e-6)[0]
-			for pres, ids in [(pr_p, pr), (np_p, np), (hc_to_mc, pr), (hc_to_nc, np)]:
-				pres[intersect1d(active_idx, ids)] = 1
+	def step_two(self, rx_cat, constraint, constrainby, nl, ntimes, om=1e4, pr_to_np=2):
+		rx_cat = array(rx_cat)
+		costbase = zeros(self._n, )
 
-		def random_cost():
-			return nl * floor(1e4 * random.rand(len(costbase), ))/10000
+		costbase[rx_cat == 2] = sqrt(om)
+		costbase[rx_cat == 3] = om
 
-		# TODO: Shorten this!
-		for i,rx in enumerate(es):
-			x1, f = self.check_reaction_dependency(S, lb, ub, rx, random_cost(), constraint, constraintby, nl, minimize=False)
-			if f > 1e-6:
-				update_dependency(x1)
-				for k in range(ntimes):
-					cost_inc = costbase+random_cost()
-					xn, f = self.check_reaction_dependency(S, lb, ub, rx, cost_inc, constraint, constraintby, nl, minimize=False)
-					update_dependency(xn)
+		HC_reactions = where(rx_cat == 1)[0]
+		costfx = self.costfx_factory(nl, om, costbase)
+		for rx in HC_reactions:
+			dep, to_del = self.find_dependent_reactions(rx, constraint, constrainby, costfx, costbase, ntimes, eps=1e-6)
+			rx_cat[dep] = 1
+			if to_del:
+				rx_cat[rx] = -1
+
+		costbase = zeros(self._n, )
+		costbase[rx_cat == 3] = om
+
+		PR_reactions = where(rx_cat == 2)[0]
+		NP_reactions = where(rx_cat == 3)[0]
+
+		costfx = self.costfx_factory(nl, om, costbase)
+
+		PR_NP = []
+		for i, rx in enumerate(PR_reactions):
+			dep, to_del = self.find_dependent_reactions(rx, constraint, constrainby, costfx, costbase, ntimes, eps=1e-6)
+			PR_NP.append(dep[NP_reactions])
+			if to_del:
+				rx_cat[rx] = -1
+
+		PR_NP = vstack(PR_NP)
+		NP_occurrence = apply_along_axis(sum, 0, PR_NP)
+		np_to_pr_idx = NP_reactions[NP_occurrence > pr_to_np]
+
+		if len(np_to_pr_idx) > 0:
+			rx_cat[np_to_pr_idx] = 2
+			PR_NP = PR_NP[:, NP_occurrence > pr_to_np]
+			if PR_NP.shape[1] > 0:
+				PR_NP = vstack([zeros(len(np_to_pr_idx), PR_NP.shape[1])])
 			else:
-				es_fwd_del[i] = 1
+				PR_NP = array([])
 
-			if lb[rx] < 0:
-				xb, f = self.check_reaction_dependency(S, lb, ub, rx, costbase+random_cost(),
-													   -constraint, constraintby, nl, minimize=True)
-				if f > 1e-6:
-					update_dependency(xb)
-					for k in range(ntimes):
-						cost_inc = costbase + random_cost()
-						xbn, f = self.check_reaction_dependency(S, lb, ub, rx, cost_inc, constraint, constraintby, nl,
-															   minimize=True)
-						update_dependency(xbn)
-				else:
-					es_bkw_del[i] = 1
+		# 2.2
+		PR_reactions = where(rx_cat == 2)[0]
+		NP_reactions = where(rx_cat == 3)[0]
 
+		PR_to_check_l8r = []
+		for rx in NP_reactions:
+			if isinstance(self.corso_fba.mapping[rx], int):
+				self.corso_fba.set_reaction_bounds(rx, lb=0, ub=0)
 			else:
-				es_bkw_del[i] = 1
+				for rxsplit in self.corso_fba.mapping[rx]:
+					self.corso_fba.set_reaction_bounds(rxsplit, lb=0, ub=0)
 
-		return _
+			self.corso_fba.cbmodel.set_reaction_bounds(rx, lb=0, ub=0)
 
+		res2 = []
+		for i, rx in enumerate(PR_reactions):
+			to_del = self.check_if_blocked(rx)
+			if to_del:
+				PR_to_check_l8r.append(rx)
+				if len(np_to_pr_idx) > 0:
+					np_from_rx = where(PR_NP[i, :] > 0)[0]
+					if len(np_from_rx) == 0:
+						print('Undefined')
+					else:
+						for kn in np_from_rx:
+							res2.append(kn)
+				rx_cat[rx] = -1
+		res2 = unique(sorted(array(res2)))
 
-	def check_reaction_dependency(self, S, lb, ub, rx, costfx, constraint, constraintby, nl, minimize):
-		obj_fx = zeros(S.shape[1], )
-		obj_fx[rx] = 1
-		# TODO: Check what subl is - line 119
-		return self.corsoFBA(S, lb, ub, of=obj_fx, constraint=constraint, constraintby=constraintby,
-							 costas=costfx, nl=nl, minimize=minimize)
+		PR_reactions = where(rx_cat == 2)[0]
+		rx_cat[PR_reactions] = 1
+		rescued = set(sorted(PR_to_check_l8r + res2.tolist()))
 
-	def corsoFBA(self, S, lb, ub, of, costas, minimize=False, constraint=1, constraintby='val', eps=1e-6):
-		constraint = abs(constraint) if constraintby == 'perc' else constraint
-		zero_result = zeros(S.shape[1])
-		lso, ss = self.get_linear_model(S, lb, ub, of, minimize)
-		sol = lso.optimize()
-		f1_f, f1_x = sol.objective_value(), sol.x()
+		ES_reactions = rx_cat == 1
+		OT_reactions = rx_cat == 0
 
-		if abs(f1_f) < eps:
-			return zero_result
+		to_block = where(ES_reactions | OT_reactions)[0]
 
-		if constraintby == 'perc':
-			f1_f = f1_x[of != 0] * (constraint / 100)
-		elif constraintby == 'val':
-			if (f1_f > constraint and minimize) or (f1_f < constraint and not minimize):
-				return zero_result
-			else:
-				f1_f = constraint
+		block_corso = lambda rx: self.corso_fba.set_reaction_bounds(rx, lb=0, ub=0)
+		block_cbmodel = lambda rx: self.corso_fba.cbmodel.set_reaction_bounds(rx, lb=0, ub=0)
+
+		for rx in to_block:
+			self.do_function_for_reactions_on_both_models(rx, block_cbmodel, block_corso)
+
+		costbase = zeros(self._n, )
+		costbase[OT_reactions] = om
+
+		ES_OT = []
+		for rx in where(ES_reactions)[0]:
+			dep, to_del = self.find_dependent_reactions(rx, constraint, constrainby, costfx, costbase, ntimes, 1e-6)
+			ES_OT.append(dep[OT_reactions])
+
+		OT_reaction_ids = where(OT_reactions)[0]
+		ES_OT = vstack(ES_OT)
+		if ES_OT.shape[1] > 0:
+			OT_occurrence = apply_along_axis(sum, 0, ES_OT)
+			ot_to_es_idx = OT_reaction_ids[OT_occurrence != 0]
+			rx_cat[ot_to_es_idx] = 1
+
+		return rx_cat
+
+	def do_function_for_reactions_on_both_models(self, reaction, mfunction, corsofunction):
+		if isinstance(self.corso_fba.mapping[reaction], int):
+			corsofunction(reaction)
 		else:
-			raise (ValueError('Invalid `constraintby` parameter. Must be either \'val\' or \'perc\''))
+			for rxsplit in self.corso_fba.mapping[reaction]:
+				corsofunction(rxsplit)
 
-		if len(costas) == 1:
-			costas = ones(S.shape[1],)
-		if len(costas) == S.shape[1]:
-			append(costas, costas)
-		elif len(costas) != 2 * len(S.shape[1]):
-			raise (ValueError('Invalid costs length'))
+		mfunction(reaction)
 
-		n_orig = S.shape[1]
-		rev_idx = where(lb < 0 & ub >= 0)[0]
+	def find_reaction_limits(self, rx):
+		self.corso_fba.cbmodel.set_objective({rx: 1}, True)
+		fmin = self.corso_fba.cbmodel.optimize().objective_value()
+		self.corso_fba.cbmodel.set_objective({rx: 1}, False)
+		fmax = self.corso_fba.cbmodel.optimize().objective_value()
 
-		S_n, lb_n, ub_n, rx_mapping = self.make_irreversible(S, lb, ub)
-		S_n = vstack([S_n, zeros(S_n.shape[0])])
-		S_n[-1, :] = hstack([costas[:n_orig], costas[n_orig + rev_idx]])
-		append(lb_n, array([1e20]))
-		append(ub_n, array([0]))
-		col = zeros(S_n.shape[0], )
-		col[-1] = -1
-		S_n = hstack([S_n, col])
-		S_ov = zeros(S_n.shape[1])
-		S_ov[-1] = 1
+		return fmin, fmax
 
-		obj_fluxes = where(of != 0)[0]
-		for rx in obj_fluxes:
-			lb_n[rx] = ub_n[rx] = f1_f[rx]
-			if isinstance(rx_mapping[rx], tuple):
-				lb_n[rx_mapping[rx][1]] = ub_n[rx_mapping[rx][1]] = 0
+	def check_if_blocked(self, rx):
+		fl = self.find_reaction_limits(rx)
+		if fl[0] == nan and fl[1] == nan:
+			return True
+		else:
+			return (abs(fl[0]) < 1e-6) and (abs(fl[1]) < 1e-6)
 
-		lso2, ssls2 = self.get_linear_model(S_n, lb_n, ub_n, S_ov, True)
-		flux2 = lso2.optimize()
+	def find_dependent_reactions(self, rx, constraint, constrainby, costfx, costbase, ntimes, eps):
+		dependent, to_delete = self.__find_dependent_reactions(rx, constraint, constrainby, costfx, costbase, ntimes,
+															   True,
+															   eps)
+		if self.lb[rx] < 0:
+			bkw_dep, to_del_bkw = self.__find_dependent_reactions(rx, -constraint, constrainby, costfx, costbase,
+																  ntimes,
+																  False, eps)
 
-		flux_x = flux2[:n_orig]
-		flux_x[rev_idx] = flux_x[rev_idx] - flux2.x()[n_orig:-1]
-		flux_x[abs(flux_x) < 1e-8] = 0
+			dependent = dependent & bkw_dep
+			to_delete = to_del_bkw & to_delete
 
-		return flux_x, f1_f
+		return dependent, to_delete
 
-	def make_irreversible(self, S, lb, ub):
-		## TODO: Order should be S, Srb
-		irrev = array([i for i in range(self.S.shape[1]) if not (lb[i] < 0 and ub[i] > 0)])
-		rev = array([i for i in range(self.S.shape[1]) if i not in irrev])
-		Sr = S[:, rev]
-		offset = S.shape[1]
+	def __find_dependent_reactions(self, rx, constraint, constrainby, costfx, costbase, n_times, forward, eps):
+		of_dict = {rx: 1}
+		cost = costbase + costfx()
+		_, corso_sol = self.corso_fba.optimize_corso(cost, of_dict, not forward, constraint, constrainby)
 
-		rx_mapping = {k: v if k in irrev else [v] for k, v in dict(zip(range(offset), range(offset))).items()}
-		for i, rx in enumerate(rev):
-			rx_mapping[rx].append(offset + i)
-		rx_mapping = {k: tuple(v) if isinstance(v, list) else v for k, v in rx_mapping.items()}
-
-		S_new = hstack([S, -Sr])
-		nlb, nub = zeros(S_new.shape[1]), zeros(S_new.shape[1])
-		for orig_rx, new_rx in rx_mapping.items():
-			if isinstance(new_rx, tuple):
-				nub[new_rx[0]] = abs(lb[orig_rx])
-				nub[new_rx[1]] = ub[orig_rx]
-			else:
-				nlb[new_rx], nub[new_rx] = lb[orig_rx], ub[orig_rx]
-
-		return S_new, nlb, nub, rx_mapping
-
-	def get_linear_model(self, S, lb, ub, of=None, minimize=False):
-		ss = SteadyStateLinearSystem(S, lb, ub, ['V' + str(i) for i in range(len(S.shape[1]))])
-		lso = LinearSystemOptimizer(ss)
-		if of:
-			ss.set_objective(of, minimize)
-		return lso, ss
-
-	def get_tests_stoichiometry(self, row_shape, tests):
-		S_test = zeros(row_shape, len(tests))
-		S_test[(tests, array(range(len(tests))))] = 1
-		return S_test
+		dependent = corso_sol.x() > eps
+		to_del = not dependent.any()
+		if not to_del:
+			for i in range(n_times - 1):
+				cost = costbase + costfx()
+				_, corso_sol = self.corso_fba.optimize_corso(cost, of_dict, not forward, constraint, constrainby)
+				dependent = (corso_sol.x() > eps) | dependent
+		else:
+			dependent = zeros(dependent.shape).astype(bool)
+		return dependent, to_del
