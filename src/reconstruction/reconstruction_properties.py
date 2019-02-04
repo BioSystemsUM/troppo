@@ -6,6 +6,11 @@ from reconstruction.methods_reconstruction import MethodsReconstruction
 from numpy import ndarray, array
 
 
+# Help functions
+
+def is_list(x):
+	return type(x) in [list, tuple] and len(x) > 0 or isinstance(x, ndarray) and x.size > 0
+
 
 class PropertiesReconstruction(PropertyDictionary):
 	def __init__(self):
@@ -112,27 +117,45 @@ class CORDAProperties(PropertiesReconstruction):
 		for v,k,d in zip(vars,names,defaults):
 			self[k] = v if v is not None else d
 
-
 class tINITProperties(PropertiesReconstruction):
-	def __init__(self, reactions_scores, present_metabolites, essential_reactions, production_weight, allow_excretion,
-				 no_reverse_loops, params):
+	def __init__(self, reactions_scores, present_metabolites, essential_reactions, production_weight=0.5,
+				 allow_excretion=False,
+				 no_reverse_loops=False):
+		# TODO check later if the params input might be necessary to include for the reconstruction
 		new_mandatory = {
+
+		}
+		new_optional = {
 			'reactions_scores': lambda x: is_list(x),
 			'present_metabolites': lambda x: is_list(x),
+			'essential_reactions': lambda x: is_list(x),
+			'production_weight': lambda x: isinstance(x, float),
+			'allow_excretion': lambda x: isinstance(x, bool),
+			'no_reverse_loops': lambda x: isinstance(x, bool),
 		}
-		new_optional = {}
 
-		super.__init__()
-
+		super().__init__()
 
 		self.add_new_properties(new_mandatory, new_optional)
 
+		properties_dict_list = ["reactions_scores", "present_metabolites", "essential_reactions", "production_weight",
+								"allow_excretion", "no_reverse_loops"]
+		properties_list = [reactions_scores, present_metabolites, essential_reactions, production_weight,
+						   allow_excretion, no_reverse_loops]
+		prop_dict = dict(zip(properties_dict_list, properties_list))
 
-def is_list(x):
-	return type(x) in [list, tuple] and len(x) > 0 or isinstance(x, ndarray) and x.size > 0
+		[self.add_if_not_none(*k) for k in prop_dict.items()]
 
-def is_number(x):
-	return
+# if reactions_scores:
+# 	self['reactions_scores'] = reactions_scores
+# if present_metabolites:
+# 	self['present_metabolites'] = present_metabolites
+# self['essential_reactions'] = essential_reactions
+# self['production_weight'] = production_weight
+# if allow_excretion:
+# 	self['allow_excretion'] = allow_excretion
+# if no_reverse_loops:
+# 	self['no_reverse_loops'] = no_reverse_loops
 
 
 if __name__ == '__main__':
