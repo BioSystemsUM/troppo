@@ -1,22 +1,30 @@
 import numpy as np
+from numpy import int_
 from itertools import chain
 
 from cobamp.core.linear_systems import GenericLinearSystem, VAR_CONTINUOUS, VAR_BINARY
 from cobamp.core.optimization import LinearSystemOptimizer
 
+from cobamp.core.models import make_irreversible_model
+
 
 class tINIT():
-	def __init__(self, S, ub, lb, properties):
+	def __init__(self, S, lb, ub, properties):
 		self.S = S
-		self.ub = ub
 		self.lb = lb
+		self.ub = ub
 		self.properties = properties
 		self.n_metabolites, self.n_reactions = self.S.shape
 
 	def preprocessing(self):
-		self.reaction_scores = self.properties['reactions_scores']
-		self.present_metabolites = self.properties['present_metabolites']
-		self.essential_reactions = self.properties['essential_reactions']
+		self.reaction_scores = np.array(self.properties['reactions_scores'])
+		self.present_metabolites = np.array(self.properties['present_metabolites'])
+
+		self.essential_reactions_idx = np.array(self.properties['essential_reactions'])
+		self.essential_reactions = np.zeros(self.n_reactions).astype(bool)
+		if self.essential_reactions_idx.size != 0:
+			self.essential_reactions[self.essential_reactions_idx] = True
+
 		self.production_weight = self.properties['production_weight']
 		self.allow_excretion = self.properties['allow_excretion']
 		self.no_reverse_loops = self.properties['no_reverse_loops']
@@ -29,7 +37,7 @@ class tINIT():
 		self.present_metabolites_unlisted = np.array(
 			list(chain(*map(lambda x: [x] if not isinstance(x, list) else x, self.present_metabolites))))
 
-		if self.present_metabolites_unlisted:
+		if self.present_metabolites_unlisted.size > 0:
 			self.metabolites_production = np.ones(self.present_metabolites_unlisted.size) * -1
 		# self.metabolites_production[self.present_metabolites] = -1
 		else:
@@ -40,24 +48,29 @@ class tINIT():
 		# TODO have a function to check if the model is unconstrained
 		# TODO change the reversible stuff later to the new to be implemented functions
 		self.reversible_reactions = np.where(self.lb < 0)[0]  # change this
-		self.essential_reversible_reactions = self.essential_reactions[self.reversible_reactions]
-		self.essential_reactions = np.delete(self.essential_reactions, self.essential_reversible_reactions)
+		self.essential_reversible_reactions = self.essential_reactions_idx[
+			np.isin(self.essential_reactions_idx, self.reversible_reactions)]
+		self.essential_reactions_idx = np.setdiff1d(self.essential_reactions_idx, self.essential_reversible_reactions)
 
 		# convert the model to irreversible
-		self.irreversible_S, self.irreversible_lb, self.irreversible_ub = self.irreversible_model(
-			self.S)  # TODO implement this function
-		self.reaction_scores = np.concatenate(self.reaction_scores, self.reaction_scores[self.reversible_reactions])
+		self.irreversible_S, self.irreversible_lb, self.irreversible_ub, self.rev_map = make_irreversible_model(self.S,
+																												self.lb,
+																												self.ub)
+
+		self.reaction_scores = np.hstack([self.reaction_scores, self.reaction_scores[
+			self.reversible_reactions]])  # even though is a column, we use vstack because python
 
 		if self.no_reverse_loops:
 			self.fwd_idx = self.reversible_reactions
-			self.bwd_idx = np.concatenate(self.n_reactions,
-										  [i + self.n_reactions for i in range(self.irreversible_S.shape[1])])
+			self.bwd_idx = np.array([self.rev_map[i][1] for i in self.reversible_reactions])
+
 		else:
 			self.fwd_idx = self.essential_reversible_reactions
-			self.bwd_idx = [i + self.n_reactions for i in range(len(self.essential_reversible_reactions))]
+			# self.bwd_idx = np.array([i + (self.n_reactions) for i in self.essential_reversible_reactions])
+			self.bwd_idx = np.array([self.rev_map[i][1] for i in self.essential_reversible_reactions])
 
 		# remove the essential reactions from the self.reactions_scores
-		self.reaction_scores = np.delete(self.reaction_scores, self.essential_reactions)
+		self.reaction_scores = np.delete(self.reaction_scores, self.essential_reactions_idx)
 
 		# this part will create fake metabolites for the self.present_metabolites to insert on the self.irreversible_S
 		# TODO this should also be a function in a superclass
@@ -96,14 +109,35 @@ class tINIT():
 		# TODO for this block, check if the values are updated throughout the modifications, but I do not think so and its the way it should be
 		# useful numbers
 		self.n_metabolites_irrev, self.n_reactions_irrev = self.irreversible_S.shape
-		self.n_essential_reactions = self.essential_reactions.size
-		self.n_non_essential_reactions = self.n_reactions_irrev - self.essential_reactions.size
+		self.n_essential_reactions = self.essential_reactions_idx.size
+		self.n_non_essential_reactions = self.n_reactions_irrev - self.n_essential_reactions
+		self.non_essential = np.setdiff1d(list(range(self.irreversible_S.shape[1])), self.essential_reactions_idx)
+
+		self.v_vector_reactions = list(self.rev_map.keys())
+		for rev_r in self.reversible_reactions: self.v_vector_reactions.append(str(rev_r) + '_r')
+
+		revs = np.setdiff1d(self.non_essential, list(self.rev_map.keys()))
+		revs_names = []
+		for r in range(revs.size):
+			for k, v in self.rev_map.items():
+				if isinstance(v, (tuple, list)):
+					if revs[r] in v:
+						revs_names.append(str(k) + '_r')
+
+		self.non_essential = self.non_essential.astype(str)
+		revs = revs.astype(str)
+
+		for r in range(revs.size):
+			temp = np.where(self.non_essential == revs[r])[0]
+			self.non_essential[temp] = revs_names[r]
 
 		# non-essential reactions to produce a fake metabolite
+		matrix_to_add = np.delete(np.eye(self.n_reactions_irrev), self.essential_reactions_idx, 0)
 		self.irreversible_S = np.vstack(
-			[self.irreversible_S, np.delete(np.eye(self.n_reactions_irrev), self.essential_reactions, 0)])
+			[self.irreversible_S, matrix_to_add])
+
 		# for non-essential, but with a stoichiometry of 1000
-		temp = np.eye(self.n_reactions_irrev) * 1000
+		temp = np.eye(self.n_non_essential_reactions) * 1000
 		new_temp = np.vstack([np.zeros([self.n_metabolites_irrev, self.n_non_essential_reactions]), temp])
 		self.irreversible_S = np.hstack(
 			[self.irreversible_S, new_temp])
@@ -114,16 +148,19 @@ class tINIT():
 				 np.zeros([self.n_non_essential_reactions + self.present_metabolites_unlisted.size,
 						   self.n_metabolites_irrev - self.present_metabolites_unlisted.size])])
 
-			self.irreversible_S = np.hstack([S, temp2])
+			self.irreversible_S = np.hstack([self.irreversible_S, temp2])
 			self.n_net_production = self.n_metabolites_irrev - self.present_metabolites_unlisted.size
+			self.net_production = np.setdiff1d(list(range(self.n_metabolites_irrev)), self.present_metabolites_unlisted)
 
 		else:
+			self.net_production = []
 			self.n_net_production = 0
 
 		if self.fwd_idx.size > 0:
 			self.n_rev_bounds = self.fwd_idx.size
-			I = np.eye(self.irreversible_S.shape[1]) * -1
+			I = np.eye(self.n_reactions_irrev) * -1
 			temp = np.vstack([I[self.fwd_idx,], I[self.bwd_idx,]])
+			# padding
 			temp = np.hstack([temp, np.zeros([temp.shape[0], self.irreversible_S.shape[1] - self.n_reactions_irrev])])
 			temp = np.hstack([temp, np.eye(self.n_rev_bounds * 2) * 1000])
 			temp = np.vstack([temp, np.hstack(
@@ -131,84 +168,117 @@ class tINIT():
 				 np.eye(self.n_rev_bounds) * -1])])
 			self.irreversible_S = np.hstack(
 				[self.irreversible_S, np.zeros([self.irreversible_S.shape[0], self.n_rev_bounds * 2])])
-			self.irreversible_S = np.hstack([self.irreversible_S, temp])
+			self.irreversible_S = np.vstack([self.irreversible_S, temp])
 		else:
 			self.n_rev_bounds = 0
 
 	def build_problem(self):
 
 		# Preparation of the problem to be optimized
-		self.problem_blx = np.vstack([self.irreversible_lb, np.zeros(
+		self.problem_blx = np.hstack([self.irreversible_lb, np.zeros(
 			self.n_non_essential_reactions + self.n_net_production + (self.n_rev_bounds * 2))])
 		# TODO check if this in float; if not, we have to change the dtype of problem_blx, otherwise 0.1 will no exist (will be 0)
-		self.problem_blx[self.essential_reactions,] = np.apply_along_axis(lambda x: [i if i > 0.1 else 0.1 for i in x],
-																		  1,
-																		  self.problem_blx[
-																			  self.essential_reactions,])  # this == max(0.1, prob.bl(essentialIndex))
+		if self.essential_reactions_idx.size > 0:
+			self.problem_blx[self.essential_reactions_idx] = np.array(
+				list(map(lambda x: x if x > 0.1 else 0.1, self.problem_blx[self.essential_reactions_idx])))
 
-		self.problem_ubx = np.vstack([self.irreversible_ub, np.ones(
+		self.problem_ubx = np.hstack([self.irreversible_ub, np.ones(
 			self.n_non_essential_reactions + self.n_net_production + self.n_rev_bounds * 2)])
 
-		self.irreversible_b = np.zeros(self.n_metabolites)
+		self.irreversible_b = np.zeros(self.n_metabolites_irrev)
 
-		self.problem_blc = np.vstack(
+		self.problem_blc = np.hstack(
 			[self.irreversible_b, np.ones(self.n_non_essential_reactions), np.zeros(self.n_rev_bounds * 2),
 			 np.ones(self.n_rev_bounds) * -1])
 
 		# this part of the code will take care of excretion and reverse loops, if they are true on the parameters
 		if self.no_reverse_loops:
 			self.rev_ub = np.zeros(self.n_rev_bounds)
-			self.rev_ub[self.essential_reversible_reactions] = -1
+			# TODO this is just a fix; REALLY FIX THIS LATER
+			for i in range(self.essential_reversible_reactions.size):
+				self.rev_ub[i] = -1
 		else:
 			self.rev_ub = np.ones(self.n_rev_bounds) * -1
 
 		if self.allow_excretion:
-			self.met_ub = np.array([None] * self.n_metabolites)
+			self.met_ub = np.array([None] * self.n_metabolites_irrev)
 		else:
-			self.met_ub = np.zeros(self.n_metabolites)
+			self.met_ub = np.zeros(self.n_metabolites_irrev)
 
-		self.problem_buc = np.vstack(
+		self.problem_buc = np.hstack(
 			[self.met_ub, np.ones(self.n_non_essential_reactions) * 1000, np.ones(self.n_rev_bounds * 2) * 999.9,
 			 self.rev_ub])
 
-		self.problem_c = np.vstack([np.zeros(self.n_reactions), self.reaction_scores,
+		self.problem_c = np.hstack([np.zeros(self.n_reactions), self.reaction_scores,
 									np.ones(self.n_net_production) * self.production_weight * -1,
 									np.zeros(self.n_rev_bounds * 2)])
 
 		self.problem_a = self.irreversible_S
 
 	def solve_problem(self):
-		start_index = self.n_metabolites_irrev - self.present_metabolites_unlisted
+
+		# len_reactions = [len(self.irreversible_lb), self.n_non_essential_reactions, self.n_net_production,
+		# 				 self.n_rev_bounds, self.n_rev_bounds]
+		# prefix = ['v_', 'ne_', 'net_prod_', 'revF_', 'revB_']
+		#
+		# rx_names_problem2 = list(chain(*[[k + str(i) for i in range(v)] for k, v in zip(prefix, len_reactions)]))
+
+		len_reactions = [np.array(self.v_vector_reactions), self.non_essential, self.net_production,
+						 self.fwd_idx, self.fwd_idx]
+		prefix = ['v_', 'ne_', 'net_prod_', 'revF_', 'revB_']
+
+		rx_names_problem = list(chain(*[[k + str(i) for i in v] for k, v in zip(prefix, len_reactions)]))
+
+		start_index = self.n_metabolites_irrev - self.present_metabolites_unlisted.size
 		problem = GenericLinearSystem(self.problem_a, VAR_CONTINUOUS, self.problem_blx, self.problem_ubx,
 									  self.problem_blc, self.problem_buc,
-									  ['V' + str(i) for i in range(self.problem_a.shape[1])])
-		for i in range(self.present_metabolites_unlisted.size):
-			self.problem_blc[start_index + i] = 1
-			lso = LinearSystemOptimizer(problem)
-			problem.set_constraint_bounds(problem.model.constraints, self.problem_blc, self.problem_buc)
-			problem.set_objective(self.problem_c, False)
-			solution = lso.optimize()
+									  rx_names_problem)
+		lso = LinearSystemOptimizer(problem)
+		problem.write_to_lp('tINIT_test.lp')
+		if self.present_metabolites_unlisted.size > 0:
+			for i in range(self.present_metabolites_unlisted.size):
+				self.problem_buc[start_index + i] = 1
+				problem.set_constraint_bounds(problem.model.constraints, self.problem_blc, self.problem_buc)
+				problem.set_objective(self.problem_c, True)
+				solution = lso.optimize()
 
-			if solution.status() != 'optimal':
-				self.problem_blc[start_index + i] = 0
-			else:
-				self.metabolites_production[self.present_metabolites_unlisted[i]] = 1
+				if solution.status() != 'optimal':
+					self.problem_buc[start_index + i] = 0
+				else:
+					self.metabolites_production[i] = 1
 
 		allInt = np.hstack([list(range(self.n_reactions + 1, self.n_reactions + self.n_non_essential_reactions)), list(
 			range(self.irreversible_S.shape[1] - (self.n_rev_bounds * 2) + 1, self.irreversible_S.shape[1]))])
 
+		# return lso.optimize()
 
-		problem.set_variable_types([problem.model.variables[i] for i in allInt], VAR_BINARY)
+		problem.set_variable_types([problem.model.variables[int_(i)] for i in allInt], VAR_BINARY)
+		print(problem.model.to_lp())
 		solution = lso.optimize()
 
-		if solution.status()!='optimal':
+		if solution.status() != 'optimal':
 			print('The problem is infeasible')
-			return # TODO improve
+			# return solution  # TODO improve
+			return
+		# return solution
 
+		used_reactions = np.array([])
 
+		for k, v in solution.var_values().items(): print(k, v)
+
+		for k, v in solution.var_values().items():
+			if 'ne_' in k:
+				# if '_r' in k:
+				if v < 1 - 1e-6:
+					used_reactions = np.append(used_reactions, int_(k.split('_')[1]))
+
+		return np.append(used_reactions, self.essential_reactions_idx)
 
 
 if __name__ == '__main__':
+	import numpy as np
+	from reconstruction.reconstruction_properties import tINITProperties
+
 	S = np.array([[1, -1, 0, 0, -1, 0, -1, 0, 0],
 				  [0, 1, -1, 0, 0, 0, 0, 0, 0],
 				  [0, 1, 0, 1, -1, 0, 0, 0, 0],

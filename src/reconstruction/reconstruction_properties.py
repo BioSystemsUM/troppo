@@ -12,6 +12,17 @@ def is_list(x):
 	return type(x) in [list, tuple] and len(x) > 0 or isinstance(x, ndarray) and x.size > 0
 
 
+def is_list_else_empty(x):
+	return type(x) in [list, tuple] or isinstance(x, ndarray)
+
+
+def if_none_return_list(x):
+	if x is None:
+		return array([])
+	else:
+		return x
+
+
 class PropertiesReconstruction(PropertyDictionary):
 	def __init__(self):
 		self.base_mandatory = {'solver': str, 'template_model': model_readers, 'method': MethodsReconstruction,
@@ -32,7 +43,7 @@ class FastcoreProperties(PropertiesReconstruction):
 		self['core'] = core
 		# TODO change this later, this is only for testing
 		self['core_idx'] = core
-	# self['core_idx'] = [model_readers.reaction_id_to_index(reaction) for reaction in core]
+# self['core_idx'] = [model_readers.reaction_id_to_index(reaction) for reaction in core]
 
 
 class GIMMEProperties(PropertiesReconstruction):
@@ -79,9 +90,11 @@ class IMATProperties(PropertiesReconstruction):
 		if epsilon:
 			self['epsilon'] = epsilon
 
+
 class CORDAProperties(PropertiesReconstruction):
 	CONSTRAINBY_VAL = 'val'
 	CONSTRAINBY_PERC = 'perc'
+
 	def __init__(self, high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np=None, constraint=None, constrainby=None,
 				 om=None, ntimes=None, nl=None):
 		'''
@@ -95,14 +108,14 @@ class CORDAProperties(PropertiesReconstruction):
 		:param ntimes: Number of CORSO FBA simulations performed per dependency assessment
 		:param nl: Noise added to reaction costs
 		'''
-		new_mandatory = {k: is_list for k in ['high_conf_rx','medium_conf_rx','neg_conf_rx']}
+		new_mandatory = {k: is_list for k in ['high_conf_rx', 'medium_conf_rx', 'neg_conf_rx']}
 
 		new_optional = {
-			#'met_tests': lambda x: is_list(x) or x is None,
-			'pr_to_np': lambda x: isinstance(x,Number),
-			'constraint': lambda x: isinstance(x,Number),
+			# 'met_tests': lambda x: is_list(x) or x is None,
+			'pr_to_np': lambda x: isinstance(x, Number),
+			'constraint': lambda x: isinstance(x, Number),
 			'constrainby': [self.CONSTRAINBY_VAL, self.CONSTRAINBY_PERC],
-			'om': lambda x: isinstance(x,Number),
+			'om': lambda x: isinstance(x, Number),
 			'ntimes': lambda x: isinstance(x, int) and x > 0,
 			'nl': lambda x: isinstance(x, Number) and x >= 0
 		}
@@ -112,10 +125,12 @@ class CORDAProperties(PropertiesReconstruction):
 
 		vars = [high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np, constraint, constrainby, om, ntimes, nl]
 		defaults = [None, None, None, 2, 1, CORDAProperties.CONSTRAINBY_VAL, 1e4, 5, 1e-2]
-		names = ['high_conf_rx','medium_conf_rx','neg_conf_rx', 'pr_to_np', 'constraint', 'constrainby', 'om', 'ntimes', 'nl']
+		names = ['high_conf_rx', 'medium_conf_rx', 'neg_conf_rx', 'pr_to_np', 'constraint', 'constrainby', 'om',
+				 'ntimes', 'nl']
 
-		for v,k,d in zip(vars,names,defaults):
+		for v, k, d in zip(vars, names, defaults):
 			self[k] = v if v is not None else d
+
 
 class tINITProperties(PropertiesReconstruction):
 	def __init__(self, reactions_scores, present_metabolites, essential_reactions, production_weight=0.5,
@@ -126,9 +141,9 @@ class tINITProperties(PropertiesReconstruction):
 
 		}
 		new_optional = {
-			'reactions_scores': lambda x: is_list(x),
-			'present_metabolites': lambda x: is_list(x),
-			'essential_reactions': lambda x: is_list(x),
+			'reactions_scores': lambda x: is_list_else_empty(x),
+			'present_metabolites': lambda x: is_list_else_empty(x),
+			'essential_reactions': lambda x: is_list_else_empty(x),
 			'production_weight': lambda x: isinstance(x, float),
 			'allow_excretion': lambda x: isinstance(x, bool),
 			'no_reverse_loops': lambda x: isinstance(x, bool),
@@ -140,11 +155,13 @@ class tINITProperties(PropertiesReconstruction):
 
 		properties_dict_list = ["reactions_scores", "present_metabolites", "essential_reactions", "production_weight",
 								"allow_excretion", "no_reverse_loops"]
-		properties_list = [reactions_scores, present_metabolites, essential_reactions, production_weight,
+		properties_list = [reactions_scores, if_none_return_list(present_metabolites),
+						   if_none_return_list(essential_reactions), if_none_return_list(production_weight),
 						   allow_excretion, no_reverse_loops]
 		prop_dict = dict(zip(properties_dict_list, properties_list))
 
 		[self.add_if_not_none(*k) for k in prop_dict.items()]
+
 
 # if reactions_scores:
 # 	self['reactions_scores'] = reactions_scores
