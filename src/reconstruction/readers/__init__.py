@@ -4,3 +4,4 @@
  __init__.py
  
 """
+from . import generic_reader, hpa_reader, probe_reader
