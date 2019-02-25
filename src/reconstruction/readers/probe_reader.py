@@ -60,10 +60,12 @@ class ProbeReader:
             else:
                 for line in f:
                     fields = line.replace('\"', '').split(',')
-                    genes = self._IdMapping[fields[0]].replace(' ', '').split('///')  # 1 probe : many genes
-                    for geneID in genes:
-                        if geneID not in ('---', ''):  # filters cases where one probe does not match an id
-                            tup_list.append((geneID, float(fields[self._expCol])))
+                    # don't add genes to tuplist that don't have an id mapping
+                    if isinstance(self._IdMapping[fields[0]],str):
+                        genes = self._IdMapping[fields[0]].replace(' ', '').split('///')  # 1 probe : many genes
+                        for geneID in genes:
+                            if geneID not in ('---', ''):  # filters cases where one probe does not match an id
+                                tup_list.append((geneID, float(fields[self._expCol])))
         for gene, val in tup_list:  # 2 probes translated to same gene
             if gene not in values:
                 values[gene] = [val]  # simple entries
