@@ -1,5 +1,5 @@
 from numpy import array, zeros, sqrt, vstack, where, floor, random, unique, \
-	apply_along_axis, nan, empty
+	apply_along_axis, nan
 
 from cobamp.core.models import CORSOModel
 from cobamp.core.models import ConstraintBasedModel
