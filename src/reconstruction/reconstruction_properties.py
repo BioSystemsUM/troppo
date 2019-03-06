@@ -4,6 +4,7 @@ from cobamp.wrappers.external_wrappers import model_readers
 from numbers import Number
 from reconstruction.methods_reconstruction import MethodsReconstruction
 from numpy import ndarray, array
+from multiprocessing import cpu_count
 
 
 # Help functions
@@ -96,7 +97,7 @@ class CORDAProperties(PropertiesReconstruction):
 	CONSTRAINBY_PERC = 'perc'
 
 	def __init__(self, high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np=None, constraint=None, constrainby=None,
-				 om=None, ntimes=None, nl=None):
+				 om=None, ntimes=None, nl=None, solver=None, threads=None):
 		'''
 		:param high_conf_rx: High confidence reactions
 		:param medium_conf_rx: Medium confidence reactions
@@ -117,16 +118,17 @@ class CORDAProperties(PropertiesReconstruction):
 			'constrainby': [self.CONSTRAINBY_VAL, self.CONSTRAINBY_PERC],
 			'om': lambda x: isinstance(x, Number),
 			'ntimes': lambda x: isinstance(x, int) and x > 0,
-			'nl': lambda x: isinstance(x, Number) and x >= 0
+			'nl': lambda x: isinstance(x, Number) and x >= 0,
+			'threads':int
 		}
 
 		super().__init__()
 		self.add_new_properties(new_mandatory, new_optional)
 
-		vars = [high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np, constraint, constrainby, om, ntimes, nl]
-		defaults = [None, None, None, 2, 1, CORDAProperties.CONSTRAINBY_VAL, 1e4, 5, 1e-2]
+		vars = [high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np, constraint, constrainby, om, ntimes, nl, solver, threads]
+		defaults = [None, None, None, 2, 1, CORDAProperties.CONSTRAINBY_VAL, 1e4, 5, 1e-2, 'CPLEX', cpu_count()-1]
 		names = ['high_conf_rx', 'medium_conf_rx', 'neg_conf_rx', 'pr_to_np', 'constraint', 'constrainby', 'om',
-				 'ntimes', 'nl']
+				 'ntimes', 'nl','solver','threads']
 
 		for v, k, d in zip(vars, names, defaults):
 			self[k] = v if v is not None else d

@@ -18,9 +18,9 @@ class CORDA():
 
 		rx_names, mt_names = ['V' + str(i) for i in range(S.shape[1])], ['M' + str(i) for i in range(S.shape[0])]
 		cbmodel = ConstraintBasedModel(S, list(zip(lb, ub)), reaction_names=rx_names,
-									   metabolite_names=mt_names, optimizer=True)
+									   metabolite_names=mt_names, optimizer=True, solver=properties['solver'])
 		self._m, self._n = self.S.shape
-		self.corso_fba = CORSOModel(cbmodel)
+		self.corso_fba = CORSOModel(cbmodel, solver=properties['solver'])
 
 	def run(self):
 		rx_cat = zeros(self._n,)
@@ -34,8 +34,9 @@ class CORDA():
 		ntimes = self.properties['ntimes']
 		om = self.properties['om']
 		pr_to_np = self.properties['pr_to_np']
+		threads = self.properties['threads']
 
-		return self.run_corda(rx_cat, constraint, constrainby, nl, ntimes, om, pr_to_np)
+		return self.run_corda(rx_cat, constraint, constrainby, nl, ntimes, om, pr_to_np, threads)
 
 	def run_corda(self, rx_cat, constraint, constrainby, nl, ntimes, om=1e4, pr_to_np=2, threads=cpu_count()-1):
 		import pandas as pd
@@ -51,6 +52,7 @@ class CORDA():
 		costfx = self.costfx_factory(nl, om, costbase)
 
 		def nested_dependent_rxs(rx):
+			print(rx)
 			return self.find_dependent_reactions(rx, constraint, constrainby, costfx, costbase, ntimes, eps=1e-6)
 
 		HC_reactions = where(rx_cat == 1)[0]
@@ -61,8 +63,12 @@ class CORDA():
 
 
 			# print(sum(dep),pd.Series(rx_cat).value_counts())
+		if threads and threads > 1:
+			res1 = pool.map(nested_dependent_rxs, HC_reactions)
+		else:
+			res1 = list(map(nested_dependent_rxs, HC_reactions))
 
-		s1_deps, s1_block = list(zip(*pool.map(nested_dependent_rxs, HC_reactions)))
+		s1_deps, s1_block = list(zip(*res1))
 		rx_cat[logical_or.reduce(s1_deps)] = 1
 		if sum(s1_block) > 0:
 			rx_cat[HC_reactions[s1_block]] = -1
@@ -97,7 +103,12 @@ class CORDA():
 		# 		rx_cat[rx] = -1
 
 
-		s2_deps, s2_block = list(zip(*pool.map(nested_dependent_rxs, PR_reactions)))
+		if threads and threads > 1:
+			res2 = pool.map(nested_dependent_rxs, PR_reactions)
+		else:
+			res2 = list(map(nested_dependent_rxs, PR_reactions))
+		s2_deps, s2_block = list(zip(*res2))
+
 		for rx, dep in zip(PR_reactions, s2_deps):
 			PR_NP[rx] = dep[NP_reactions]
 
@@ -177,8 +188,11 @@ class CORDA():
 		# 	dep, to_del = self.find_dependent_reactions(rx, constraint, constrainby, costfx, costbase, ntimes, 1e-6)
 		# 	ES_OT[rx] = dep[OT_reactions]
 		#
-
-		s3_deps, _ = list(zip(*pool.map(nested_dependent_rxs, where(ES_reactions)[0])))
+		if threads and threads > 1:
+			res3 = pool.map(nested_dependent_rxs, where(ES_reactions)[0])
+		else:
+			res3 = list(map(nested_dependent_rxs, where(ES_reactions)[0]))
+		s3_deps, _ = list(zip(*res3))
 		for rx, dep in zip(where(ES_reactions)[0], s3_deps):
 			ES_OT[rx] = dep[OT_reactions]
 
