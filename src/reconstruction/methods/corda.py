@@ -245,14 +245,15 @@ class CORDA():
 
 	def find_dependent_reactions(self, rx, constraint, constrainby, costfx, costbase, ntimes, eps):
 		dependent, to_delete = self.__find_dependent_reactions(rx, constraint, constrainby, costfx, costbase, ntimes,
-															   True,
-															   eps)
+														   True,
+														   eps)
+
 		if self.lb[rx] < 0:
 			bkw_dep, to_del_bkw = self.__find_dependent_reactions(rx, -constraint, constrainby, costfx, costbase,
 																  ntimes,
 																  False, eps)
 
-			dependent = dependent & bkw_dep
+			dependent = dependent | bkw_dep
 			to_delete = to_del_bkw & to_delete
 
 		return dependent, to_delete
@@ -263,13 +264,13 @@ class CORDA():
 		# print(rx, cost)
 		flux, corso_sol = self.corso_fba.optimize_corso(cost, of_dict, not forward, constraint, constrainby, eps=eps)
 
-		dependent = corso_sol.x() > eps
+		dependent = abs(corso_sol.x()) > eps
 		to_del = not dependent.any()
 		if not to_del:
 			for i in range(n_times - 1):
 				cost = costbase + costfx()
 				flux, corso_sol = self.corso_fba.optimize_corso(cost, of_dict, not forward, constraint, constrainby, eps=eps, flux1=flux)
-				dependent = (corso_sol.x() > eps) | dependent
+				dependent = (abs(corso_sol.x()) > eps) | dependent
 		else:
 			dependent = zeros(dependent.shape).astype(bool)
 		return dependent, to_del
