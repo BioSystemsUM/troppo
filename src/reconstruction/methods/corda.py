@@ -52,7 +52,6 @@ class CORDA():
 		costfx = self.costfx_factory(nl, om, costbase)
 
 		def nested_dependent_rxs(rx):
-			print(rx)
 			return self.find_dependent_reactions(rx, constraint, constrainby, costfx, costbase, ntimes, eps=1e-6)
 
 		HC_reactions = where(rx_cat == 1)[0]
@@ -140,14 +139,8 @@ class CORDA():
 		NP_reactions = where(rx_cat == 3)[0]
 
 		PR_to_check_l8r = []
-		for rx in NP_reactions:
-			if isinstance(self.corso_fba.mapping[rx], int):
-				self.corso_fba.set_reaction_bounds(rx, lb=0, ub=0)
-			else:
-				for rxsplit in self.corso_fba.mapping[rx]:
-					self.corso_fba.set_reaction_bounds(rxsplit, lb=0, ub=0)
-
-			self.corso_fba.cbmodel.set_reaction_bounds(rx, lb=0, ub=0)
+		rx_cat[NP_reactions] = -1
+		self.block_reactions_from_idxs(rx_cat)
 
 		res2 = []
 		for i, rx in enumerate(PR_reactions):
