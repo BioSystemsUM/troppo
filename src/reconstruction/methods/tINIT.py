@@ -5,7 +5,7 @@ from itertools import chain
 from cobamp.core.linear_systems import GenericLinearSystem, VAR_CONTINUOUS, VAR_BINARY
 from cobamp.core.optimization import LinearSystemOptimizer
 
-from cobamp.core.models import make_irreversible_model
+from cobamp.core.models import make_irreversible_model, make_irreversible_model_raven
 
 
 class tINIT():
@@ -47,22 +47,23 @@ class tINIT():
 
 		# TODO have a function to check if the model is unconstrained
 		# TODO change the reversible stuff later to the new to be implemented functions
-		self.reversible_reactions = np.where(self.lb < 0)[0]  # change this
+		self.reversible_reactions = np.where(self.lb < 0)[0] # change this TODO should this also have self.ub > 0?
+		# self.reversible_reactions = np.where((np.logical_and(self.lb < 0, self.ub>0)))[0]
 		self.essential_reversible_reactions = self.essential_reactions_idx[
 			np.isin(self.essential_reactions_idx, self.reversible_reactions)]
 		self.essential_reactions_idx = np.setdiff1d(self.essential_reactions_idx, self.essential_reversible_reactions)
 
 		# convert the model to irreversible
-		self.irreversible_S, self.irreversible_lb, self.irreversible_ub, self.rev_map = make_irreversible_model(self.S,
+		self.irreversible_S, self.irreversible_lb, self.irreversible_ub, self.rev_map = make_irreversible_model_raven(self.S,
 																												self.lb,
-																												self.ub)
+																												self.ub, False)
 
 		self.reaction_scores = np.hstack([self.reaction_scores, self.reaction_scores[
-			self.reversible_reactions]])  # even though is a column, we use vstack because python
+			self.reversible_reactions]])
 
 		if self.no_reverse_loops:
 			self.fwd_idx = self.reversible_reactions
-			self.bwd_idx = np.array([self.rev_map[i][1] for i in self.reversible_reactions])
+			self.bwd_idx = np.array([self.rev_map[i][1] for i in self.reversible_reactions]) #TODO check this part of no reverse loops
 
 		else:
 			self.fwd_idx = self.essential_reversible_reactions
@@ -182,7 +183,7 @@ class tINIT():
 			self.problem_blx[self.essential_reactions_idx] = np.array(
 				list(map(lambda x: x if x > 0.1 else 0.1, self.problem_blx[self.essential_reactions_idx])))
 
-		self.problem_ubx = np.hstack([self.irreversible_ub, np.ones(
+		self.problem_bux = np.hstack([self.irreversible_ub, np.ones(
 			self.n_non_essential_reactions + self.n_net_production + self.n_rev_bounds * 2)])
 
 		self.irreversible_b = np.zeros(self.n_metabolites_irrev)
@@ -209,7 +210,7 @@ class tINIT():
 			[self.met_ub, np.ones(self.n_non_essential_reactions) * 1000, np.ones(self.n_rev_bounds * 2) * 999.9,
 			 self.rev_ub])
 
-		self.problem_c = np.hstack([np.zeros(self.n_reactions), self.reaction_scores,
+		self.problem_c = np.hstack([np.zeros(self.n_reactions_irrev), self.reaction_scores,
 									np.ones(self.n_net_production) * self.production_weight * -1,
 									np.zeros(self.n_rev_bounds * 2)])
 
@@ -230,9 +231,9 @@ class tINIT():
 		rx_names_problem = list(chain(*[[k + str(i) for i in v] for k, v in zip(prefix, len_reactions)]))
 
 		start_index = self.n_metabolites_irrev - self.present_metabolites_unlisted.size
-		problem = GenericLinearSystem(self.problem_a, VAR_CONTINUOUS, self.problem_blx, self.problem_ubx,
+		problem = GenericLinearSystem(self.problem_a, VAR_CONTINUOUS, self.problem_blx, self.problem_bux,
 									  self.problem_blc, self.problem_buc,
-									  rx_names_problem)
+									  rx_names_problem, self.properties['solver'])
 		lso = LinearSystemOptimizer(problem)
 		problem.write_to_lp('tINIT_test.lp')
 		if self.present_metabolites_unlisted.size > 0:
@@ -247,14 +248,17 @@ class tINIT():
 				else:
 					self.metabolites_production[i] = 1
 
-		allInt = np.hstack([list(range(self.n_reactions + 1, self.n_reactions + self.n_non_essential_reactions)), list(
+		allInt = np.hstack([list(range(self.n_reactions_irrev, self.n_reactions_irrev + self.n_non_essential_reactions)), list(
 			range(self.irreversible_S.shape[1] - (self.n_rev_bounds * 2) + 1, self.irreversible_S.shape[1]))])
 
 		# return lso.optimize()
 
 		problem.set_variable_types([problem.model.variables[int_(i)] for i in allInt], VAR_BINARY)
-		print(problem.model.to_lp())
+		problem.set_objective(self.problem_c, True)
+		problem.write_to_lp('tINIT_test.lp')
+		# print(problem.model.to_lp())
 		solution = lso.optimize()
+		print(solution.objective_value())
 
 		if solution.status() != 'optimal':
 			print('The problem is infeasible')
@@ -262,15 +266,18 @@ class tINIT():
 			return
 		# return solution
 
-		used_reactions = np.array([])
+		# used_reactions = np.array([])
 
-		for k, v in solution.var_values().items(): print(k, v)
+		# for k, v in solution.var_values().items(): print(k, v)
 
-		for k, v in solution.var_values().items():
-			if 'ne_' in k:
-				# if '_r' in k:
-				if v < 1 - 1e-6:
-					used_reactions = np.append(used_reactions, int_(k.split('_')[1]))
+		used_reactions = np.array([int_(k.split('_')[1]) for k in list(solution.var_values().keys()) if 'ne_' in k and solution.var_values()[k] > 0.1])
+
+		# for k, v in solution.var_values().items():
+		# 	if 'ne_' in k:
+		# 		# if '_r' in k:
+		# 		# if v < 1 - 1e-6:
+		# 		if v < 0.1:
+		# 			used_reactions = np.append(used_reactions, int_(k.split('_')[1]))
 
 		return np.append(used_reactions, self.essential_reactions_idx)
 

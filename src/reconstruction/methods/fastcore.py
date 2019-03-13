@@ -1,20 +1,20 @@
 import numpy as np
-from cobra.io import read_sbml_model
 from scipy.sparse import csc_matrix, hstack, eye, vstack
 from cobamp.core.linear_systems import GenericLinearSystem, VAR_CONTINUOUS
 from cobamp.core.optimization import LinearSystemOptimizer
-from cobamp.wrappers import COBRAModelObjectReader
 
 
 class FASTcore():
 	def __init__(self, S, lb, ub, properties):
 		self.S = S
+		self.model_lb, self.model_ub = np.array(lb), np.array(ub)
 		self.lb, self.ub = np.array(lb), np.array(ub)
 		self.properties = properties
 		self.n_metabolites, self.n_reactions = self.S.shape
 		self.metabolites, self.reactions = np.array([i for i in range(self.n_metabolites)]), np.array(
 			[i for i in range(self.n_reactions)])
 		self.counter = 0
+
 
 	def reverse_irreversible_reactions_in_reverse_direction(self, irrev_reverse_idx):
 		'''
@@ -33,6 +33,7 @@ class FASTcore():
 
 	def LP7(self, J, basis=None):
 		# TODO implement basis (from CPLEX) to improve the speed of the algorithm
+		print('LP7')
 		nJ = J.size  # number of irreversible reactions
 		# m,n and m2,n2 are the same since the matrix S does not change throughout the algorithm, so we'll be using
 		# self.n_metabolites and self.n_reactions
@@ -60,11 +61,13 @@ class FASTcore():
 		# b_lb, b_ub = np.concatenate([beq, -np.inf * np.ones((nJ, ))]), np.concatenate([beq, bineq])
 
 		problem = GenericLinearSystem(A.toarray(), VAR_CONTINUOUS, lb, ub, b_lb, b_ub,
-									  ['V' + str(i) for i in range(A.shape[1])])
+									  ['V' + str(i) for i in range(A.shape[1])], solver = self.properties['solver'])
 
 		lso = LinearSystemOptimizer(problem)
 		problem.set_objective(f, True)
 		solution = lso.optimize()
+
+		print(solution.objective_value())
 
 		if solution.status() != 'optimal':
 			print('Warning, Solution is not optimal')
@@ -77,6 +80,7 @@ class FASTcore():
 	# return solution  # , problem.model.problem.solution.basis.get_basis()
 
 	def LP9(self, K, P):
+		print('LP9')
 		scalingFactor = 1e5
 
 		V = []
@@ -103,20 +107,22 @@ class FASTcore():
 			[np.zeros((2 * nP,)), -np.ones((nK,)) * self.properties['flux_threshold'] * scalingFactor])
 		# bounds
 		lb = np.concatenate([self.lb, np.zeros((nP,))]) * scalingFactor
-		ub = np.concatenate([self.ub, np.array(list(map(max, zip(np.abs(self.lb[P]), np.abs(self.ub[P])))))]) * scalingFactor
+		ub = np.concatenate([self.ub, np.array(list(map(max, zip(np.abs(self.model_lb[P]), np.abs(self.model_ub[P])))))]) * scalingFactor
 
 		A = vstack([Aeq, Aineq])
+		from cplex import infinity
 		b_lb, b_ub = np.concatenate([beq, [None] * (2 * nP + nK)]), np.concatenate([beq, bineq])
 		# b_lb, b_ub = np.concatenate([beq, -np.inf * np.ones((nJ, ))]), np.concatenate([beq, bineq])
 
 		problem = GenericLinearSystem(A.toarray(), VAR_CONTINUOUS, lb, ub, b_lb, b_ub,
-									  ['V' + str(i) for i in range(A.shape[1])])
+									  ['V' + str(i) for i in range(A.shape[1])], solver = self.properties['solver'])
 
 		lso = LinearSystemOptimizer(problem)
 		problem.set_objective(f, True)
 		# problem.write_to_lp('Test_LP9_'+str(self.counter))
 		# self.counter+=1
 		solution = lso.optimize()
+		print(solution.objective_value())
 
 		if solution.status() != 'optimal':
 			print('Warning, Solution is not optimal')
@@ -136,7 +142,7 @@ class FASTcore():
 
 		if basis is None:
 			basis = []
-
+		print('before LP7')
 		if singleton:
 			# V, basis = self.LP7(J[0], basis)
 			V = self.LP7(J[0], basis)
@@ -159,9 +165,9 @@ class FASTcore():
 			return np.array([])
 
 	def preprocessing(self):
-		irreversible_reactions_idx_to_change = np.where(self.ub <= 0)[0]
+		irreversible_reactions_idx_to_change = np.where(self.model_ub <= 0)[0]
 		self.reverse_irreversible_reactions_in_reverse_direction(irreversible_reactions_idx_to_change)
-		irreversible_reactions_idx = np.where(self.lb >= 0)[0]
+		irreversible_reactions_idx = np.where(self.model_lb >= 0)[0]
 
 		singleton = False
 
@@ -176,7 +182,7 @@ class FASTcore():
 		supp = self.findSparseMode(J, P, singleton)
 
 		if np.setdiff1d(J, supp).size > 0:
-			print('Inconsistent irreversible core reactions')
+			raise Exception('Inconsistent irreversible core reactions \n\tImpossible to build model')
 
 		return np.setdiff1d(self.properties['core_idx'], supp), supp, P, irreversible_reactions_idx
 		# return np.setdiff1d(J, supp), supp, P, irreversible_reactions_idx #TODO this is a test
@@ -184,8 +190,11 @@ class FASTcore():
 	def fastcore(self):
 		flipped = False
 		singleton = False
+		# # TODO to delete
+		# return self.preprocessing()
+		# # TODO end of to delete
 		J, A, P, irreversible_reactions_idx = self.preprocessing()
-
+		print(J.size, A.size)
 		while J.size > 0:
 			# print(J)
 			P = np.setdiff1d(P, A)
@@ -195,12 +204,13 @@ class FASTcore():
 			# print(A, supp)
 
 			A = np.union1d(A, supp).astype(int)
+			print(J.size, A.size)
 
 			if np.intersect1d(J, A) != np.array([]):
 				J = np.setdiff1d(J, A)
 				flipped = False
 			else:
-				# Sara modification
+				# Sara's modification
 				# if flipped:
 				# 	flipped = False
 				# 	singleton = True
@@ -222,11 +232,7 @@ class FASTcore():
 					flipped = True
 					print('Flipped')
 
-		# core_reactions_bool = np.array([False] * (self.n_reactions+1))
-		# core_reactions_bool[A] = 1
-		#
-		# tissue_reactions = np.delete(self.reactions, A)
-
+		print(J.size, A.size)
 		return sorted(A)
 
 

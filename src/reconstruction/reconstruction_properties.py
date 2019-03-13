@@ -33,9 +33,10 @@ class PropertiesReconstruction(PropertyDictionary):
 
 
 class FastcoreProperties(PropertiesReconstruction):
-	def __init__(self, core, flux_threshold=1e-4):
+	def __init__(self, core, flux_threshold=1e-4, solver=None):
 		new_mandatory = {'core': lambda x: isinstance(x, list) and len(x) > 0,
-						 'core_idx': lambda x: isinstance(x, list) and len(x) > 0}
+						 'core_idx': lambda x: isinstance(x, list) and len(x) > 0,
+						 'solver': lambda x: isinstance(x, str)}
 		new_optional = {}
 		super().__init__()
 		self.base_mandatory['method'] = MethodsReconstruction.FASTCORE
@@ -44,6 +45,9 @@ class FastcoreProperties(PropertiesReconstruction):
 		self['core'] = core
 		# TODO change this later, this is only for testing
 		self['core_idx'] = core
+		self['solver'] = solver
+
+
 # self['core_idx'] = [model_readers.reaction_id_to_index(reaction) for reaction in core]
 
 
@@ -119,16 +123,17 @@ class CORDAProperties(PropertiesReconstruction):
 			'om': lambda x: isinstance(x, Number),
 			'ntimes': lambda x: isinstance(x, int) and x > 0,
 			'nl': lambda x: isinstance(x, Number) and x >= 0,
-			'threads':int
+			'threads': int
 		}
 
 		super().__init__()
 		self.add_new_properties(new_mandatory, new_optional)
 
-		vars = [high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np, constraint, constrainby, om, ntimes, nl, solver, threads]
-		defaults = [None, None, None, 2, 1, CORDAProperties.CONSTRAINBY_VAL, 1e4, 5, 1e-2, 'CPLEX', cpu_count()-1]
+		vars = [high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np, constraint, constrainby, om, ntimes, nl, solver,
+				threads]
+		defaults = [None, None, None, 2, 1, CORDAProperties.CONSTRAINBY_VAL, 1e4, 5, 1e-2, 'CPLEX', cpu_count() - 1]
 		names = ['high_conf_rx', 'medium_conf_rx', 'neg_conf_rx', 'pr_to_np', 'constraint', 'constrainby', 'om',
-				 'ntimes', 'nl','solver','threads']
+				 'ntimes', 'nl', 'solver', 'threads']
 
 		for v, k, d in zip(vars, names, defaults):
 			self[k] = v if v is not None else d
@@ -137,10 +142,10 @@ class CORDAProperties(PropertiesReconstruction):
 class tINITProperties(PropertiesReconstruction):
 	def __init__(self, reactions_scores, present_metabolites, essential_reactions, production_weight=0.5,
 				 allow_excretion=False,
-				 no_reverse_loops=False):
+				 no_reverse_loops=False, solver=None):
 		# TODO check later if the params input might be necessary to include for the reconstruction
 		new_mandatory = {
-
+			'solver': lambda x: isinstance(x, str)
 		}
 		new_optional = {
 			'reactions_scores': lambda x: is_list_else_empty(x),
@@ -156,26 +161,13 @@ class tINITProperties(PropertiesReconstruction):
 		self.add_new_properties(new_mandatory, new_optional)
 
 		properties_dict_list = ["reactions_scores", "present_metabolites", "essential_reactions", "production_weight",
-								"allow_excretion", "no_reverse_loops"]
+								"allow_excretion", "no_reverse_loops", "solver"]
 		properties_list = [reactions_scores, if_none_return_list(present_metabolites),
 						   if_none_return_list(essential_reactions), if_none_return_list(production_weight),
-						   allow_excretion, no_reverse_loops]
+						   allow_excretion, no_reverse_loops, solver]
 		prop_dict = dict(zip(properties_dict_list, properties_list))
 
 		[self.add_if_not_none(*k) for k in prop_dict.items()]
-
-
-# if reactions_scores:
-# 	self['reactions_scores'] = reactions_scores
-# if present_metabolites:
-# 	self['present_metabolites'] = present_metabolites
-# self['essential_reactions'] = essential_reactions
-# self['production_weight'] = production_weight
-# if allow_excretion:
-# 	self['allow_excretion'] = allow_excretion
-# if no_reverse_loops:
-# 	self['no_reverse_loops'] = no_reverse_loops
-
 
 if __name__ == '__main__':
 	properties = PropertiesReconstruction()
