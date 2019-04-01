@@ -5,7 +5,8 @@ from cobamp.core.models import CORSOModel
 from cobamp.core.models import ConstraintBasedModel
 from time import time
 
-from pathos.multiprocessing import ProcessingPool, cpu_count
+from pathos.multiprocessing import cpu_count
+from pathos.pools import _ProcessPool
 
 class CORDA():
 	def costfx_factory(self, nl, om, costbase):
@@ -58,7 +59,7 @@ class CORDA():
 
 		print('Step 1 started')
 		s1t = time()
-		pool = ProcessingPool(threads)
+		pool = _ProcessPool(threads)
 
 
 			# print(sum(dep),pd.Series(rx_cat).value_counts())
@@ -101,6 +102,7 @@ class CORDA():
 		# 	if to_del:
 		# 		rx_cat[rx] = -1
 
+		pool = _ProcessPool(threads)
 
 		if threads and threads > 1:
 			res2 = pool.map(nested_dependent_rxs, PR_reactions)
@@ -176,6 +178,8 @@ class CORDA():
 		s1t = time()
 
 		ES_OT = {}
+
+		pool = _ProcessPool(threads)
 
 		# def _step_three(rx):
 		# 	dep, to_del = self.find_dependent_reactions(rx, constraint, constrainby, costfx, costbase, ntimes, 1e-6)

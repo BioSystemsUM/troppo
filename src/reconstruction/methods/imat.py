@@ -14,10 +14,9 @@ class IMAT():
 		self.lb, self.ub = np.array(lb), np.array(ub)
 		self.properties = properties
 
-	def run(self):
+	def run_imat(self):
 		exp_vector = self.properties['exp_vector']
 		exp_lb, exp_ub = self.properties['exp_thresholds']
-		tol = self.properties['tolerance']
 		core = self.properties['core']
 		epsilon = self.properties['epsilon']
 
@@ -30,13 +29,18 @@ class IMAT():
 		lso, lsystem = self.generate_imat_problem(self.S, self.lb, self.ub, high_idx, low_idx, epsilon)
 
 		solution = lso.optimize()
+		return solution
 
+	def run(self):
+		tol = self.properties['tolerance']
+		solution = self.run_imat()
 		to_keep = np.where(abs(solution.x())[:self.S.shape[1]] >= tol)[0]
 
 		if solution.status() != 'optimal':
 			print('Solution was not optimal')
 
 		return to_keep
+
 
 	def generate_imat_problem(self, S, lb, ub, high_idx, low_idx, epsilon):
 		m,n = S.shape
