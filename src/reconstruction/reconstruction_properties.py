@@ -56,7 +56,7 @@ class GIMMEProperties(PropertiesReconstruction):
 		new_mandatory = {
 			'exp_vector': lambda x: isinstance(x, list) and len(x) > 0 or isinstance(x, ndarray),
 			'preprocess': lambda x: isinstance(x, bool) or x is None,
-			'objectives': lambda x: type(x) in [dict]}
+			'objectives': lambda x: type(x) in [list, tuple, ndarray]}
 		new_optional = {'obj_frac': lambda x: type(x) in [ndarray, list, tuple, float]}
 		super().__init__()
 
