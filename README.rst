@@ -52,5 +52,5 @@ Released under the GNU Public License (version 3.0).
 
 .. |License| image:: https://img.shields.io/badge/license-GPL%20v3.0-blue.svg
    :target: https://opensource.org/licenses/GPL-3.0
-.. |PyPI version| image:: https://badge.fury.io/py/cobamp.svg
+.. |PyPI version| image:: https://badge.fury.io/py/troppo.svg
    :target: https://badge.fury.io/py/troppo
