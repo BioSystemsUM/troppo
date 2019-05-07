@@ -4,7 +4,7 @@
  OmicsContainer
  
 """
-from reconstruction.omics.id_converter import idConverter, searchNomenclature
+from troppo.omics.id_converter import idConverter, searchNomenclature
 import numpy as np
 import copy
 import re
@@ -281,7 +281,7 @@ class OmicsContainer:
 
 
 if __name__ == '__main__':
-    from reconstruction.readers.hpa_reader import HpaReader
+    from troppo.readers.hpa_reader import HpaReader
 
     path = "../../../tests/pathology.tsv"
 

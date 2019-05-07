@@ -1,14 +1,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = 'TROPPO',
-    version = '0.0.1',
+    name = 'troppo',
+    version = '0.0.3',
     package_dir = {'':'src'},
     packages = find_packages('src'),
-    install_requires = [#"numpy",
-                        #scipy",
-                        #"pandas",
-						"cobamp"],
+    install_requires = ["cobamp",
+                        "pathos"],
 
     author = 'Jorge Ferreira & Vítor Vieira',
     author_email = 'jorge.ferreira@ceb.uminho.pt',
