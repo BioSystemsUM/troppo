@@ -1,5 +1,5 @@
 from enum import Enum, unique
-#from reconstruction.methods import fastcore
+#from troppo.methods import fastcore
 
 
 @unique

@@ -281,10 +281,16 @@ class tINIT():
 
 		return np.append(used_reactions, self.essential_reactions_idx)
 
+	def run_tINIT(self):
+		self.preprocessing()
+		self.build_problem()
+		res = self.solve_problem()
+		return np.unique(np.int_(np.sort(res)))
+
 
 if __name__ == '__main__':
 	import numpy as np
-	from reconstruction.reconstruction_properties import tINITProperties
+	from troppo.reconstruction_properties import tINITProperties
 
 	S = np.array([[1, -1, 0, 0, -1, 0, -1, 0, 0],
 				  [0, 1, -1, 0, 0, 0, 0, 0, 0],

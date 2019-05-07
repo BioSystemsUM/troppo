@@ -127,10 +127,13 @@ class FASTcore():
 		if solution.status() != 'optimal':
 			print('Warning, Solution is not optimal')
 
+			# return {i:np.nan for i,k in enumerate(solution.var_values().items()) if i<= self.n_reactions-1}
+
 		if solution:
 			return {i:k[1] for i,k in enumerate(solution.var_values().items()) if i<= self.n_reactions-1}
 		else:
 			return [np.nan] * self.n_reactions
+
 
 	def findSparseMode(self, J, P, singleton, basis=None):
 		# epsilon == self.properties['flux_threshold']

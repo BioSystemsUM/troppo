@@ -7,16 +7,22 @@ import pickle
 import scipy as sci
 
 # for testing the algorithms
-from cobamp.wrappers import COBRAModelObjectReader
-from reconstruction.methods.tINIT import tINIT
-from reconstruction.methods.fastcore import FASTcore
-from reconstruction.reconstruction_properties import FastcoreProperties, tINITProperties
+from cobamp.wrappers import MatFormatReader
+from troppo.methods.tINIT import tINIT
+from troppo.methods.fastcore import FASTcore
+from troppo.reconstruction_properties import FastcoreProperties, tINITProperties
+from troppo.utilities.statistics import normalize, z_score
+
+
+# other tests
+from itertools import permutations
 
 if __name__ == '__main__':
 	from random import random
 
 	rootpath = 'E:/framed_hm/sbml_files/'
 	testpath = 'D:/Matlab/'
+
 
 	def sample_models():
 		# # model1 = cobra.io.read_sbml_model(rootpath + 'Recon2_mod_gpr.xml')
@@ -27,7 +33,7 @@ if __name__ == '__main__':
 		# # with open('recon2.pkl','wb') as f:
 		# # 	pickle.dump(model1, f)
 		#
-		# # with open('E:/reconstruction/recon2.pkl', 'rb') as f:
+		# # with open('E:/troppo/recon2.pkl', 'rb') as f:
 		# # 	model1 = pickle.load(f)
 		#
 		reader1 = cobamp.wrappers.COBRAModelObjectReader(model1)
@@ -77,43 +83,103 @@ if __name__ == '__main__':
 
 		return S, lb, ub, reactions, reac_scores
 
+
+	def load_glial_data(path):
+		data = pd.read_csv(path, index_col=0)
+		normalized_data = normalize(data)
+		z = z_score(data)
+
+		return normalized_data, z
+
+
+	def get_index_core(reactions_ids, data, threshold):
+		rx_names = data.index[data['0'] > threshold].tolist()
+		index_core = [np.where(reactions_ids == r)[0][0] for r in rx_names]
+		return index_core, rx_names
+
+	def get_reactions_names(reactions_ids, reactions_names):
+		return [reactions_names[r] for r in reactions_ids]
+
+	def _get_reactions_matlab(rx):
+		reactions_from_matlab = pd.Series(np.genfromtxt('./solution_fastcore_matlab.txt', dtype=str))
+		reactions_from_matlab.index = [np.where(np.array(rx) == r)[0][0] for r in reactions_from_matlab]
+		return reactions_from_matlab
+
+
+	def compare_solutions_fastcore(rx, python_reactions_list):
+		matlab = _get_reactions_matlab(rx)
+		python = pd.Series([rx[r] for r in python_reactions_list], index=python_reactions_list)
+
+		return pd.DataFrame(
+			[np.setdiff1d(python.tolist(), matlab.tolist()), np.setdiff1d(matlab.tolist(), python.tolist())],
+			index=['py_mat', 'mat_py']).T
+
+	def random_model(S, lb, ub, rx_names):
+		index = np.random.choice(range(S.shape[1]), S.shape[1], False)
+		index2 = np.random.choice(range(S.shape[0]), S.shape[0], False)
+		S = S[index2,:]
+		return S[:,index], np.array(lb)[index], np.array(ub)[index], np.array(rx_names)[index]
+
 	def testFastcore():
-		matlab_core = pd.read_csv('./tests/fastcore_core_test_matlab.csv', header=None) - 1
+		# matlab_core = pd.read_csv('./tests/fastcore_core_test_matlab.csv', header=None) - 1
+		x = sci.io.loadmat('D:/Matlab/cobratoolbox/test/verifiedTests/analysis/testFASTCORE/FastCoreTest.mat')[
+			'ConsistentRecon2']
+		model = MatFormatReader(x)
+		normalized, z = load_glial_data('./tests/glioma_data/grade2_calls.csv')
 
-		x = sci.io.loadmat('D:/Matlab/cobratoolbox/test/verifiedTests/analysis/testFASTCORE/FastCoreTest.mat')
-		model = x['ConsistentRecon2']
-		S = model['S'][0][0].toarray()
-		lb = model['lb'][0][0].ravel()
-		ub = model['ub'][0][0].ravel()
+		S = model.S
+		lb, ub = model.get_model_bounds(False, True)
+		core,names_core = get_index_core(np.array(model.r_ids), normalized, 0.9)
 
+		# S, lb, ub, rx_names = random_model(S, lb, ub, model.r_ids)
+		# core,_ = get_index_core(np.array(rx_names), normalized, 0.9)
 		## Testing the algorithms with the matlab versions
 		# FASTCORE
 		print('testing FASTCORE')
-		f = FASTcore(S, lb, ub, FastcoreProperties(solver = 'GUROBI', core=list(matlab_core[0].values)))
+		f = FASTcore(S, lb, ub, FastcoreProperties(solver='CPLEX', core=core))
 
 		tissue_reactions = f.fastcore()
-		print(len(tissue_reactions), tissue_reactions)
-		# irrev_matlab = pd.read_csv('E:/reconstruction/tests/irrev_matlab.csv', header = None)
-		# np.setdiff1d(tissue_reactions, irrev_matlab[0]-1)
-		# pd.DataFrame.from_dict(map,orient='index').to_csv(testpath + 'map_to_test.csv')#,header=False, na_rep=0)
+		v = get_reactions_names(tissue_reactions,model.r_ids)
+		# print(len(tissue_reactions), tissue_reactions)
+
+		z = compare_solutions_fastcore(model.r_ids, tissue_reactions)
+
+
+	# irrev_matlab = pd.read_csv('E:/troppo/tests/irrev_matlab.csv', header = None)
+	# np.setdiff1d(tissue_reactions, irrev_matlab[0]-1)
+	# pd.DataFrame.from_dict(map,orient='index').to_csv(testpath + 'map_to_test.csv')#,header=False, na_rep=0)
 
 	# tINIT
 	def test_tINIT():
 		S, lb, ub, reactions, reac_scores = consistent_recon2_from_mat()
-		reac_scores.T.tofile('D:/Matlab/tINIT_map.csv', sep= ',')
+		pd.Series(reac_scores).to_csv('D:/Matlab/tINIT_map.csv', sep=',', header=True)
 
 		print('testing tINIT')
 		t = tINIT(S, np.array(lb), np.array(ub),
 				  tINITProperties(reactions_scores=reac_scores, present_metabolites=[], essential_reactions=[],
-								  production_weight=0.5, allow_excretion=False, no_reverse_loops=False, solver = "GUROBI"))
+								  production_weight=0.5, allow_excretion=False, no_reverse_loops=False,
+								  solver="GUROBI"))
+
+		t = tINIT(S, np.array(lb), np.array(ub),
+				  tINITProperties(reactions_scores=list(normalized.fillna(0)['0']), present_metabolites=[], essential_reactions=[],
+								  production_weight=0.5, allow_excretion=False, no_reverse_loops=False,
+								  solver="GUROBI"))
+
 		t.preprocessing()
 		t.build_problem()
 		res = t.solve_problem()
 		res.sort()
+		to_remove = np.int_(res)
+		m = cobra.io.load_matlab_model('D:/Matlab/cobratoolbox/test/verifiedTests/analysis/testFASTCORE/FastCoreTest.mat')
+		tin = m.copy()
+		ids = [r.id for r in tin.reactions]
+		tin.remove_reactions([ids[r] for r in np.int_(res)],True)
+
 		print(np.int_(res) + 1)
 		print(len(np.int_(res) + 1))
 
 
 	### Tests to Run ###
 
+	testFastcore()
 	test_tINIT()

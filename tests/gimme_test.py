@@ -1,5 +1,5 @@
-from reconstruction.methods.gimme import GIMME
-from reconstruction.reconstruction_properties import GIMMEProperties
+from troppo.methods.gimme import GIMME
+from troppo.reconstruction_properties import GIMMEProperties
 
 if __name__ == '__main__':
 	import numpy as np

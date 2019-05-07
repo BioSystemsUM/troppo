@@ -2,7 +2,7 @@ from cobamp.utilities.property_management import PropertyDictionary
 from cobamp.wrappers.external_wrappers import model_readers
 
 from numbers import Number
-from reconstruction.methods_reconstruction import MethodsReconstruction
+from troppo.methods_reconstruction import MethodsReconstruction
 from numpy import ndarray, array
 from multiprocessing import cpu_count
 
@@ -143,7 +143,7 @@ class tINITProperties(PropertiesReconstruction):
 	def __init__(self, reactions_scores, present_metabolites, essential_reactions, production_weight=0.5,
 				 allow_excretion=False,
 				 no_reverse_loops=False, solver=None):
-		# TODO check later if the params input might be necessary to include for the reconstruction
+		# TODO check later if the params input might be necessary to include for the troppo
 		new_mandatory = {
 			'solver': lambda x: isinstance(x, str)
 		}

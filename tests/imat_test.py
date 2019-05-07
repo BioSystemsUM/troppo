@@ -1,6 +1,6 @@
 import numpy as np
-from reconstruction.reconstruction_properties import IMATProperties
-from reconstruction.methods.imat import IMAT
+from troppo.reconstruction_properties import IMATProperties
+from troppo.methods.imat import IMAT
 
 if __name__ == '__main__':
 
