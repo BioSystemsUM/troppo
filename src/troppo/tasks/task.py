@@ -62,6 +62,7 @@ class Tasks(object):
 			is_optimal, is_infeasible = [sol.status() == x for x in ['optimal', 'infeasible']]
 			task_status = (not is_optimal and is_infeasible) if sfail else (is_optimal and not is_infeasible)
 			task_sols[task_name] = task_status
+			self.disable_task_bounds()
 
 		return task_sols
 
