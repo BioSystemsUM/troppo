@@ -4,9 +4,7 @@
  integrate
  
 """
-from framed.omics.simulation import gene_to_reaction_expression as gene2reaction
 from .omics_data_map import OmicsDataMap
-from .id_converter import searchNomenclature
 
 """
  Function responsible for the integration of different omics data with a metabolic model loaded with framed package.

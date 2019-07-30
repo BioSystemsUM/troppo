@@ -8,6 +8,48 @@ from time import time
 from pathos.multiprocessing import cpu_count
 from pathos.pools import _ProcessPool
 
+def _init_corda_worker(corso_fba, constraint, constrainby, costfx, costbase, ntimes, eps, lb):
+	global _corso_fba, _constraint, _constrainby, _costfx, _costbase, _ntimes, _eps, _lb
+	_corso_fba = corso_fba
+	_constraint = constraint
+	_constrainby = constrainby
+	_costfx = costfx
+	_costbase = costbase
+	_ntimes = ntimes
+	_eps = eps
+	_lb = lb
+
+def _corda_dependent_reactions_iteration(rx):
+	global _corso_fba, _constraint, _constrainby, _costfx, _costbase
+	global _ntimes, _forward, _eps, _lb
+	dependent, to_delete = _corda_dependent_rxs_per_sense(rx, _constraint, True)
+
+	if _lb[rx] < 0:
+		bkw_dep, to_del_bkw = _corda_dependent_rxs_per_sense(rx, -_constraint, False)
+
+		dependent = dependent | bkw_dep
+		to_delete = to_del_bkw & to_delete
+
+	return rx, (dependent, to_delete)
+
+def _corda_dependent_rxs_per_sense(rx, constraint, forward):
+	global _corso_fba, _constrainby, _costfx, _costbase
+	of_dict = {rx: 1}
+	cost = _costbase + _costfx()
+	flux, corso_sol = _corso_fba.optimize_corso(cost, of_dict, not forward, constraint, _constrainby, eps=_eps)
+
+	dependent = abs(corso_sol.x()) > _eps
+	to_del = not dependent.any()
+	if not to_del:
+		for i in range(_ntimes - 1):
+			cost = _costbase + _costfx()
+			flux, corso_sol = _corso_fba.optimize_corso(cost, of_dict, not forward, constraint, _constrainby, eps=_eps, flux1=flux)
+			dependent = (abs(corso_sol.x()) > _eps) | dependent
+	else:
+		dependent = zeros(dependent.shape).astype(bool)
+	return dependent, to_del
+
+
 class CORDA():
 	def costfx_factory(self, nl, om, costbase):
 		return lambda: nl * floor(om * random.rand(len(costbase),)) / om
@@ -40,6 +82,25 @@ class CORDA():
 		return self.run_corda(rx_cat, constraint, constrainby, nl, ntimes, om, pr_to_np, threads)
 
 	def run_corda(self, rx_cat, constraint, constrainby, nl, ntimes, om=1e4, pr_to_np=2, threads=cpu_count()-1):
+		def _corda_find_all_dependencies(reaction_list):
+			res_map = {r:i for i,r in enumerate(reaction_list)}
+			true_threads = min((len(reaction_list)//2)+1, threads)
+			result = [None] * len(reaction_list)
+			rx_per_job = len(reaction_list) // threads
+			pool = _ProcessPool(
+				processes=true_threads,
+				initializer=_init_corda_worker,
+				initargs=(self.corso_fba, constraint, constrainby, costfx, costbase, ntimes, 1e-6, self.lb)
+			)
+			for i, value in pool.imap_unordered(_corda_dependent_reactions_iteration, reaction_list,
+												chunksize=rx_per_job):
+				result[res_map[i]] = value
+
+			pool.close()
+			pool.join()
+
+			return result
+
 		import pandas as pd
 
 		rx_cat = array(rx_cat)
@@ -59,12 +120,11 @@ class CORDA():
 
 		print('Step 1 started')
 		s1t = time()
-		pool = _ProcessPool(threads)
 
 
 			# print(sum(dep),pd.Series(rx_cat).value_counts())
-		if threads and threads > 1:
-			res1 = pool.map(nested_dependent_rxs, HC_reactions)
+		if (threads and threads > 1) and (len(HC_reactions)/2 > threads):
+			res1 = _corda_find_all_dependencies(HC_reactions)
 		else:
 			res1 = list(map(nested_dependent_rxs, HC_reactions))
 
@@ -102,12 +162,11 @@ class CORDA():
 		# 	if to_del:
 		# 		rx_cat[rx] = -1
 
-		pool = _ProcessPool(threads)
-
-		if threads and threads > 1:
-			res2 = pool.map(nested_dependent_rxs, PR_reactions)
+		if (threads and threads > 1) and (len(PR_reactions)/2 > threads):
+			res2 = _corda_find_all_dependencies(PR_reactions)
 		else:
 			res2 = list(map(nested_dependent_rxs, PR_reactions))
+
 		s2_deps, s2_block = list(zip(*res2))
 
 		for rx, dep in zip(PR_reactions, s2_deps):
@@ -179,16 +238,19 @@ class CORDA():
 
 		ES_OT = {}
 
-		pool = _ProcessPool(threads)
 
 		# def _step_three(rx):
 		# 	dep, to_del = self.find_dependent_reactions(rx, constraint, constrainby, costfx, costbase, ntimes, 1e-6)
 		# 	ES_OT[rx] = dep[OT_reactions]
 		#
-		if threads and threads > 1:
-			res3 = pool.map(nested_dependent_rxs, where(ES_reactions)[0])
+		ES_temp = where(ES_reactions)[0]
+		if (threads and threads > 1) and (len(ES_temp)/2 > threads):
+			res3 = _corda_find_all_dependencies(ES_temp)
 		else:
-			res3 = list(map(nested_dependent_rxs, where(ES_reactions)[0]))
+			res3 = list(map(nested_dependent_rxs, ES_temp))
+
+
+
 		s3_deps, _ = list(zip(*res3))
 		for rx, dep in zip(where(ES_reactions)[0], s3_deps):
 			ES_OT[rx] = dep[OT_reactions]
