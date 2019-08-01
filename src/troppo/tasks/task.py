@@ -1,5 +1,60 @@
 from cobamp.core.models import ConstraintBasedModel
 from random import randint
+from pathos.pools import _ProcessPool
+from pathos.multiprocessing import cpu_count
+
+MP_THREADS = cpu_count()
+
+
+def disable_task_bounds(model, task_reactions):
+	for rx in task_reactions:
+		model.set_reaction_bounds(rx, lb=0, ub=0)
+
+def enable_task_bounds(model, task_items):
+	## TODO: excepção
+	for d in task_items:
+		for rx, bounds in d.items():
+			lb, ub = bounds
+			model.set_reaction_bounds(rx, lb=lb, ub=ub)
+
+def _init_task_solver(model, task_components, task_fail_status, task_added_reactions):
+	global _model, _task_components, _task_fail_status, _task_added_reactions
+	_model, _task_components, _task_fail_status, _task_added_reactions = model, task_components, task_fail_status, task_added_reactions
+
+def _task_iteration(task_name):
+	global _model, _task_components, _task_fail_status, _task_added_reactions
+	return task_name, evaluate_task(_model, _task_components[task_name], _task_fail_status[task_name], _task_added_reactions)
+
+def evaluate_task(model, task_items, sfail, task_reactions):
+	enable_task_bounds(model, task_items)
+	sol = model.optimize()
+	is_optimal, is_infeasible = [sol.status() == x for x in ['optimal', 'infeasible']]
+	task_status = (not is_optimal and is_infeasible) if sfail else (is_optimal and not is_infeasible)
+	disable_task_bounds(model, task_reactions)
+	return task_status
+
+def task_pool(model, task_components, task_fail_status, task_added_reactions):
+	threads = MP_THREADS
+	task_list = list(task_components.keys())
+	res_map = {r: i for i, r in enumerate(task_list)}
+	true_threads = min((len(task_list) // 2) + 1, threads)
+	#result = [None] * len(task_list)
+	it_per_job = len(task_list) // threads
+	pool = _ProcessPool(
+		processes=true_threads,
+		initializer=_init_task_solver,
+		initargs=(model, task_components, task_fail_status, task_added_reactions)
+	)
+	for i, value in pool.imap_unordered(_task_iteration, task_list,
+										chunksize=it_per_job):
+		res_map[i] = value
+
+	pool.close()
+	pool.join()
+
+	return res_map
+
+
 
 class Tasks(object):
 	def __init__(self, S, lb, ub, rx_names, met_names, objective_reaction=None):
@@ -36,35 +91,34 @@ class Tasks(object):
 		self.tasks[task.task_name] = (task_equations, task_sinks)
 		self.task_fail_status[task.task_name] = sfail
 
-	def disable_task_bounds(self):
-		for rx in self.__add_reactions:
-			self.model.set_reaction_bounds(rx, lb=0, ub=0)
+	def __run_single_task(self, task):
+		return evaluate_task(self.model, self.tasks[task], self.task_fail_status[task], self.__add_reactions)
 
-	def enable_task_bounds(self, task):
-		## TODO: excepção
-		for d in self.tasks[task]:
-			for rx, bounds in d.items():
-				lb, ub = bounds
-				self.model.set_reaction_bounds(rx, lb=lb, ub=ub)
+	def __task_initializer(self, task):
+		if task.task_name not in self.tasks.keys():
+			self.populate_model(task)
 
-	def run_tasks(self, tasks):
-		for task in tasks:
-			if task not in self.tasks:
-				self.populate_model(task)
+	def evaluate(self, task_arg):
+		if isinstance(task_arg, (list, tuple, set)):
+			for task in task_arg:
+				if isinstance(task, Task):
+					self.__task_initializer(task)
+				else:
+					raise TypeError('Invalid type object found within the task_arg iterable. Expected Task, found'+str(type(task)))
+			if len(task_arg) <= MP_THREADS:
+				return {task.task_name:self.__run_single_task(task.task_name) for task in task_arg}
+			else:
+				return task_pool(self.model, self.tasks, self.task_fail_status, self.__add_reactions)
 
-		self.disable_task_bounds()
-		task_sols = {}
+		elif isinstance(task_arg, Task):
+			self.__task_initializer(task_arg)
+			return self.__run_single_task(task_arg.task_name)
+		else:
+			raise TypeError('task_arg expected to be of type Task. Found '+str(type(task_arg))+' instead')
 
-		for task_name in self.tasks:
-			sfail = self.task_fail_status[task_name]
-			self.enable_task_bounds(task_name)
-			sol = self.model.optimize()
-			is_optimal, is_infeasible = [sol.status() == x for x in ['optimal', 'infeasible']]
-			task_status = (not is_optimal and is_infeasible) if sfail else (is_optimal and not is_infeasible)
-			task_sols[task_name] = task_status
-			self.disable_task_bounds()
 
-		return task_sols
+
+
 
 class Task(object):
 	def __init__(self, reaction_dict, inflow_dict, outflow_dict, should_fail, task_name=None):
@@ -96,6 +150,7 @@ class Task(object):
 		return self.should_fail
 
 
+
 if __name__ == '__main__':
 	from numpy import array
 
@@ -118,7 +173,7 @@ if __name__ == '__main__':
 
 	tasks = Tasks(S, lb, ub, rx_names, mt_names)
 
-	task1 = Task(
+	task1 = [Task(
 		reaction_dict={
 			'A': ({'M1':-1, 'M2':2},(10,10)),
 			'B': ({'M3':-2, 'M6':3},(2,10))
@@ -130,8 +185,8 @@ if __name__ == '__main__':
 			'M4':(4,10)
 		},
 		should_fail=True
-	)
+	) for i in range(20)]
 
-	res = tasks.run_tasks([task1])
+	res = tasks.evaluate(task1)
 
 	print(res)
