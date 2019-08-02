@@ -53,11 +53,17 @@ def task_pool(model, task_components, task_fail_status, task_added_reactions):
 
 	return res_map
 
+## TODO: For now, context will be applied using knockouts. In the future we should actually prune and simplify
 
+def apply_context(model, context):
+	for index in context:
+		model.set_reaction_bounds(index, lb=0, ub=0)
 
 class Tasks(object):
-	def __init__(self, S, lb, ub, rx_names, met_names, objective_reaction=None):
+	def __init__(self, S, lb, ub, rx_names, met_names, objective_reaction=None, context=None):
 		self.model = ConstraintBasedModel(S, list(zip(lb, ub)), reaction_names=rx_names, metabolite_names=met_names)
+		if context == None:
+			apply_context(self.model, context)
 		self.tasks = {}
 		self.task_fail_status = {}
 		self.__add_reactions = []
