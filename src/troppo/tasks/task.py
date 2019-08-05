@@ -62,7 +62,7 @@ def apply_context(model, context):
 class Tasks(object):
 	def __init__(self, S, lb, ub, rx_names, met_names, objective_reaction=None, context=None):
 		self.model = ConstraintBasedModel(S, list(zip(lb, ub)), reaction_names=rx_names, metabolite_names=met_names)
-		if context == None:
+		if context != None:
 			apply_context(self.model, context)
 		self.tasks = {}
 		self.task_fail_status = {}
