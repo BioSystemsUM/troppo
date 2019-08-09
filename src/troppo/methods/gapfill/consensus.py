@@ -1,5 +1,7 @@
-from numpy import array, where
+from numpy import array, where, logical_xor
 from troppo.tasks.task import Tasks
+from time import time
+import warnings
 
 ## TODO: Abstract class for this
 
@@ -52,8 +54,7 @@ class CombinatorialGapfill(object):
 			completed_tasks[j] = valid_tasks
 			if (j > 0) and (j < len(rx_presences)):
 				lost_metabolic_tasks[j-1] = completed_tasks[j-1] - completed_tasks[j]
-				lost_reaction_set[j-1] = rx_presences[j-1]
-				lost_reaction_set[j-1][rx_presences[j-1] & rx_presences[j]] = False
+				lost_reaction_set[j-1] = logical_xor(rx_presences[j],rx_presences[j-1])
 				lost_reaction_set[j-1] = set(where(lost_reaction_set[j-1])[0])
 			satisfied = len(valid_tasks) >= self.__min_tasks
 			print('\tModel',j,'completes',len(valid_tasks),'out of ',len(self.tasks))
@@ -61,7 +62,7 @@ class CombinatorialGapfill(object):
 				j += 1
 
 		# Step 4
-		validators = {i:validators[i] for i in range(j+1)}
+		validators = {i:validators[i] for i in range(j)}
 		print('Building final model...')
 		return self.build_final_model(
 			partials={i:partials[i] for i in range(j)},
@@ -73,20 +74,29 @@ class CombinatorialGapfill(object):
 
 	def build_final_model(self, partials, start_from, lost_metabolic_tasks, lost_reaction_sets, validators):
 		to_del = set()
-		final_model = None
-		for i in range(start_from, 0, -1):
+		for i in range(start_from, -1, -1):
 			final_model, model_validator = set(partials[i]), validators[i]
 			tasks, reactions = lost_metabolic_tasks[i], set(lost_reaction_sets[i])
 			test_kos = to_del | set(reactions)
-			print('Testing model',i,'with',len(test_kos),'reaction knockouts.')
-			for r in test_kos:
-				if len(tasks) > 1:
-					valid = self.is_valid_model(tasks, r, model_validator)
-					if valid:
-						final_model -= {r}
-						to_del |= {r}
-					if i > 0:
-						lost_reaction_sets[i-1] |= to_del
+			print('\tTesting model',i,'with',len(test_kos),'reaction knockouts.')
+			times_spent = []
+			if len(tasks) >= 1:
+				for r in test_kos:
+						start_time = time()
+						valid = self.is_valid_model(tasks, r, model_validator)
+						if valid:
+							final_model -= {r}
+							to_del |= {r}
+							if i > 0:
+								lost_reaction_sets[i-1] |= {r}
+						end_time = time()
+						times_spent.append(end_time-start_time)
+			else:
+				final_model -= test_kos
+				to_del |= test_kos
+				warnings.warn(' '.join(['Model',str(i),'not tested.','No lost metabolic tasks']))
+			if len(times_spent) > 0:
+				print('\t',(sum(times_spent)/len(times_spent)) * 1000,'ms per optimization')
 		return final_model
 
 
