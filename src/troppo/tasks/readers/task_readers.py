@@ -45,14 +45,16 @@ class JSONTaskIO(TaskIO):
 				'outflow_dict':{},
 				'inflow_dict':{},
 				'should_fail':False,
-				'task_name':None
+				'task_name':None,
+				'flux_constraints':{}
 			}
 			types = {
 				'reaction_dict': dict,
 				'outflow_dict': dict,
 				'inflow_dict': dict,
 				'should_fail': bool,
-				'task_name': str
+				'task_name': str,
+				'flux_constraints':dict
 			}
 			for key in defaults:
 				if key not in json_dict.keys():
@@ -61,7 +63,7 @@ class JSONTaskIO(TaskIO):
 					json_dict[key] = defaults[key]
 
 				elif type(json_dict[key]) != types[key]:
-					str_msg = ' '.join(['Key',key,'with value=',str(json_dict[key]),'does not match the expected type','Setting default value =',str(defaults[key])])
+					str_msg = ' '.join(['Key',key,'with value=',str(json_dict[key]),'does not match the expected type.','Setting default value =',str(defaults[key])])
 					warnings.warn(str_msg)
 					json_dict[key] = defaults[key]
 			return json_dict
@@ -81,7 +83,8 @@ class JSONTaskIO(TaskIO):
 				 'outflow_dict': task.outflow_dict,
 				 'inflow_dict': task.inflow_dict,
 				 'task_name': task.task_name,
-				 'should_fail': task.should_fail}
+				 'should_fail': task.should_fail,
+				 'flux_constraints':task.flux_constraints}
 			tasks = [d(t) for t in task_arg]
 			return JSONEncoder().encode(tasks)
 		elif isinstance(task_arg, Task):
