@@ -4,6 +4,7 @@ from pathos.pools import _ProcessPool
 from pathos.multiprocessing import cpu_count
 
 MP_THREADS = cpu_count()
+INF = float('inf')
 
 
 def disable_task_bounds(model, task_reactions):
@@ -17,23 +18,36 @@ def enable_task_bounds(model, task_items):
 			lb, ub = bounds
 			model.set_reaction_bounds(rx, lb=lb, ub=ub)
 
-def _init_task_solver(model, task_components, task_fail_status, task_added_reactions):
-	global _model, _task_components, _task_fail_status, _task_added_reactions
-	_model, _task_components, _task_fail_status, _task_added_reactions = model, task_components, task_fail_status, task_added_reactions
+def _init_task_solver(model, task_components, task_fail_status, flux_constraints, task_added_reactions):
+	global _model, _task_components, _task_fail_status, _flux_constraints, _task_added_reactions
+	_model, _task_components, _task_fail_status, _flux_constraints, _task_added_reactions = \
+		model, task_components, task_fail_status, flux_constraints, task_added_reactions
 
 def _task_iteration(task_name):
-	global _model, _task_components, _task_fail_status, _task_added_reactions
-	return task_name, evaluate_task(_model, _task_components[task_name], _task_fail_status[task_name], _task_added_reactions)
+	global _model, _task_components, _task_fail_status, _flux_constraints, _task_added_reactions
+	return task_name, evaluate_task(_model, _task_components[task_name], _task_fail_status[task_name],
+									_flux_constraints[task_name], _task_added_reactions)
 
-def evaluate_task(model, task_items, sfail, task_reactions):
+def evaluate_task(model, task_items, sfail, flux_constraints, task_reactions):
 	enable_task_bounds(model, task_items)
 	sol = model.optimize()
+	constraint_compliant = evaluate_flux_constraints(flux_constraints, sol.var_values())
 	is_optimal, is_infeasible = [sol.status() == x for x in ['optimal', 'infeasible']]
 	task_status = (not is_optimal and is_infeasible) if sfail else (is_optimal and not is_infeasible)
+	if task_status:
+		task_status = (task_status or (not constraint_compliant)) if sfail else (task_status and constraint_compliant)
 	disable_task_bounds(model, task_reactions)
 	return task_status
 
-def task_pool(model, task_components, task_fail_status, task_added_reactions):
+def evaluate_flux_constraints(flux_constraints, solution):
+	for i, v in flux_constraints.items():
+		lb,ub = [(INF*sign) if (k == None) else k for k,sign in zip(v,[-1, 1])]
+		valid = lb <= solution[i] <= ub
+		if not valid:
+			return False
+	return True
+
+def task_pool(model, task_components, task_fail_status, flux_constraints, task_added_reactions):
 	threads = MP_THREADS
 	task_list = list(task_components.keys())
 	res_map = {r: i for i, r in enumerate(task_list)}
@@ -42,7 +56,7 @@ def task_pool(model, task_components, task_fail_status, task_added_reactions):
 	pool = _ProcessPool(
 		processes=true_threads,
 		initializer=_init_task_solver,
-		initargs=(model, task_components, task_fail_status, task_added_reactions)
+		initargs=(model, task_components, task_fail_status, flux_constraints, task_added_reactions)
 	)
 	for i, value in pool.imap_unordered(_task_iteration, task_list,
 										chunksize=it_per_job):
@@ -56,8 +70,10 @@ def task_pool(model, task_components, task_fail_status, task_added_reactions):
 ## TODO: For now, context will be applied using knockouts. In the future we should actually prune and simplify
 
 def apply_context(model, context):
-	for index in context:
-		model.set_reaction_bounds(index, lb=0, ub=0)
+	for i,index in enumerate(model.reaction_names):
+		if (index not in context) and (i not in context):
+			model.set_reaction_bounds(index, lb=0, ub=0)
+
 
 class Tasks(object):
 	def __init__(self, S, lb, ub, rx_names, met_names, objective_reaction=None, context=None):
@@ -67,6 +83,7 @@ class Tasks(object):
 		self.tasks = {}
 		self.task_fail_status = {}
 		self.__add_reactions = []
+		self.flux_constraints = {}
 
 		if objective_reaction:
 			self.model.set_objective({objective_reaction: 1}, False)
@@ -74,7 +91,7 @@ class Tasks(object):
 			self.model.set_objective({0:1}, False)
 
 	def populate_model(self, task):
-		rd, ifd, ofd = task.get_task_components()
+		rd, ifd, ofd, flc = task.get_task_components()
 		sfail = task.should_fail
 
 		## TODO: excepções para qd um metabolito não existir
@@ -95,9 +112,14 @@ class Tasks(object):
 				task_sinks[r_name] = bounds
 		self.tasks[task.task_name] = (task_equations, task_sinks)
 		self.task_fail_status[task.task_name] = sfail
+		self.flux_constraints[task.task_name] = flc
 
 	def __run_single_task(self, task):
-		return evaluate_task(self.model, self.tasks[task], self.task_fail_status[task], self.__add_reactions)
+		return evaluate_task(model=self.model,
+							 task_items=self.tasks[task],
+							 sfail=self.task_fail_status[task],
+							 flux_constraints=self.flux_constraints[task],
+							 task_reactions=self.__add_reactions)
 
 	def __task_initializer(self, task):
 		if task.task_name not in self.tasks.keys():
@@ -113,7 +135,7 @@ class Tasks(object):
 			if len(task_arg) <= MP_THREADS:
 				return {task.task_name:self.__run_single_task(task.task_name) for task in task_arg}
 			else:
-				return task_pool(self.model, self.tasks, self.task_fail_status, self.__add_reactions)
+				return task_pool(self.model, self.tasks, self.task_fail_status, self.flux_constraints, self.__add_reactions)
 
 		elif isinstance(task_arg, Task):
 			self.__task_initializer(task_arg)
@@ -126,7 +148,7 @@ class Tasks(object):
 
 
 class Task(object):
-	def __init__(self, reaction_dict, inflow_dict, outflow_dict, should_fail, task_name=None):
+	def __init__(self, reaction_dict, inflow_dict, outflow_dict, should_fail, flux_constraint_dict, task_name=None):
 		'''
 		reaction_dict: rxd = {'r1':({'m1':-1, 'm2':2}, (lb, ub)), ...
 		inflow_dict: ifd = {'m3':(1,1), ...
@@ -137,6 +159,7 @@ class Task(object):
 		self.inflow_dict = inflow_dict
 		self.outflow_dict = outflow_dict
 		self.should_fail = should_fail
+		self.flux_constraints = flux_constraint_dict
 
 		if (task_name == None) and (not isinstance(task_name, str)):
 			self._task_name = 'task_' + str(randint(1,(2**32)-1))
@@ -145,7 +168,10 @@ class Task(object):
 
 
 	def get_task_components(self):
-		return self.reaction_dict, self.inflow_dict, self.outflow_dict
+		return self.reaction_dict, self.inflow_dict, self.outflow_dict, self.flux_constraints
+
+	def get_flux_constraints(self):
+		return self.flux_constraints
 
 	@property
 	def task_name(self):
@@ -189,9 +215,11 @@ if __name__ == '__main__':
 		outflow_dict={
 			'M4':(4,10)
 		},
-		should_fail=True
-	) for i in range(20)]
+		should_fail=True,
+		flux_constraint_dict={'R1':(1,10)}
+	) for i in range(16)]
 
 	res = tasks.evaluate(task1)
 
 	print(res)
+
