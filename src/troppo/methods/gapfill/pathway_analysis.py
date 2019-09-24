@@ -2,12 +2,13 @@ from cobamp.wrappers.method_wrappers import KShortestEFMEnumeratorWrapper
 from cobamp.core.models import ConstraintBasedModel
 
 class SubEFMGapfill(object):
-	def __init__(self, template_model, subset_forced_reactions, media):
+	def __init__(self, template_model, subset_forced_reactions, media, iterative=True):
 		'''
 		:param template_model: dict - must contain {S, lb, ub} and possibly rx_names/met_names
 		:param subset_forced_reactions: list - contains reaction indexes
 		:param media: dict - must contain the following keys - consumed, non_consumed, produced
 		values can be set as empty lists if not needed
+		:param iterative: boolean flag - determines whether the k-shortest algorithm behaviour
 		'''
 		if isinstance(template_model, dict):
 			S, lb, ub = [template_model[k] for k in ['S', 'lb', 'ub']]
@@ -17,18 +18,24 @@ class SubEFMGapfill(object):
 
 		self.subset_forced_reactions = subset_forced_reactions
 		self.met_pr, self.met_co, self.met_nc =  [media[k] for k in ['produced','consumed','non_consumed']]
+		self.__iterative = iterative
 
 	def gapfill(self, missing_set, at_most_n_sols=1):
+		algo_type = 'kse_iterative' if self.__iterative else 'kse_populate'
 		final_subset = missing_set | self.subset_forced_reactions
-		algorithm = KShortestEFMEnumeratorWrapper(self.cb_model, subset=final_subset, stop_criteria=len(missing_set),
-			non_consumed=self.met_nc, consumed=self.met_co, algorithm_type='kse_populate', produced=self.met_pr)
+		stop_criteria = at_most_n_sols if self.__iterative else len(final_subset)
+		algorithm = KShortestEFMEnumeratorWrapper(self.cb_model, subset=final_subset, stop_criteria=stop_criteria,
+			non_consumed=self.met_nc, consumed=self.met_co, algorithm_type=algo_type, produced=self.met_pr)
 
 		enumerator = algorithm.get_enumerator()
 		solutions = []
 		while len(solutions) < at_most_n_sols:
 			try:
 				sols = next(enumerator)
-				solutions.extend(sols)
+				if self.__iterative:
+					solutions.append(sols)
+				else:
+					solutions.extend(sols)
 			except StopIteration as e:
 				print('No more solutions')
 
@@ -106,14 +113,14 @@ if __name__ == '__main__':
 	print(len(missing_reactions),'total reactions missing.')
 
 	after_missing_reactions = simulate_model_with_kos(model, missing_reactions)
-	print('After removing selected KOs:',after_missing_reactions.objective_value)
+	print('After removing selected KOs:',after_missing_reactions.status,after_missing_reactions.objective_value)
 
 	gapfiller = SubEFMGapfill(template_model, biomass_reactions, media)
 	gapfill_reactions = gapfiller.gapfill(missing_set=set(missing_reactions))
 	print(len(gapfill_reactions[0]),'gapfilled reactions:',','.join(gapfill_reactions[0]))
 
 	after_gapfilling = simulate_model_with_kos(model, set(missing_reactions) - gapfill_reactions[0])
-	print('After gapfilling with EFM:',after_gapfilling.objective_value)
+	print('After gapfilling with EFM:',after_gapfilling.status,after_gapfilling.objective_value)
 
 # any_sols = []
 # sub_ko = None
