@@ -24,10 +24,10 @@ class SubEFMGapfill(object):
 		algo_type = 'kse_iterative' if self.__iterative else 'kse_populate'
 		final_subset = missing_set | self.subset_forced_reactions
 		stop_criteria = at_most_n_sols if self.__iterative else len(final_subset)
-		algorithm = KShortestEFMEnumeratorWrapper(self.cb_model, subset=final_subset, stop_criteria=stop_criteria,
+		self.algorithm = KShortestEFMEnumeratorWrapper(self.cb_model, subset=final_subset, stop_criteria=stop_criteria,
 			non_consumed=self.met_nc, consumed=self.met_co, algorithm_type=algo_type, produced=self.met_pr)
 
-		enumerator = algorithm.get_enumerator()
+		enumerator = self.algorithm.get_enumerator()
 		solutions = []
 		while len(solutions) < at_most_n_sols:
 			try:
@@ -38,6 +38,7 @@ class SubEFMGapfill(object):
 					solutions.extend(sols)
 			except StopIteration as e:
 				print('No more solutions')
+				break
 
 		return [set(d.keys()) for d in solutions]
 
@@ -55,7 +56,6 @@ if __name__ == '__main__':
 	BIOMASS_EXT_NAME = 'biomass_e'
 
 	def get_ecoli_core_model():
-
 
 		model_url = 'http://bigg.ucsd.edu/static/models/e_coli_core.xml'
 		model_path, _ = urlretrieve(model_url)
@@ -115,7 +115,7 @@ if __name__ == '__main__':
 	after_missing_reactions = simulate_model_with_kos(model, missing_reactions)
 	print('After removing selected KOs:',after_missing_reactions.status,after_missing_reactions.objective_value)
 
-	gapfiller = SubEFMGapfill(template_model, biomass_reactions, media)
+	gapfiller = SubEFMGapfill(template_model, biomass_reactions, media, iterative=True)
 	gapfill_reactions = gapfiller.gapfill(missing_set=set(missing_reactions))
 	print(len(gapfill_reactions[0]),'gapfilled reactions:',','.join(gapfill_reactions[0]))
 
