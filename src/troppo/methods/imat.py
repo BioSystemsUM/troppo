@@ -13,6 +13,7 @@ class IMAT():
 		self.S = np.array(S)
 		self.lb, self.ub = np.array(lb), np.array(ub)
 		self.properties = properties
+		self.sol = None
 
 	def run_imat(self):
 		exp_vector = self.properties['exp_vector']
@@ -35,6 +36,8 @@ class IMAT():
 		tol = self.properties['tolerance']
 		solution = self.run_imat()
 		to_keep = np.where(abs(solution.x())[:self.S.shape[1]] >= tol)[0]
+
+		self.sol = solution
 
 		if solution.status() != 'optimal':
 			print('Solution was not optimal')

@@ -238,6 +238,9 @@ class FASTcore():
 		print(J.size, A.size)
 		return sorted(A)
 
+	def run(self):
+		return self.fastcore()
+
 
 if __name__ == '__main__':
 	pass

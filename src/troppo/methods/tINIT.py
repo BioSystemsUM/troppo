@@ -287,6 +287,8 @@ class tINIT():
 		res = self.solve_problem()
 		return np.unique(np.int_(np.sort(res)))
 
+	def run(self):
+		return self.run_tINIT()
 
 if __name__ == '__main__':
 	import numpy as np
