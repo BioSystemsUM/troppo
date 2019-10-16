@@ -9,7 +9,7 @@ class GIMME():
 		self.lb, self.ub = np.array(lb), np.array(ub)
 		self.properties = properties
 		self.model = GIMMEModel
-
+		self.sol = None
 		metabolite_names = ['M'+str(i) for i in range(S.shape[0])]
 		reaction_names = ['R'+str(i) for i in range(S.shape[1])]
 		cbm = ConstraintBasedModel(S, list(zip(lb,ub)), reaction_names=reaction_names, metabolite_names=metabolite_names)
@@ -23,8 +23,10 @@ class GIMME():
 			obj_frac=self.properties['obj_frac'],
 			flux_thres=self.properties['flux_threshold']
 		)
-
+		self.sol = sol
 		return sol.get_reaction_activity(self.properties['flux_threshold'])
+
+
 	# def preprocess(self, S, lb, ub, exp_vector, objectives):
 	# 	## make irreversible model
 	# 	Sn, lb_n, ub_n, irrev_mapping = self.make_irreversible(S, lb, ub)
