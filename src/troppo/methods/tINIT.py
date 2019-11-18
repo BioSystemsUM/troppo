@@ -10,9 +10,9 @@ from cobamp.core.models import make_irreversible_model, make_irreversible_model_
 
 class tINIT():
 	def __init__(self, S, lb, ub, properties):
-		self.S = S
-		self.lb = lb
-		self.ub = ub
+		self.S = np.array(S)
+		self.lb = np.array(lb)
+		self.ub = np.array(ub)
 		self.properties = properties
 		self.n_metabolites, self.n_reactions = self.S.shape
 
@@ -234,6 +234,17 @@ class tINIT():
 		problem = GenericLinearSystem(self.problem_a, VAR_CONTINUOUS, self.problem_blx, self.problem_bux,
 									  self.problem_blc, self.problem_buc,
 									  rx_names_problem, self.properties['solver'])
+
+		## TODO: Remove this later
+		if self.properties['solver'] == 'CPLEX':
+			problem.model.problem.parameters.mip.tolerances.mipgap.set(1e-9)
+		elif self.properties['solver'] == 'GUROBI':
+			problem.model.problem.Params.MIPGap = 1e-9
+
+		problem.model.configuration.tolerances.feasibility = 1e-8
+		problem.model.configuration.tolerances.optimality = 1e-8
+		problem.model.configuration.verbosity = 3
+
 		lso = LinearSystemOptimizer(problem)
 		problem.write_to_lp('tINIT_test.lp')
 		if self.present_metabolites_unlisted.size > 0:
@@ -270,7 +281,7 @@ class tINIT():
 
 		# for k, v in solution.var_values().items(): print(k, v)
 
-		used_reactions = np.array([int_(k.split('_')[1]) for k in list(solution.var_values().keys()) if 'ne_' in k and solution.var_values()[k] > 0.1])
+		used_reactions = np.array([int_(k.split('_')[1]) for k in list(solution.var_values().keys()) if 'ne_' in k and solution.var_values()[k] < 0.1])
 
 		# for k, v in solution.var_values().items():
 		# 	if 'ne_' in k:

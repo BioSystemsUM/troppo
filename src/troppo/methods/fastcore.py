@@ -6,7 +6,7 @@ from cobamp.core.optimization import LinearSystemOptimizer
 
 class FASTcore():
 	def __init__(self, S, lb, ub, properties):
-		self.S = S
+		self.S = np.array(S)
 		self.model_lb, self.model_ub = np.array(lb), np.array(ub)
 		self.lb, self.ub = np.array(lb), np.array(ub)
 		self.properties = properties
