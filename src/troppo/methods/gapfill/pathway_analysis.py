@@ -2,7 +2,8 @@ from cobamp.wrappers.method_wrappers import KShortestEFMEnumeratorWrapper
 from cobamp.core.models import ConstraintBasedModel
 
 class SubEFMGapfill(object):
-	def __init__(self, template_model, subset_forced_reactions, media, iterative=True):
+	def __init__(self, template_model, subset_forced_reactions, media, iterative=True, max_time=0, max_threads=0,
+				 big_m=False, big_m_value=1000):
 		'''
 		:param template_model: dict - must contain {S, lb, ub} and possibly rx_names/met_names
 		:param subset_forced_reactions: list - contains reaction indexes
@@ -12,20 +13,28 @@ class SubEFMGapfill(object):
 		'''
 		if isinstance(template_model, dict):
 			S, lb, ub = [template_model[k] for k in ['S', 'lb', 'ub']]
-			self.cb_model = ConstraintBasedModel(S=self.S, thermodynamic_constraints=list(zip(lb, ub)))
+			self.cb_model = ConstraintBasedModel(S=S, thermodynamic_constraints=list(zip(lb, ub)))
 		elif isinstance(template_model, ConstraintBasedModel):
 			self.cb_model = template_model
 
 		self.subset_forced_reactions = subset_forced_reactions
 		self.met_pr, self.met_co, self.met_nc =  [media[k] for k in ['produced','consumed','non_consumed']]
 		self.__iterative = iterative
+		self.__max_time = max_time
+		self.__max_threads = max_threads
+		self.__big_m = big_m
+		self.__big_m_value = big_m_value
 
-	def gapfill(self, missing_set, at_most_n_sols=1):
+	def gapfill(self, missing_set, at_most_n_sols=1, populate_max_size=None):
 		algo_type = 'kse_iterative' if self.__iterative else 'kse_populate'
 		final_subset = missing_set | self.subset_forced_reactions
-		stop_criteria = at_most_n_sols if self.__iterative else len(final_subset)
+		stop_criteria = at_most_n_sols if self.__iterative else populate_max_size \
+			if populate_max_size != None else len(final_subset)
+
 		self.algorithm = KShortestEFMEnumeratorWrapper(self.cb_model, subset=final_subset, stop_criteria=stop_criteria,
-			non_consumed=self.met_nc, consumed=self.met_co, algorithm_type=algo_type, produced=self.met_pr)
+			non_consumed=self.met_nc, consumed=self.met_co, algorithm_type=algo_type, produced=self.met_pr,
+			big_m=self.__big_m, max_populate_sols_override=at_most_n_sols, time_limit=self.__max_time,
+			n_threads=self.__max_threads, big_m_value=self.__big_m_value)
 
 		enumerator = self.algorithm.get_enumerator()
 		solutions = []
