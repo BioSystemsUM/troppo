@@ -17,7 +17,7 @@ class FASTcore():
 		self.metabolites, self.reactions = np.array([i for i in range(self.n_metabolites)]), np.array(
 			[i for i in range(self.n_reactions)])
 		self.counter = 0
-		self.LPproblem, self.LP3problem, self.LP7problem, self.LP9problem = None, None, None, None
+		self.LPproblem, self.lsoLP3, self.lsoLP7, self.lsoLP9 = None, None, None, None
 
 	def reverse_irreversible_reactions_in_reverse_direction(self, irrev_reverse_idx):
 		'''
@@ -34,29 +34,10 @@ class FASTcore():
 			self.lb[irrev_reverse_idx] = -temp
 		return
 
-	def reverse_irreversible_reactions_in_reverse_direction_LP3problem(self, irrev_reverse_idx):
-		'''
-		Identifies the irreversible reactions in the reverse direction and returns the S matrix with the signals for the
-		metabolites reversed, a vector with the upper bounds as reversed form the lower bounds and a vector with the lower
-		bounds as the reverse of the upper ones.
-		Returns: S, ub, lb after modifications
-
-		'''
-		if irrev_reverse_idx.size > 0:  # if they exist
-			self.LP3problem.S[:, irrev_reverse_idx] = -self.LP3problem.S[:, irrev_reverse_idx]
-			temp = self.LP3problem.ub[irrev_reverse_idx]
-			self.LP3problem.ub[irrev_reverse_idx] = -self.LP3problem.lb[irrev_reverse_idx]
-			self.LP3problem.lb[irrev_reverse_idx] = -temp
-		return
-
-	def generate_base_LPproblem(self):
-		self.LPproblem = SteadyStateLinearSystem(self.S, self.lb, self.ub,
-												  ['V' + str(i) for i in range(self.S.shape[1])],
-												  solver=self.properties[
-													  'solver'])
-
 	def generate_LP3_problem(self):
-		self.LP3problem = self.LPproblem
+		self.LP3problem = SteadyStateLinearSystem(self.S, self.lb, self.ub,
+													  ['V' + str(i) for i in range(self.S.shape[1])],
+													  solver=self.properties['solver'])
 		self.lsoLP3 = LinearSystemOptimizer(self.LP3problem)
 
 	def LP3(self, J, basis=None):
@@ -72,12 +53,11 @@ class FASTcore():
 	def LP7(self, J, basis=None):
 		# TODO implement basis (from CPLEX) to improve the speed of the algorithm
 		print('LP7')
-		# self.generate_LP7_problem(J)
 		nJ = J.size  # number of irreversible reactions
-		# # m,n and m2,n2 are the same since the matrix S does not change throughout the algorithm, so we'll be using
-		# # self.n_metabolites and self.n_reactions
-		#
-		# # objective function
+		# m,n and m2,n2 are the same since the matrix S does not change throughout the algorithm, so we'll be using
+		# self.n_metabolites and self.n_reactions
+
+		# objective function
 		f = -np.concatenate([np.zeros((self.n_reactions)), np.ones((nJ))])
 
 		# equalities
@@ -116,8 +96,6 @@ class FASTcore():
 		else:
 			return [np.nan] * self.n_reactions
 
-	# return solution  # , problem.model.problem.solution.basis.get_basis()
-
 	def LP9(self, K, P):
 		print('LP9')
 		scalingFactor = 1e5
@@ -150,24 +128,18 @@ class FASTcore():
 			list(map(max, zip(np.abs(self.model_lb[P]), np.abs(self.model_ub[P])))))]) * scalingFactor
 
 		A = vstack([Aeq, Aineq])
-		from cplex import infinity
 		b_lb, b_ub = np.concatenate([beq, [None] * (2 * nP + nK)]), np.concatenate([beq, bineq])
-		# b_lb, b_ub = np.concatenate([beq, -np.inf * np.ones((nJ, ))]), np.concatenate([beq, bineq])
 
 		problem = GenericLinearSystem(A.toarray(), VAR_CONTINUOUS, lb, ub, b_lb, b_ub,
 									  ['V' + str(i) for i in range(A.shape[1])], solver=self.properties['solver'])
 
 		lso = LinearSystemOptimizer(problem)
 		problem.set_objective(f, True)
-		# problem.write_to_lp('Test_LP9_'+str(self.counter))
-		# self.counter+=1
 		solution = lso.optimize()
 		print(solution.objective_value())
 
 		if solution.status() != 'optimal':
 			print('Warning, Solution is not optimal')
-
-		# return {i:np.nan for i,k in enumerate(solution.var_values().items()) if i<= self.n_reactions-1}
 
 		if solution:
 			return {i: k[1] for i, k in enumerate(solution.var_values().items()) if i <= self.n_reactions - 1}
@@ -175,8 +147,6 @@ class FASTcore():
 			return [np.nan] * self.n_reactions
 
 	def findSparseMode(self, J, P, singleton, basis=None):
-		# epsilon == self.properties['flux_threshold']
-		# model, LPProblem == self.S
 		if J.size == 0:
 			return np.array([], dtype=int)
 
@@ -186,13 +156,11 @@ class FASTcore():
 			basis = []
 		print('before LP7')
 		if singleton:
-			# V, basis = self.LP7(J[0], basis)
 			V = self.LP7(J[0], basis)
 		else:
 			# V, basis = self.LP7(J, basis)
 			V = self.LP7(J, basis)
 
-		# K = np.array([rJ for rJ in J if V['V' + str(rJ)] >= 0.99 * self.properties['flux_threshold']])
 		K = np.array([rJ for rJ in J if V[rJ] >= 0.99 * self.properties['flux_threshold']])
 
 		print('done LP7')
@@ -200,7 +168,6 @@ class FASTcore():
 			V = self.LP9(K, P)
 			Supp = np.array([i for i, k in V.items() if
 							 (np.abs(k) >= 0.99 * self.properties['flux_threshold']) and i <= self.n_reactions - 1])
-			# Supp = np.array([k for k, v in V.items() if v >= 0.99 * self.properties['flux_threshold']])
 			print('done LP9')
 			return Supp
 		else:
@@ -220,7 +187,6 @@ class FASTcore():
 
 		P = np.setdiff1d(self.reactions, self.properties['core_idx'])  # non-core reactions
 
-		# supp, basis = self.findSparseMode(J, P, singleton)
 		supp = self.findSparseMode(J, P, singleton)
 
 		if np.setdiff1d(J, supp).size > 0:
@@ -228,18 +194,12 @@ class FASTcore():
 
 		return np.setdiff1d(self.properties['core_idx'], supp), supp, P, irreversible_reactions_idx
 
-	# return np.setdiff1d(J, supp), supp, P, irreversible_reactions_idx #TODO this is a test
-
 	def fastcore(self):
 		flipped = False
 		singleton = False
-		# # TODO to delete
-		# return self.preprocessing()
-		# # TODO end of to delete
 		J, A, P, irreversible_reactions_idx = self.preprocessing()
 		print(J.size, A.size)
 		while J.size > 0:
-			# print(J)
 			P = np.setdiff1d(P, A)
 
 			supp = self.findSparseMode(J, P, singleton)
@@ -253,11 +213,6 @@ class FASTcore():
 				J = np.setdiff1d(J, A)
 				flipped = False
 			else:
-				# Sara's modification
-				# if flipped:
-				# 	flipped = False
-				# 	singleton = True
-				#
 				if singleton:
 					JiRev = np.setdiff1d(J[0], irreversible_reactions_idx)
 				else:
