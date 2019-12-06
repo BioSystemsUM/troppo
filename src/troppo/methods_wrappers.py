@@ -1,6 +1,6 @@
 import abc
 import numpy as np
-from cobamp.wrappers.external_wrappers import model_readers
+from cobamp.wrappers.external_wrappers import model_readers, AbstractObjectReader
 
 from .methods.fastcore import FASTcore
 from .methods.gimme import GIMME
@@ -26,6 +26,8 @@ class ReconstructionWrapper(object):
 		self.__model = model
 		if model.__module__ in model_readers.keys():
 			self.model_reader = model_readers[model.__module__](model)
+		elif isinstance(model, AbstractObjectReader):
+			self.model_reader = model
 		else:
 			raise TypeError(
 				"The `model` instance is not currently supported by cobamp. Currently available readers are: " + str(
@@ -39,10 +41,11 @@ class ReconstructionWrapper(object):
 		# if properties['core']:
 		# 	properties.add_new_properties({'core_idx': lambda x: isinstance(x, list) and len(x) > 0})
 		# 	properties['core_idx'] = np.array([self.model_reader.reaction_id_to_index(reaction) for reaction in properties['core']])
-		map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
+		algo = map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
+		return algo.run()
 		# else:
 		# 	map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
-		pass
+
 
 # class FASTcoreWrapper(ReconstructionWrapper):
 #
