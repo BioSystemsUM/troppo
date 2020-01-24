@@ -1,13 +1,9 @@
-"""
- Created by Jorge Gomes on 13/03/2018
- source
- OmicsContainer
- 
-"""
-from troppo.omics.id_converter import idConverter, searchNomenclature
-import numpy as np
 import copy
 import re
+
+import numpy as np
+
+from troppo.omics.id_converter import searchNomenclature, idConverter
 
 
 class OmicsContainer:
@@ -27,7 +23,7 @@ class OmicsContainer:
     Main attribute is .data() which is a dictionary containing : {gene_id: Expression Value}
     """
 
-    def __init__(self, omicstype=None, condition=None):
+    def __init__(self, omicstype=None, condition=None, data=None, nomenclature=None):
         """
         Creates an empty OmicsContainer object.
 
@@ -37,12 +33,19 @@ class OmicsContainer:
         """
         self.otype = omicstype
         self.condition = condition
-        self.data = {}
-        self.nomenclature = None
+        self.nomenclature = nomenclature
+        if data == None:
+            self.data = {}
+        else:
+            self.load(data)
 
-    def load(self, reader):
-        self.data = reader.load()
-        self.nomenclature = searchNomenclature(list(self.data.keys()))
+    def load(self, arg, **kwargs):
+        if isinstance(arg, dict):
+            self.data = arg
+        else:
+            self.data = arg.load(**kwargs)
+        if self.nomenclature is None:
+            self.nomenclature = searchNomenclature(list(self.data.keys()))
 
     def convertValues(self, mapping):
         """
@@ -268,6 +271,43 @@ class OmicsContainer:
     def get_Nomenclature(self):
         return self.nomenclature
 
+
+    def get_integrated_data_map(self, model_reader, and_func=min, or_func=max):
+        """
+        Function responsible for the integration of different omics data with a metabolic model loaded with framed package.
+        Matches model ids for gene_ids, metabolites or reaction ids with those present in the omicsContainer object.
+
+        :param model_reader: (obj) a cobamp AbstractModelObjectReader object
+        :param and_func:(func) the mathematical function to replace the "AND" operator present in the Gene-Protein-Rules
+        :param or_func:(func) the mathematical function to replace the "OR" operator present in the Gene-Protein-Rules
+
+
+        :return m: (obj) an OmicsDataMap object which contains the mapping between reactions/metabolites and its fluxes
+        based on the supplied omics data.
+        """
+
+        def g2rIntegrate():
+            """
+            Handles integration of both proteomics and transcriptomics expression data relying on framed's gene2reaction
+            """
+            # suffixAndPrefix()
+            d = model_reader.get_reaction_scores(self.get_Data(), or_fx=or_func, and_fx=and_func)
+            return aux_createMap(d, 'ReactionDataMap')
+
+        def aux_createMap(mMap, mapType):
+            m = OmicsDataMap(mMap, mapType)
+            return m
+
+        # execution commands
+
+        omicsType = self.otype.lower()
+
+        if omicsType.lower() in ['proteomics', 'transcriptomics']:
+            return g2rIntegrate()
+        else:
+            raise Exception('Omics data type not yet supported')
+
+
     def print_values(self):
         print('Gene Symbol >>> Exp Value')
         for k, v in self.data.items():
@@ -280,72 +320,60 @@ class OmicsContainer:
                    '{3} Expression Values'.format(self.otype, self.condition, self.nomenclature, len(self.data.keys())))
 
 
-if __name__ == '__main__':
-    from troppo.readers.hpa_reader import HpaReader
+class OmicsDataMap:
+    """
+    Stores integrated omics data, matching a given metabolic model
 
-    path = "../../../tests/pathology.tsv"
+    """
 
-    d2num = {'High': 20.0,
-             'Medium': 15.0,
-             'Low': 10.0,
-             'Not detected': -8.0}
+    def __init__(self, scores, mapType):
+        self._mapType = mapType
+        self._scores = scores
 
-    num2d = {20.0: 'High',
-             15.0: 'Medium',
-             10.0: 'Low',
-             -8.0: 'Not detected'}
+    # getters
+    def __len__(self):
+        return len(self._scores.items())
 
-    n2num = {20.0: 12.0,
-             15.0: 9.0,
-             10.0: 5.0,
-             -8.0: -1.0}
+    def __str__(self):
+        return self.get_scores()
 
-    r2n = {(0, 20): 'Positive',
-           (-10, -1): 'Negative'}
+    def mapType(self):
+        return self._mapType
 
-    r = HpaReader(fpath=path, tissue='ovarian cancer', id_col=1, includeNA=False)
-    oc = OmicsContainer(omicstype='proteomics', condition='Ovarian Cancer')
-    oc.load(r)
-    print(oc.get_Data())
-    print(oc)
+    def get_scores(self):
+        return self._scores
 
-    # oc.convertValues(d2num)
-    # print(oc.data)
-    #
-    # oc.convertValues(num2d)
-    # print(oc.data)
+    def select(self, op, threshold):
+        """
+        Filtering the original reaction scores to be under or above a threshold. Above or under operations use the
+        >= and <= operators
 
-    # ids = ["TSPAN6", "TNMD", "DPM1", "SCYL3", "C1orf112"]
-    # oc.convertIds('symbol', 'entrez_id')
-    # print(oc.data)
-    # oc.transform('norm')
-    # print(oc.values())
+        Args:
+            op: str, either "above" or "under" determining which scores shall be chosen
+            threshold: num, either a float or an integer whether under or above all scores shall be chosen
 
-    # oc2 = oc.filterById('TSPAN6')
-    # print(oc2.values())
 
-    # oc2.convertIds('files/map.txt',',')
-    # print(oc2.values())
+        """
 
-    # teste values conversion
-    # print(d2num)
+        if type(threshold) not in [int, float]:
+            print('Select threshold must be numeric!')
+            return
 
-    # oc.convertValues(d2num)
-    # print(d2num)
-    # print(oc.values())
+        if op.lower() == 'above':
+            res = {x: y for x, y in self._scores.items() if y is not None and y >= threshold}
 
-    # oc.convertValues(r2n)
-    # print(oc.values())
+        elif op.lower() == 'under':
+            res = {x: y for x, y in self._scores.items() if y is not None and y <= threshold}
 
-    # teste filtro valores
+        else:
+            print('Select operation must be either \'above\' or \'under\'')
+            return
 
-    #oc3 = oc.filterByValue('levels', ('Medium'))
-    #print(oc3.data())
+        # self.set_scores(res)
+        return set(res.keys())
 
-    #path = 'files/abc-tis-gpl570-formatted_v3.csv'
-    #tissue = 'brain'
-    #convFile = 'files/HG-U133_Plus_2.na35.annot.csv'
-    #convS = ('Probe Set ID', 'Gene Symbol', ';')
-    #g = GEB_Reader(path, tissue, convFile, convS)
-    #oc = OmicsContainer(reader=g, Type='Transcriptomics', condition='Brain Healthy')
-    #oc.print_values()
+    # setters
+    def set_scores(self, newScores):
+        self._scores = newScores
+
+

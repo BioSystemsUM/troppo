@@ -2,13 +2,40 @@ import numpy as np
 from scipy.sparse import lil_matrix, hstack, eye, vstack
 from cobamp.core.linear_systems import GenericLinearSystem, VAR_CONTINUOUS, SteadyStateLinearSystem
 from cobamp.core.optimization import LinearSystemOptimizer
-
+from troppo.methods.base import ContextSpecificModelReconstructionAlgorithm, PropertiesReconstruction
 
 # TODO make a generic LPProblem, then update with the necessary information for the LP7 and LP9 - this should improve
 #  the performance of the algorithm
+from troppo.methods_reconstruction import MethodsReconstruction
 
-class FASTcore():
+
+class FastcoreProperties(PropertiesReconstruction):
+
+	def __init__(self, core, flux_threshold=1e-4, solver=None):
+		new_mandatory = {'core': lambda x: isinstance(x, list) and len(x) > 0,
+						 'core_idx': lambda x: isinstance(x, list) and len(x) > 0,
+						 'solver': lambda x: isinstance(x, str)}
+		new_optional = {}
+		super().__init__()
+		self.base_mandatory['method'] = MethodsReconstruction.FASTCORE
+		self.add_new_properties(new_mandatory, new_optional)
+		self['flux_threshold'] = flux_threshold
+		self['core'] = list(core)
+		# TODO change this later, this is only for testing
+		self['core_idx'] = list(core)
+		self['solver'] = solver
+
+	@staticmethod
+	def from_integrated_scores(scores, **kwargs):
+		# TODO change later, idk why core_idx is here
+		return FastcoreProperties(core=scores, **dict({k:v for k,v in kwargs.items() if k not in ['core','core_idx']}))
+
+class FASTcore(ContextSpecificModelReconstructionAlgorithm):
+
+	properties_class = FastcoreProperties
+
 	def __init__(self, S, lb, ub, properties):
+		super().__init__(S, lb, ub, properties)
 		self.S = np.array(S)
 		self.model_lb, self.model_ub = np.array(lb), np.array(ub)
 		self.lb, self.ub = np.array(lb), np.array(ub)
@@ -237,5 +264,3 @@ class FASTcore():
 		return self.fastcore()
 
 
-if __name__ == '__main__':
-	pass

@@ -1,3 +1,6 @@
+from multiprocessing import cpu_count
+from numbers import Number
+
 from numpy import array, zeros, sqrt, vstack, where, floor, random, unique, \
 	apply_along_axis, nan, logical_or
 
@@ -5,8 +8,13 @@ from cobamp.core.models import CORSOModel
 from cobamp.core.models import ConstraintBasedModel
 from time import time
 
+from troppo.methods.base import ContextSpecificModelReconstructionAlgorithm, PropertiesReconstruction
+
 from pathos.multiprocessing import cpu_count
 from pathos.pools import _ProcessPool
+
+from troppo.reconstruction_properties import is_list
+
 
 def _init_corda_worker(corso_fba, constraint, constrainby, costfx, costbase, ntimes, eps, lb):
 	global _corso_fba, _constraint, _constrainby, _costfx, _costbase, _ntimes, _eps, _lb
@@ -49,12 +57,62 @@ def _corda_dependent_rxs_per_sense(rx, constraint, forward):
 		dependent = zeros(dependent.shape).astype(bool)
 	return dependent, to_del
 
+class CORDAProperties(PropertiesReconstruction):
+	CONSTRAINBY_VAL = 'val'
+	CONSTRAINBY_PERC = 'perc'
 
-class CORDA():
+	def __init__(self, high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np=None, constraint=None, constrainby=None,
+				 om=None, ntimes=None, nl=None, solver=None, threads=None):
+		'''
+		:param high_conf_rx: High confidence reactions
+		:param medium_conf_rx: Medium confidence reactions
+		:param neg_conf_rx: Negative confidence reactions
+		:param pr_to_np: Threshold to include NP reactions if PR reactions depend of them
+		:param constraint: Constraint value
+		:param constrainby: either 'val' (constrain fluxes by value) or 'perc' (constraint by percentage)
+		:param om: cost assigned to reactions when calculating dependencies
+		:param ntimes: Number of CORSO FBA simulations performed per dependency assessment
+		:param nl: Noise added to reaction costs
+		'''
+		new_mandatory = {k: is_list for k in ['high_conf_rx', 'medium_conf_rx', 'neg_conf_rx']}
+
+		new_optional = {
+			# 'met_tests': lambda x: is_list(x) or x is None,
+			'pr_to_np': lambda x: isinstance(x, Number),
+			'constraint': lambda x: isinstance(x, Number),
+			'constrainby': [self.CONSTRAINBY_VAL, self.CONSTRAINBY_PERC],
+			'om': lambda x: isinstance(x, Number),
+			'ntimes': lambda x: isinstance(x, int) and x > 0,
+			'nl': lambda x: isinstance(x, Number) and x >= 0,
+			'threads': int
+		}
+
+		super().__init__()
+		self.add_new_properties(new_mandatory, new_optional)
+
+		vars = [high_conf_rx, medium_conf_rx, neg_conf_rx, pr_to_np, constraint, constrainby, om, ntimes, nl, solver,
+				threads]
+		defaults = [None, None, None, 2, 1, CORDAProperties.CONSTRAINBY_VAL, 1e4, 5, 1e-2, 'CPLEX', cpu_count() - 1]
+		names = ['high_conf_rx', 'medium_conf_rx', 'neg_conf_rx', 'pr_to_np', 'constraint', 'constrainby', 'om',
+				 'ntimes', 'nl', 'solver', 'threads']
+
+		for v, k, d in zip(vars, names, defaults):
+			self[k] = v if v is not None else d
+
+	@staticmethod
+	def from_integrated_scores(scores, **kwargs):
+		hi, med, neg = scores
+		return CORDAProperties(hi, med, neg, **kwargs)
+
+
+class CORDA(ContextSpecificModelReconstructionAlgorithm):
+	properties_class = CORDAProperties
+
 	def costfx_factory(self, nl, om, costbase):
 		return lambda: nl * floor(om * random.rand(len(costbase),)) / om
 
 	def __init__(self, S, lb, ub, properties):
+		super().__init__(S, lb, ub, properties)
 		self.S = array(S)
 		self.lb, self.ub = array(lb), array(ub)
 		self.properties = properties
@@ -333,3 +391,5 @@ class CORDA():
 		else:
 			dependent = zeros(dependent.shape).astype(bool)
 		return dependent, to_del
+
+

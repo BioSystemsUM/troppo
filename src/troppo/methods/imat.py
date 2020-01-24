@@ -1,15 +1,51 @@
 import numpy as np
 from itertools import chain
 
+from numpy.core._multiarray_umath import ndarray
+
 from cobamp.core.linear_systems import GenericLinearSystem, VAR_CONTINUOUS, VAR_BINARY
 from cobamp.core.optimization import LinearSystemOptimizer
+from troppo.methods.base import ContextSpecificModelReconstructionAlgorithm, PropertiesReconstruction
 
 
-class IMAT():
+class IMATProperties(PropertiesReconstruction):
+	def __init__(self, exp_vector, exp_thresholds, core=None, tolerance=1e-8, epsilon=1):
+		new_mandatory = {
+			'exp_vector': lambda x: isinstance(x, list) and len(x) > 0 or isinstance(x, ndarray),
+			'objectives': lambda x: type(x) in [list, ndarray],
+			'exp_thresholds': lambda x: type(x) in (tuple, list, ndarray) and type(x[0]) in [float, int] and type(
+				x[1]) in [float, int]
+		}
+		new_optional = {
+			'core': lambda x: type(x) in [ndarray, list, tuple],
+			'tolerance': float,
+			'epsilon': lambda x: type(x) in [int, float]
+		}
+		super().__init__()
+
+		self.add_new_properties(new_mandatory, new_optional)
+
+		self['exp_vector'] = exp_vector
+		self['exp_thresholds'] = exp_thresholds
+		if core:
+			self['core'] = core
+		if tolerance:
+			self['tolerance'] = tolerance
+		if epsilon:
+			self['epsilon'] = epsilon
+
+	@staticmethod
+	def from_integrated_scores(scores, **kwargs):
+		return IMATProperties(exp_vector=scores, **kwargs)
+
+class IMAT(ContextSpecificModelReconstructionAlgorithm):
+	properties_class = IMATProperties
+
 	def empty_matrix(self, r, c):
 		return np.zeros((r,c))
 
 	def __init__(self, S, lb, ub, properties):
+		super().__init__(S, lb, ub, properties)
 		self.S = np.array(S)
 		self.lb, self.ub = np.array(lb), np.array(ub)
 		self.properties = properties
@@ -92,4 +128,5 @@ class IMAT():
 		#print(high_idx, low_idx)
 		#lsystem.write_to_lp('imat.lp')
 		return lso, lsystem
+
 

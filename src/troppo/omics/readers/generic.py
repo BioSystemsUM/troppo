@@ -6,6 +6,50 @@
 """
 from pandas import read_csv
 
+from ..core import OmicsContainer
+
+
+class TabularReader(object):
+    def __init__(self, path, index_col=0, sample_in_rows=True, header_offset=0, cache_df=False, ignore_samples=None,
+                 omics_type='transcriptomics', nomenclature=None, dsapply=None, **kwargs):
+        self.path, self.index_col, self.sample_axis, self.header_offset = \
+            path, index_col, sample_in_rows, header_offset
+        self.pandas_args = kwargs
+        self.dsapply = dsapply
+        self.dfcache = None
+        self.cache_df = cache_df
+        self.ignore_samples = ignore_samples
+        self.omics_type = omics_type
+        self.nomenclature = nomenclature
+
+    def __iter__(self):
+        if self.dfcache is None:
+            df = read_csv(self.path, index_col=self.index_col, **self.pandas_args)
+            self.dfcache = df
+        elif self.cache_df:
+            df = self.dfcache
+
+        else:
+            df = self.dfcache
+
+        if not self.sample_axis:
+            df = df.T
+
+        if self.ignore_samples is not None or len(self.ignore_samples) > 0:
+            df = df.drop(labels=self.ignore_samples, axis=0)
+
+        if self.dsapply is not None:
+            df = self.dsapply(df)
+
+
+        for name, series in df.iterrows():
+            yield (name, series.to_dict())
+
+    def to_containers(self):
+        ocs = [OmicsContainer(data=data, condition=sample, nomenclature=self.nomenclature, omicstype=self.omics_type)
+               for sample, data in self]
+        self.dsapply = None
+        return ocs
 
 class GenericReader:
     """
@@ -28,7 +72,7 @@ class GenericReader:
         self._headerStart = header_start
         self._sep = sep
 
-    def load(self):
+    def load(self, **kwargs):
         """
         Executes the loading of supplied omics file.
 
@@ -59,7 +103,10 @@ class GenericReader:
         return omics
 
 
+
 if __name__ == "__main__":
-    path1 = "C:/Users/Tese_Avoid_Namespaces/Tese/TsmRec/files/abc-gpl571-formatted_v3.csv"
-    gr = GenericReader(path1,'probe_id', 22)
-    gr.load()
+    # path1 = "C:/Users/Tese_Avoid_Namespaces/Tese/TsmRec/files/abc-gpl571-formatted_v3.csv"
+    # gr = GenericReader(path1,'probe_id', 22)
+    # gr.load()
+    reader = TabularReader('tests/small_transcriptomics_dataset.csv')
+

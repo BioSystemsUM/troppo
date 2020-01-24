@@ -6,10 +6,48 @@ from cobamp.core.linear_systems import GenericLinearSystem, VAR_CONTINUOUS, VAR_
 from cobamp.core.optimization import LinearSystemOptimizer
 
 from cobamp.core.models import make_irreversible_model, make_irreversible_model_raven
+from troppo.methods.base import ContextSpecificModelReconstructionAlgorithm, PropertiesReconstruction
+from troppo.reconstruction_properties import is_list_else_empty, if_none_return_list
+
+class tINITProperties(PropertiesReconstruction):
+	def __init__(self, reactions_scores, present_metabolites=[], essential_reactions=[], production_weight=0.5,
+				 allow_excretion=False,
+				 no_reverse_loops=False, solver=None):
+		# TODO check later if the params input might be necessary to include for the troppo
+		new_mandatory = {
+			'solver': lambda x: isinstance(x, str)
+		}
+		new_optional = {
+			'reactions_scores': lambda x: is_list_else_empty(x),
+			'present_metabolites': lambda x: is_list_else_empty(x),
+			'essential_reactions': lambda x: is_list_else_empty(x),
+			'production_weight': lambda x: isinstance(x, float),
+			'allow_excretion': lambda x: isinstance(x, bool),
+			'no_reverse_loops': lambda x: isinstance(x, bool),
+		}
+
+		super().__init__()
+
+		self.add_new_properties(new_mandatory, new_optional)
+
+		properties_dict_list = ["reactions_scores", "present_metabolites", "essential_reactions", "production_weight",
+								"allow_excretion", "no_reverse_loops", "solver"]
+		properties_list = [reactions_scores, if_none_return_list(present_metabolites),
+						   if_none_return_list(essential_reactions), if_none_return_list(production_weight),
+						   allow_excretion, no_reverse_loops, solver]
+		prop_dict = dict(zip(properties_dict_list, properties_list))
+
+		[self.add_if_not_none(*k) for k in prop_dict.items()]
+
+	@staticmethod
+	def from_integrated_scores(scores, **kwargs):
+		tINITProperties(reactions_scores=scores, **kwargs)
 
 
-class tINIT():
+class tINIT(ContextSpecificModelReconstructionAlgorithm):
+	properties_class = tINITProperties
 	def __init__(self, S, lb, ub, properties):
+		super().__init__(S, lb, ub, properties)
 		self.S = np.array(S)
 		self.lb = np.array(lb)
 		self.ub = np.array(ub)
@@ -301,9 +339,10 @@ class tINIT():
 	def run(self):
 		return self.run_tINIT()
 
+
+
 if __name__ == '__main__':
 	import numpy as np
-	from troppo.reconstruction_properties import tINITProperties
 
 	S = np.array([[1, -1, 0, 0, -1, 0, -1, 0, 0],
 				  [0, 1, -1, 0, 0, 0, 0, 0, 0],
@@ -322,3 +361,5 @@ if __name__ == '__main__':
 	z[[0, 2, 4],] = np.apply_along_axis(lambda x: [i if i > 0.1 else 0.1 for i in x], 1, z[[0, 2, 4],])
 	l = (lambda x: [i if i > 0.1 else 0.1 for i in x])
 	l([0, 1, 2])
+
+

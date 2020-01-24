@@ -1,1 +1,2 @@
-from . import methods,omics,readers
+from . import methods,omics
+from .omics import readers

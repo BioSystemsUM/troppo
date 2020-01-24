@@ -2,14 +2,16 @@ import abc
 import numpy as np
 from cobamp.wrappers.external_wrappers import model_readers, AbstractObjectReader
 
-from .methods.fastcore import FASTcore
-from .methods.gimme import GIMME
-from .methods.imat import IMAT
-from .methods.corda import CORDA
-from .methods.tINIT import tINIT
+from .methods.fastcore import FASTcore, FastcoreProperties
+from .methods.gimme import GIMME, GIMMEProperties
+from .methods.imat import IMAT, IMATProperties
+from .methods.corda import CORDA, CORDAProperties
+from .methods.tINIT import tINIT, tINITProperties
 
-from .reconstruction_properties import FastcoreProperties, GIMMEProperties, IMATProperties, tINITProperties, \
-	CORDAProperties
+from .omics.core import OmicsContainer, OmicsDataMap
+
+from .omics.integration import ContinuousScoreIntegrationStrategy, CustomSelectionIntegrationStrategy, \
+	ThresholdSelectionIntegrationStrategy
 
 map_properties_algorithms = {
 	FastcoreProperties : FASTcore,
@@ -18,6 +20,21 @@ map_properties_algorithms = {
 	tINITProperties : tINIT,
 	CORDAProperties : CORDA
 }
+
+algorithm_instance_map = {
+	'fastcore': FASTcore,
+	'gimme': GIMME,
+	'imat': IMAT,
+	'tinit': tINIT,
+	'corda': CORDA
+}
+
+integration_strategy_map = {
+	'continuous': ContinuousScoreIntegrationStrategy,
+	'custom': CustomSelectionIntegrationStrategy,
+	'threshold': ThresholdSelectionIntegrationStrategy
+}
+
 
 class ReconstructionWrapper(object):
 	__metaclass__ = abc.ABCMeta
@@ -38,24 +55,28 @@ class ReconstructionWrapper(object):
 		pass
 
 	def run(self, properties):
-		# if properties['core']:
-		# 	properties.add_new_properties({'core_idx': lambda x: isinstance(x, list) and len(x) > 0})
-		# 	properties['core_idx'] = np.array([self.model_reader.reaction_id_to_index(reaction) for reaction in properties['core']])
 		algo = map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
 		return algo.run()
-		# else:
-		# 	map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
+
+	def run_from_omics(self, omics_container: OmicsContainer, algorithm, integration_strategy, and_or_funcs=(min, max), **kwargs):
+		def ezinstance(x):
+			return integration_strategy_map[x[0]](x[1])
+
+		ordered_ids = {r:i for i,r in enumerate(self.model_reader.r_ids)}
+		afx, ofx = 	and_or_funcs
+		strat = ezinstance(integration_strategy)
+		scores = strat.integrate(omics_container.get_integrated_data_map(self.model_reader, afx, ofx))
+		if isinstance(scores, dict):
+			res = {ordered_ids[k]:v for k,v in scores.items()}
+		else:
+			res = {ordered_ids[k] for k in scores}
+
+		properties = algorithm_instance_map[algorithm].properties_class.from_integrated_scores(res, **kwargs)
+		self.run(properties)
 
 
-# class FASTcoreWrapper(ReconstructionWrapper):
-#
-# 	def __init__(self, model, properties):
-# 		super.__init__(model)
-# 		if isinstance(properties, FastcoreProperties):
-# 			self.properties = properties
-# 		else:
-# 			raise Exception('The properties are not from the FASTcore algorithm')
-#
-# 	def run(self, proper):
-# 		algorithm = FASTcore(self.S, self.lb, self.ub, self.properties)
-# 		return [for r in algorithm]
+
+
+
+
+
