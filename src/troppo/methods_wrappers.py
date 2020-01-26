@@ -39,10 +39,10 @@ integration_strategy_map = {
 class ReconstructionWrapper(object):
 	__metaclass__ = abc.ABCMeta
 
-	def __init__(self, model):
+	def __init__(self, model, **kwargs):
 		self.__model = model
 		if model.__module__ in model_readers.keys():
-			self.model_reader = model_readers[model.__module__](model)
+			self.model_reader = model_readers[model.__module__](model, **kwargs)
 		elif isinstance(model, AbstractObjectReader):
 			self.model_reader = model
 		else:
@@ -72,7 +72,8 @@ class ReconstructionWrapper(object):
 			res = {ordered_ids[k] for k in scores}
 
 		properties = algorithm_instance_map[algorithm].properties_class.from_integrated_scores(res, **kwargs)
-		self.run(properties)
+		algorithm_result = self.run(properties)
+		return [self.model_reader.r_ids[k] for k in algorithm_result]
 
 
 

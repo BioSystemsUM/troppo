@@ -35,7 +35,7 @@ class TabularReader(object):
         if not self.sample_axis:
             df = df.T
 
-        if self.ignore_samples is not None or len(self.ignore_samples) > 0:
+        if self.ignore_samples is not None and len(self.ignore_samples) > 0:
             df = df.drop(labels=self.ignore_samples, axis=0)
 
         if self.dsapply is not None:
