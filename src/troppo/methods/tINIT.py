@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.sparse as sprs
 from numpy import int_
 from itertools import chain
 
@@ -41,7 +42,7 @@ class tINITProperties(PropertiesReconstruction):
 
 	@staticmethod
 	def from_integrated_scores(scores, **kwargs):
-		tINITProperties(reactions_scores=scores, **kwargs)
+		return tINITProperties(reactions_scores=scores, **kwargs)
 
 
 class tINIT(ContextSpecificModelReconstructionAlgorithm):
@@ -156,12 +157,15 @@ class tINIT(ContextSpecificModelReconstructionAlgorithm):
 		for rev_r in self.reversible_reactions: self.v_vector_reactions.append(str(rev_r) + '_r')
 
 		revs = np.setdiff1d(self.non_essential, list(self.rev_map.keys()))
-		revs_names = []
-		for r in range(revs.size):
-			for k, v in self.rev_map.items():
-				if isinstance(v, (tuple, list)):
-					if revs[r] in v:
-						revs_names.append(str(k) + '_r')
+
+		# revs_names = []
+		# for r in range(revs.size):
+		# 	for k, v in self.rev_map.items():
+		# 		if isinstance(v, (tuple, list)):
+		# 			if revs[r] in v:
+		# 				revs_names.append(str(k) + '_r')
+
+		revs_names = [str(k)+'_r' for k,v in self.rev_map.items() if isinstance(v, (tuple, list)) and v[1] in revs]
 
 		self.non_essential = self.non_essential.astype(str)
 		revs = revs.astype(str)
@@ -170,24 +174,29 @@ class tINIT(ContextSpecificModelReconstructionAlgorithm):
 			temp = np.where(self.non_essential == revs[r])[0]
 			self.non_essential[temp] = revs_names[r]
 
+		## TODO: The blocks below this will need a rework as larger models will use too much memory
 		# non-essential reactions to produce a fake metabolite
-		matrix_to_add = np.delete(np.eye(self.n_reactions_irrev), self.essential_reactions_idx, 0)
-		self.irreversible_S = np.vstack(
+
+		ids_to_keep = np.setdiff1d(np.arange(self.n_reactions_irrev), self.essential_reactions_idx)
+		matrix_to_add = sprs.eye(self.n_reactions_irrev, format='csc')[:, ids_to_keep]
+
+		self.irreversible_S = sprs.vstack(
 			[self.irreversible_S, matrix_to_add])
 
 		# for non-essential, but with a stoichiometry of 1000
-		temp = np.eye(self.n_non_essential_reactions) * 1000
-		new_temp = np.vstack([np.zeros([self.n_metabolites_irrev, self.n_non_essential_reactions]), temp])
-		self.irreversible_S = np.hstack(
+		temp = sprs.eye(self.n_non_essential_reactions, format='csc') * 1000
+		new_temp = sprs.vstack([np.zeros([self.n_metabolites_irrev, self.n_non_essential_reactions]), temp])
+		self.irreversible_S = sprs.hstack(
 			[self.irreversible_S, new_temp])
 
 		if self.production_weight != 0:
-			temp2 = np.vstack(
-				[np.eye(self.n_metabolites_irrev - self.present_metabolites_unlisted.size) * -1,
-				 np.zeros([self.n_non_essential_reactions + self.present_metabolites_unlisted.size,
-						   self.n_metabolites_irrev - self.present_metabolites_unlisted.size])])
+			zmat = sprs.csc_matrix(np.zeros([self.n_non_essential_reactions + self.present_metabolites_unlisted.size,
+					  self.n_metabolites_irrev - self.present_metabolites_unlisted.size]))
+			temp2 = sprs.vstack(
+				[sprs.eye(self.n_metabolites_irrev - self.present_metabolites_unlisted.size, format='csc') * -1,
+				 zmat])
 
-			self.irreversible_S = np.hstack([self.irreversible_S, temp2])
+			self.irreversible_S = sprs.hstack([self.irreversible_S, temp2])
 			self.n_net_production = self.n_metabolites_irrev - self.present_metabolites_unlisted.size
 			self.net_production = np.setdiff1d(list(range(self.n_metabolites_irrev)), self.present_metabolites_unlisted)
 
@@ -197,31 +206,31 @@ class tINIT(ContextSpecificModelReconstructionAlgorithm):
 
 		if self.fwd_idx.size > 0:
 			self.n_rev_bounds = self.fwd_idx.size
-			I = np.eye(self.n_reactions_irrev) * -1
-			temp = np.vstack([I[self.fwd_idx,], I[self.bwd_idx,]])
+			I = sprs.eye(self.n_reactions_irrev) * -1
+			temp = sprs.vstack([I[self.fwd_idx,], I[self.bwd_idx,]])
 			# padding
-			temp = np.hstack([temp, np.zeros([temp.shape[0], self.irreversible_S.shape[1] - self.n_reactions_irrev])])
-			temp = np.hstack([temp, np.eye(self.n_rev_bounds * 2) * 1000])
-			temp = np.vstack([temp, np.hstack(
-				[np.zeros([self.n_rev_bounds, self.irreversible_S.shape[1]]), np.eye(self.n_rev_bounds) * -1,
-				 np.eye(self.n_rev_bounds) * -1])])
-			self.irreversible_S = np.hstack(
-				[self.irreversible_S, np.zeros([self.irreversible_S.shape[0], self.n_rev_bounds * 2])])
-			self.irreversible_S = np.vstack([self.irreversible_S, temp])
+			temp = sprs.hstack([temp, sprs.csc_matrix(np.zeros([temp.shape[0], self.irreversible_S.shape[1] - self.n_reactions_irrev]))])
+			temp = sprs.hstack([temp, sprs.eye(self.n_rev_bounds * 2, format='csc') * 1000])
+			temp = sprs.vstack([temp, sprs.hstack(
+				[sprs.csc_matrix(np.zeros([self.n_rev_bounds, self.irreversible_S.shape[1]])), sprs.eye(self.n_rev_bounds, format='csc') * -1,
+				 sprs.eye(self.n_rev_bounds, format='csc') * -1])])
+			self.irreversible_S = sprs.hstack(
+				[self.irreversible_S, sprs.csc_matrix(np.zeros([self.irreversible_S.shape[0], self.n_rev_bounds * 2]))])
+			self.irreversible_S = sprs.vstack([self.irreversible_S, temp])
 		else:
 			self.n_rev_bounds = 0
 
 	def build_problem(self):
 
 		# Preparation of the problem to be optimized
-		self.problem_blx = np.hstack([self.irreversible_lb, np.zeros(
-			self.n_non_essential_reactions + self.n_net_production + (self.n_rev_bounds * 2))])
+		self.problem_blx = sprs.hstack([self.irreversible_lb, sprs.csc_matrix(np.zeros(
+			self.n_non_essential_reactions + self.n_net_production + (self.n_rev_bounds * 2)))])
 		# TODO check if this in float; if not, we have to change the dtype of problem_blx, otherwise 0.1 will no exist (will be 0)
 		if self.essential_reactions_idx.size > 0:
 			self.problem_blx[self.essential_reactions_idx] = np.array(
 				list(map(lambda x: x if x > 0.1 else 0.1, self.problem_blx[self.essential_reactions_idx])))
 
-		self.problem_bux = np.hstack([self.irreversible_ub, np.ones(
+		self.problem_bux = sprs.hstack([self.irreversible_ub, np.ones(
 			self.n_non_essential_reactions + self.n_net_production + self.n_rev_bounds * 2)])
 
 		self.irreversible_b = np.zeros(self.n_metabolites_irrev)
@@ -269,7 +278,7 @@ class tINIT(ContextSpecificModelReconstructionAlgorithm):
 		rx_names_problem = list(chain(*[[k + str(i) for i in v] for k, v in zip(prefix, len_reactions)]))
 
 		start_index = self.n_metabolites_irrev - self.present_metabolites_unlisted.size
-		problem = GenericLinearSystem(self.problem_a, VAR_CONTINUOUS, self.problem_blx, self.problem_bux,
+		problem = GenericLinearSystem(self.problem_a.toarray(), VAR_CONTINUOUS, self.problem_blx, self.problem_bux,
 									  self.problem_blc, self.problem_buc,
 									  rx_names_problem, self.properties['solver'])
 
