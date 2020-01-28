@@ -19,7 +19,7 @@ class ContinuousScoreIntegrationStrategy(ScoreIntegrationStrategy):
 		self.score_apply = score_apply
 
 	def integrate(self, data_map):
-		return data_map.get_scores() if self.score_apply is None else self.score_apply(data_map)
+		return data_map.get_scores() if self.score_apply is None else self.score_apply(data_map.get_scores())
 
 
 class CustomSelectionIntegrationStrategy(ScoreIntegrationStrategy):
