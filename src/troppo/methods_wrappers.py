@@ -8,7 +8,7 @@ from .methods.imat import IMAT, IMATProperties
 from .methods.corda import CORDA, CORDAProperties
 from .methods.tINIT import tINIT, tINITProperties
 
-from .omics.core import OmicsContainer, OmicsDataMap
+from .omics.core import OmicsContainer
 
 from .omics.integration import ContinuousScoreIntegrationStrategy, CustomSelectionIntegrationStrategy, \
 	ThresholdSelectionIntegrationStrategy
@@ -59,17 +59,20 @@ class ReconstructionWrapper(object):
 		return algo.run()
 
 	def run_from_omics(self, omics_container: OmicsContainer, algorithm, integration_strategy, and_or_funcs=(min, max), **kwargs):
-		def ezinstance(x):
+		def tuple_to_strat(x):
 			return integration_strategy_map[x[0]](x[1])
 
 		ordered_ids = {r:i for i,r in enumerate(self.model_reader.r_ids)}
 		afx, ofx = 	and_or_funcs
-		strat = ezinstance(integration_strategy)
+		strat = tuple_to_strat(integration_strategy)
 		scores = strat.integrate(omics_container.get_integrated_data_map(self.model_reader, afx, ofx))
 		if isinstance(scores, dict):
-			res = {ordered_ids[k]:v for k,v in scores.items()}
+			res = [scores[k] for k in self.model_reader.r_ids]
 		else:
-			res = {ordered_ids[k] for k in scores}
+			if isinstance(scores, (tuple, list)) and len(scores) > 0:
+				res = [[ordered_ids[k] for k in l] for l in scores]
+			else:
+				res = [ordered_ids[k] for k in scores]
 
 		properties = algorithm_instance_map[algorithm].properties_class.from_integrated_scores(res, **kwargs)
 		algorithm_result = self.run(properties)
