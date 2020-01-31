@@ -223,14 +223,14 @@ class tINIT(ContextSpecificModelReconstructionAlgorithm):
 	def build_problem(self):
 
 		# Preparation of the problem to be optimized
-		self.problem_blx = sprs.hstack([self.irreversible_lb, sprs.csc_matrix(np.zeros(
-			self.n_non_essential_reactions + self.n_net_production + (self.n_rev_bounds * 2)))])
+		self.problem_blx = np.hstack([self.irreversible_lb, np.zeros(
+			self.n_non_essential_reactions + self.n_net_production + (self.n_rev_bounds * 2))])
 		# TODO check if this in float; if not, we have to change the dtype of problem_blx, otherwise 0.1 will no exist (will be 0)
 		if self.essential_reactions_idx.size > 0:
 			self.problem_blx[self.essential_reactions_idx] = np.array(
 				list(map(lambda x: x if x > 0.1 else 0.1, self.problem_blx[self.essential_reactions_idx])))
 
-		self.problem_bux = sprs.hstack([self.irreversible_ub, np.ones(
+		self.problem_bux = np.hstack([self.irreversible_ub, np.ones(
 			self.n_non_essential_reactions + self.n_net_production + self.n_rev_bounds * 2)])
 
 		self.irreversible_b = np.zeros(self.n_metabolites_irrev)
