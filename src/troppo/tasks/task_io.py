@@ -2,7 +2,7 @@ import abc
 from io import TextIOBase
 from json import JSONDecoder, JSONEncoder
 import warnings
-from troppo.tasks.task import Task
+from troppo.tasks.core import Task
 
 class TaskIO(object):
 	__metaclass__ = abc.ABCMeta
@@ -40,22 +40,7 @@ class TaskIO(object):
 class JSONTaskIO(TaskIO):
 	def read_from_string(self, string):
 		def sanity_check(json_dict):
-			defaults = {
-				'reaction_dict':{},
-				'outflow_dict':{},
-				'inflow_dict':{},
-				'should_fail':False,
-				'task_name':None,
-				'flux_constraints':{}
-			}
-			types = {
-				'reaction_dict': dict,
-				'outflow_dict': dict,
-				'inflow_dict': dict,
-				'should_fail': bool,
-				'task_name': str,
-				'flux_constraints':dict
-			}
+			types, defaults = Task.__types__, Task.__defaults__
 			for key in defaults:
 				if key not in json_dict.keys():
 					str_msg = ' '.join(['Key',key,'has no value.','Setting default value =',str(defaults[key])])
@@ -79,12 +64,7 @@ class JSONTaskIO(TaskIO):
 	def write_to_string(self, task_arg):
 		## TODO: Make this less hardcoded
 		if isinstance(task_arg, (list,tuple,set)):
-			d = lambda task: {'reaction_dict': task.reaction_dict,
-				 'outflow_dict': task.outflow_dict,
-				 'inflow_dict': task.inflow_dict,
-				 'task_name': task.task_name,
-				 'should_fail': task.should_fail,
-				 'flux_constraints':task.flux_constraints}
+			d = lambda task: {k:getattr(task,k) for k in Task.__types__.keys()}
 			tasks = [d(t) for t in task_arg]
 			return JSONEncoder().encode(tasks)
 		elif isinstance(task_arg, Task):
