@@ -1,8 +1,7 @@
 from cobra.io import read_sbml_model
 
 from cobamp.wrappers import COBRAModelObjectReader
-from troppo.methods.fastcore import FASTcore
-from troppo.reconstruction_properties import FastcoreProperties
+from troppo.methods.fastcore import FASTcore, FastcoreProperties
 import pandas as pd
 from urllib.request import urlretrieve
 

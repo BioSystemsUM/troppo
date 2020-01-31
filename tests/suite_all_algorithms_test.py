@@ -8,9 +8,8 @@ import scipy as sci
 
 # for testing the algorithms
 from cobamp.wrappers import MatFormatReader
-from troppo.methods.tINIT import tINIT
-from troppo.methods.fastcore import FASTcore
-from troppo.reconstruction_properties import FastcoreProperties, tINITProperties
+from troppo.methods.tINIT import tINIT, tINITProperties
+from troppo.methods.fastcore import FASTcore, FastcoreProperties
 from troppo.utilities.statistics import normalize, z_score
 
 
