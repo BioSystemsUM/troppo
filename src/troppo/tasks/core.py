@@ -262,6 +262,16 @@ class Task(object):
 	def mandatory_activity(self, value):
 		self.__mandatory_activity = value
 
+	def id_replace(self, func):
+		for prop, typ in self.__types__.items():
+			prop_data = getattr(self, prop)
+			if isinstance(typ, list):
+				setattr(self,prop,[func(k) for k in prop_data])
+			elif isinstance(typ, dict) and prop != 'annotations':
+				setattr(self,prop,{func(k):v for k,v in prop_data.items()})
+			else:
+				pass
+
 	def get_task_manipulation_cmds(self, model: ConstraintBasedModel):
 		## reaction_dict - add reactions to the model
 
@@ -295,7 +305,15 @@ class Task(object):
 
 		return (conditions_are_met and not self.should_fail)
 
-
+	def __repr__(self):
+		name = "Task '"+self.name
+		desc = ''
+		info = ' ; '.join([k+': '+str(len(getattr(self, k))) for k, t in self.__types__.items() if t in [dict, list]
+						 and len(getattr(self, k)) > 0])
+		fail = "'"+(' expecting failure' if self.should_fail else ' expecting success')+":"
+		if hasattr(self, 'annotations') and 'description' in self.annotations:
+			desc = self.annotations['description']
+		return name+fail+info+' -- '+desc
 
 if __name__ == '__main__':
 	from numpy import array

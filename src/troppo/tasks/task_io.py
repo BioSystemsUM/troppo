@@ -34,7 +34,7 @@ class TaskIO(object):
 
 	@abc.abstractmethod
 	def read_from_string(self, string):
-		return ''
+		return []
 
 
 class JSONTaskIO(TaskIO):
@@ -64,7 +64,7 @@ class JSONTaskIO(TaskIO):
 	def write_to_string(self, task_arg):
 		## TODO: Make this less hardcoded
 		if isinstance(task_arg, (list,tuple,set)):
-			d = lambda task: {k:getattr(task,k) for k in Task.__types__.keys()}
+			d = lambda task: {k:getattr(task,k) for k,dv in Task.__defaults__.items() if getattr(task,k) != dv}
 			tasks = [d(t) for t in task_arg]
 			return JSONEncoder().encode(tasks)
 		elif isinstance(task_arg, Task):
