@@ -58,7 +58,8 @@ class ReconstructionWrapper(object):
 		algo = map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
 		return algo.run()
 
-	def run_from_omics(self, omics_container: OmicsContainer, algorithm, integration_strategy, and_or_funcs=(min, max), **kwargs):
+	def run_from_omics(self, omics_container: OmicsContainer, algorithm, integration_strategy, and_or_funcs=(min, max),
+					   **kwargs):
 		def tuple_to_strat(x):
 			return integration_strategy_map[x[0]](x[1])
 
