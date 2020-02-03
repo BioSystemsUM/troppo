@@ -1,5 +1,7 @@
 from random import randint
+from typing import Iterable, TypeVar
 
+import warnings
 from pathos.multiprocessing import cpu_count
 from cobamp.utilities.parallel import batch_run
 from cobamp.utilities.context import CommandHistory
@@ -12,168 +14,8 @@ INF = float('inf')
 
 from functools import partial
 
-#
-# def disable_task_bounds(model, task_reactions):
-# 	for rx in task_reactions:
-# 		model.set_reaction_bounds(rx, lb=0, ub=0)
-#
-# def enable_task_bounds(model, task_items):
-# 	## TODO: excepção
-# 	for d in task_items:
-# 		for rx, bounds in d.items():
-# 			lb, ub = bounds
-# 			model.set_reaction_bounds(rx, lb=lb, ub=ub)
-#
-# def _init_task_solver(model, task_components, task_fail_status, flux_constraints, task_added_reactions):
-# 	global _model, _task_components, _task_fail_status, _flux_constraints, _task_added_reactions
-# 	_model, _task_components, _task_fail_status, _flux_constraints, _task_added_reactions = \
-# 		model, task_components, task_fail_status, flux_constraints, task_added_reactions
-#
-# def _task_iteration(task_name):
-# 	global _model, _task_components, _task_fail_status, _flux_constraints, _task_added_reactions
-# 	return task_name, evaluate_task(_model, _task_components[task_name], _task_fail_status[task_name],
-# 									_flux_constraints[task_name], _task_added_reactions)
-#
-# def evaluate_task(model, task_items, sfail, flux_constraints, task_reactions):
-# 	enable_task_bounds(model, task_items)
-# 	sol = model.optimize()
-# 	constraint_compliant = evaluate_flux_constraints(flux_constraints, sol.var_values())
-# 	is_optimal, is_infeasible = [sol.status() == x for x in ['optimal', 'infeasible']]
-# 	task_status = (not is_optimal and is_infeasible) if sfail else (is_optimal and not is_infeasible)
-# 	if task_status:
-# 		task_status = (task_status or (not constraint_compliant)) if sfail else (task_status and constraint_compliant)
-# 	disable_task_bounds(model, task_reactions)
-# 	return task_status
-#
-# def evaluate_flux_constraints(flux_constraints, solution):
-# 	for i, v in flux_constraints.items():
-# 		lb,ub = [(INF*sign) if (k == None) else k for k,sign in zip(v,[-1, 1])]
-# 		valid = lb <= solution[i] <= ub
-# 		if not valid:
-# 			return False
-# 	return True
-#
-# def task_pool(model, task_components, task_fail_status, flux_constraints, task_added_reactions):
-# 	threads = MP_THREADS
-# 	task_list = list(task_components.keys())
-# 	res_map = {r: i for i, r in enumerate(task_list)}
-# 	true_threads = min((len(task_list) // 2) + 1, threads)
-# 	it_per_job = len(task_list) // threads
-# 	pool = _ProcessPool(
-# 		processes=true_threads,
-# 		initializer=_init_task_solver,
-# 		initargs=(model, task_components, task_fail_status, flux_constraints, task_added_reactions)
-# 	)
-# 	for i, value in pool.imap_unordered(_task_iteration, task_list,
-# 										chunksize=it_per_job):
-# 		res_map[i] = value
-#
-# 	pool.close()
-# 	pool.join()
-#
-# 	return res_map
-#
-# ## TODO: For now, context will be applied using knockouts. In the future we should actually prune and simplify
-#
-# def apply_context(model, context):
-# 	for i,index in enumerate(model.reaction_names):
-# 		if (index not in context) and (i not in context):
-# 			model.set_reaction_bounds(index, lb=0, ub=0)
-#
-#
-# class TaskEvaluator(object):
-# 	def __init__(self, S, lb, ub, rx_names, met_names, objective_reaction=None, context=None):
-# 		self.model = ConstraintBasedModel(S, list(zip(lb, ub)), reaction_names=rx_names, metabolite_names=met_names)
-# 		if context != None:
-# 			apply_context(self.model, context)
-# 		self.tasks = {}
-# 		self.task_fail_status = {}
-# 		self.__add_reactions = []
-# 		self.flux_constraints = {}
-#
-# 		if objective_reaction:
-# 			self.model.set_objective({objective_reaction: 1}, False)
-# 		else:
-# 			self.model.set_objective({0:1}, False)
-#
-# 	def populate_model(self, task):
-# 		rd, ifd, ofd, flc = task.get_task_components()
-# 		sfail = task.should_fail
-#
-# 		## TODO: excepções para qd um metabolito não existir
-# 		task_equations = {}
-# 		for r_id, tup in rd.items():
-# 			r_mets, bounds = tup
-# 			r_name = '_'.join([task.task_name, r_id])
-# 			self.model.add_reaction(arg=r_mets, bounds=bounds, name=r_name)
-# 			task_equations[r_name] = bounds
-# 			self.__add_reactions.append(r_name)
-#
-# 		task_sinks = {}
-# 		for coef, sinkdict in zip([-1, 1], [ofd, ifd]):
-# 			for m_id, bounds in sinkdict.items():
-# 				r_name = '_'.join([task.task_name, m_id, 'sink'])
-# 				self.model.add_reaction(arg={m_id:coef}, bounds=bounds, name=r_name)
-# 				self.__add_reactions.append(r_name)
-# 				task_sinks[r_name] = bounds
-# 		self.tasks[task.task_name] = (task_equations, task_sinks)
-# 		self.task_fail_status[task.task_name] = sfail
-# 		self.flux_constraints[task.task_name] = flc
-#
-# 	def __run_single_task(self, task):
-# 		return evaluate_task(model=self.model,
-# 							 task_items=self.tasks[task],
-# 							 sfail=self.task_fail_status[task],
-# 							 flux_constraints=self.flux_constraints[task],
-# 							 task_reactions=self.__add_reactions)
-#
-# 	def __task_initializer(self, task):
-# 		if task.task_name not in self.tasks.keys():
-# 			self.populate_model(task)
-#
-# 	def evaluate(self, task_arg):
-# 		if isinstance(task_arg, (list, tuple, set)):
-# 			for task in task_arg:
-# 				if isinstance(task, Task):
-# 					self.__task_initializer(task)
-# 				else:
-# 					raise TypeError('Invalid type object found within the task_arg iterable. Expected Task, found'+str(type(task)))
-# 			if len(task_arg) <= MP_THREADS:
-# 				return {task.task_name:self.__run_single_task(task.task_name) for task in task_arg}
-# 			else:
-# 				return task_pool(self.model, self.tasks, self.task_fail_status, self.flux_constraints, self.__add_reactions)
-#
-# 		elif isinstance(task_arg, Task):
-# 			self.__task_initializer(task_arg)
-# 			return self.__run_single_task(task_arg.task_name)
-# 		else:
-# 			raise TypeError('task_arg expected to be of type Task. Found '+str(type(task_arg))+' instead')
-
-class TaskEvaluator(object):
-	def __init__(self, **kwargs):
-		if 'solver' in kwargs:
-			solver = kwargs['solver']
-		else:
-			solver = None
-
-		if 'model' in kwargs.keys():
-			model_obj = kwargs['model']
-			if isinstance(model_obj, ConstraintBasedModel):
-				self.model = model_obj
-			else:
-				self.model = get_model_reader(model_obj).to_cobamp_cbm(solver)
-		else:
-			if 'lb' in kwargs.keys():
-				S, lb, ub, rxn, mtn = [kwargs[k] for k in ['S','lb','ub','reaction_names','metabolite_names']]
-				bounds = list(zip(lb, ub))
-
-				self.model = ConstraintBasedModel(S, bounds, rxn, mtn, True, solver)
-
-	def evaluate_task(self, task):
-		pass
 
 class Task(object):
-
 	__defaults__ = {
 		'should_fail': False,
 		'reaction_dict': {},
@@ -202,7 +44,7 @@ class Task(object):
 		outflow_dict: ofd = {'m5':(5,5), ...
 
 		'''
-		for k,v in self.__defaults__.items():
+		for k, v in self.__defaults__.items():
 			itype, dval = self.__types__[k], self.__defaults__[k]
 			setattr(self, k, dval if k not in kwargs.keys() else kwargs[k])
 
@@ -266,54 +108,249 @@ class Task(object):
 		for prop, typ in self.__types__.items():
 			prop_data = getattr(self, prop)
 			if isinstance(typ, list):
-				setattr(self,prop,[func(k) for k in prop_data])
+				setattr(self, prop, [func(k) for k in prop_data])
 			elif isinstance(typ, dict) and prop != 'annotations':
-				setattr(self,prop,{func(k):v for k,v in prop_data.items()})
+				setattr(self, prop, {func(k): v for k, v in prop_data.items()})
 			else:
 				pass
 
-	def get_task_manipulation_cmds(self, model: ConstraintBasedModel):
+	def get_add_reaction_args(self, model: ConstraintBasedModel, closed=False):
+
+		## assume list order is arg, bounds. keys contain the name
+		## reaction_dict - add reactions to the model
+
+		reactions = {}
+		command_history = CommandHistory()
+		for k, v in self.reaction_dict.items():
+			reaction_name = '_'.join([self.name, k, 'flow'])
+			if reaction_name not in model.reaction_names:
+				reactions[reaction_name] = [v[0],0 if closed else v[1], reaction_name]
+
+		## flow_dict - add drains to the model
+		for k, v in self.flow_dict.items():
+			sink_name = '_'.join([k, 'flow'])
+			if sink_name not in model.reaction_names:
+				reactions[sink_name] = [{k: 1}, (0,0) if closed else v, sink_name]
+
+		#reaction_names = list(reactions.keys())
+		# arg, bounds = zip(*[reactions[k] for k in reaction_names])
+		#
+		# call_args = {'arg':arg, 'bounds':bounds, 'names': reaction_names}
+		added_rxs = set(self.reaction_dict.keys()) | set(['_'.join([k, 'flow']) for k in self.flow_dict.keys()])
+
+		return reactions, added_rxs
+
+
+	def get_add_reaction_cmds(self, model: ConstraintBasedModel, closed=False):
 		## reaction_dict - add reactions to the model
 
 		command_history = CommandHistory()
-		for k,v in self.reaction_dict.items():
-			reaction_name = '_'.join([self.name,k,'flow'])
-			command_history.queue_command(model.add_reaction, {'arg':v[0], 'bounds':v[1], 'name': reaction_name})
+		for k, v in self.reaction_dict.items():
+			reaction_name = '_'.join([self.name, k, 'flow'])
+			if reaction_name not in model.reaction_names:
+				command_history.queue_command(model.add_reaction, {'arg': 0 if closed else v[0], 'bounds': 0 if closed
+				else v[1], 'name': reaction_name})
 
 		## flow_dict - add drains to the model
-		for k,v in self.flow_dict.items():
-			sink_name = '_'.join([self.name,k,'flow'])
-			command_history.queue_command(model.add_reaction, {'arg':{k: 1}, 'bounds':v, 'name': sink_name})
+		for k, v in self.flow_dict.items():
+			sink_name = '_'.join([k, 'flow'])
+			if sink_name not in model.reaction_names:
+				command_history.queue_command(model.add_reaction, {'arg': {k: 1}, 'bounds': (0,0) if closed else v,
+																   'name': sink_name})
 
-		## constraint_dict - impose additional bounds
-		for k,v in self.flux_constraints.items():
-			command_history.queue_command(model.set_reaction_bounds, {'index':k, 'lb':v[0], 'ub':v[1]})
+		return command_history, set(self.reaction_dict.keys()) | set(['_'.join([k, 'flow']) for k in self.flow_dict.keys()])
 
-		return command_history
+	def get_task_bounds(self):
+		master_dict = {}
+		reac_bounds = {'_'.join([self.name, k, 'flow']): v[1] for k, v in self.reaction_dict.items()}
+		flow_bounds = {'_'.join([k, 'flow']): v for k, v in self.flow_dict.items()}
+		aflx_bounds = {k: (v[0], v[1]) for k, v in self.flux_constraints.items()}
+		for d in [reac_bounds, flow_bounds, aflx_bounds]:
+			master_dict.update(d)
+
+		return master_dict
+
+	## constraint_dict - impose additional bounds
+
+	@property
+	def involved_reactions(self):
+		return set(self.flux_constraints.keys()) | set(self.mandatory_activity)
 
 	def apply_evaluate(self, model: ConstraintBasedModel):
-		with model as task_model:
-			commands = self.get_task_manipulation_cmds(task_model)
-			commands.execute_all(True)
-			task_evaluation = self.evaluate_solution(task_model.optimize())
-		return task_evaluation
+		involved_reactions_in_model = len(self.involved_reactions - set(model.reaction_names)) == 0
+		task_evaluation = False
+		if involved_reactions_in_model:
+			with model as task_model:
+				commands, _ = self.get_add_reaction_cmds(task_model)
+				commands.execute_all(True)
+				for k,v in self.get_task_bounds():
+					lb, ub = v
+					task_model.set_reaction_bounds(k, lb=lb, ub=ub)
+				task_evaluation, expected = self.evaluate_solution(task_model.optimize())
+		return task_evaluation & involved_reactions_in_model, expected
 
 	def evaluate_solution(self, sol: Solution, ftol=1e-6):
 		is_optimal = sol.status() == 'optimal'
-		mandatory_are_valid = sum([abs(sol[k]) > ftol for k in self.mandatory_activity]) == len(self.mandatory_activity)
+		expected_activity = {k: abs(sol[k]) > ftol for k in self.mandatory_activity}
+		mandatory_are_valid = len([k for k,v in expected_activity.items() if v]) == len(self.mandatory_activity)
 		conditions_are_met = (is_optimal and mandatory_are_valid)
-
-		return (conditions_are_met and not self.should_fail)
+		return (conditions_are_met and not self.should_fail), expected_activity
 
 	def __repr__(self):
-		name = "Task '"+self.name
+		name = "Task '" + self.name
 		desc = ''
-		info = ' ; '.join([k+': '+str(len(getattr(self, k))) for k, t in self.__types__.items() if t in [dict, list]
-						 and len(getattr(self, k)) > 0])
-		fail = "'"+(' expecting failure' if self.should_fail else ' expecting success')+":"
+		info = ' ; '.join([k + ': ' + str(len(getattr(self, k))) for k, t in self.__types__.items() if t in [dict, list]
+						   and len(getattr(self, k)) > 0])
+		fail = "'" + (' expecting failure' if self.should_fail else ' expecting success') + ":"
 		if hasattr(self, 'annotations') and 'description' in self.annotations:
 			desc = self.annotations['description']
-		return name+fail+info+' -- '+desc
+		return name + fail + info + ' -- ' + desc
+
+
+class TaskEvaluator(object):
+	def __init__(self, **kwargs):
+		if 'solver' in kwargs:
+			solver = kwargs['solver']
+		else:
+			solver = None
+
+		if 'model' in kwargs.keys():
+			model_obj = kwargs['model']
+			if isinstance(model_obj, ConstraintBasedModel):
+				self.model = model_obj
+			else:
+				self.model = get_model_reader(model_obj).to_cobamp_cbm(solver)
+		else:
+			if 'lb' in kwargs.keys():
+				S, lb, ub, rxn, mtn = [kwargs[k] for k in ['S','lb','ub','reaction_names','metabolite_names']]
+				bounds = list(zip(lb, ub))
+
+				self.model = ConstraintBasedModel(S, bounds, rxn, mtn, True, solver)
+
+		self.__tasks = {}
+		self.__original_bounds = {k:v for k,v in zip(self.model.reaction_names, self.model.bounds)}
+		self.__task_rxs = {}
+		self.__activated_task = None
+
+		if 'tasks' in kwargs:
+			self.tasks = kwargs['tasks']
+		self.history = None
+
+	@property
+	def current_task(self):
+		return self.__activated_task
+
+	@current_task.setter
+	def current_task(self, value):
+		self.__disable_tasks(self.model)
+		if value is not None:
+			self.__enable_task(value, self.model)
+
+	def __enable_task(self, name: str, model: ConstraintBasedModel):
+		bounds = self.__tasks[name].get_task_bounds()
+		for k,v in bounds.items():
+			lb, ub = v
+			model.set_reaction_bounds(k, lb=lb, ub=ub)
+		self.__activated_task = name
+
+	def __disable_tasks(self, model: ConstraintBasedModel):
+		for k,v in self.__original_bounds.items():
+			lb, ub = v
+			model.set_reaction_bounds(k, lb=lb, ub=ub)
+		for k,v in self.__task_rxs.items():
+			model.set_reaction_bounds(k, lb=0, ub=0)
+		self.__activated_task = None
+
+	def __apply(self, func):
+		with self.model as amodel:
+			return func(amodel)
+
+	def evaluate(self, context_function=None) -> [bool, Solution]:
+		if context_function is None:
+			return self.__inner_evaluate(self.model)
+		else:
+			return self.__apply(self.__inner_evaluate(self.model, context_function))
+
+	def __inner_evaluate(self, model, context_function=None, flux_distribution_func=None):
+		if self.__activated_task is not None:
+			task_to_eval = self.__tasks[self.__activated_task]
+
+			if context_function is not None:
+				context_function(model)
+
+			involved_reactions_in_model = len(task_to_eval.involved_reactions - set(model.reaction_names)) == 0
+
+			if flux_distribution_func is not None:
+				sol = flux_distribution_func(model)
+			else:
+				sol = model.optimize()
+
+			evaluation, expected = task_to_eval.evaluate_solution(sol) if involved_reactions_in_model else (False, {})
+
+			if not involved_reactions_in_model:
+				warnings.warn('Task '+task_to_eval.name+' has references to missing reactions and was evaluated as '
+														'False by default')
+
+			return evaluation, sol, expected
+		else:
+			warnings.warn('No task is currently active. A loaded task must be activated prior to evaluation using the '
+						  'current_task setter (.current_task = task_name')
+
+
+	@property
+	def tasks(self) -> Iterable[Task]:
+		return [n for n in self.__tasks.keys()]
+
+	@tasks.setter
+	def tasks(self, value: Iterable[Task]):
+		## TODO: improve task setter with an efficient method for adding reactions at once
+		for tn in self.tasks:
+			self.__remove_task(tn)
+
+		self.__tasks = {k.name: k for k in value}
+
+		# for t in value:
+		# 	self.__populate_task(t)
+		self.__populate_tasks(value)
+
+	def __remove_task(self, task_name):
+		to_remove = []
+		for k,v in self.__task_rxs.items():
+			if task_name in v and len(v) <= 1:
+				to_remove.append(k)
+				v.remove(task_name)
+
+		self.model.remove_reactions(to_remove)
+		self.__task_rxs = {k:v for k,v in self.__task_rxs.items() if len(v) > 0}
+		self.__tasks = {k:v for k,v in self.__tasks.items() if k != task_name}
+
+	def __populate_task(self, task: Task):
+		cmds, rxs = task.get_add_reaction_cmds(self.model, True)
+		involved_reactions_in_model = len(task.involved_reactions - set(self.model.reaction_names)) == 0
+		cmds.execute_all(True)
+		for k in rxs:
+			if k not in self.__task_rxs.keys():
+				self.__task_rxs[k] = [task.name]
+			else:
+				self.__task_rxs[k].append(task.name)
+
+		if not involved_reactions_in_model:
+			warnings.warn('Task object with name '+task.name+' refers to reactions that are not present in the model. '
+															 'This task will be loaded but will never evaluate as True')
+
+	def __populate_tasks(self, tasks: Iterable[Task]):
+		k_names = ['args','bounds','names']
+		add_rx_args = {k:[] for k in k_names}
+		for task in tasks:
+			arg_list, rxs_to_add = task.get_add_reaction_args(self.model, True)
+			for k in rxs_to_add:
+				if k not in self.__task_rxs.keys():
+					self.__task_rxs[k] = [task.name]
+					for kp, vp in zip(k_names,arg_list[k]):
+						add_rx_args[kp].extend([vp])
+				else:
+					self.__task_rxs[k].append(task.name)
+		self.model.add_reactions(**add_rx_args)
 
 if __name__ == '__main__':
 	from numpy import array
@@ -336,13 +373,18 @@ if __name__ == '__main__':
 	b = array([-1]).reshape(1, )
 
 	# tasks = TaskEvaluator(S, lb, ub, rx_names, mt_names)
-
-	task1 = Task(
-		flow_dict={'M4': (-4, -4)},
-		should_fail=True,
-		flux_constraints={'R2': (6, 10)})
-
 	from cobamp.core.models import ConstraintBasedModel
 
 	cbm = ConstraintBasedModel(S, list(zip(lb, ub)), rx_names, mt_names)
-	task1.apply_evaluate(cbm)
+
+	tasks = [Task(
+		flow_dict={'M4': (-4, -4)},
+		should_fail=False,
+		flux_constraints={'R2': (i, 10)},
+		name=str(i)) for i in range(11)]
+
+	tev = TaskEvaluator(model=cbm, tasks=tasks)
+	for task in tev.tasks:
+		tev.current_task = task
+		print(task, tev.evaluate())
+
