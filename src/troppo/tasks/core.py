@@ -220,6 +220,8 @@ class TaskEvaluator(object):
 				self.model = model_obj
 			else:
 				self.model = get_model_reader(model_obj).to_cobamp_cbm(solver)
+		elif 'model_reader' in kwargs.keys():
+			 self.model = kwargs['model_reader'].to_cobamp_cbm(solver)
 		else:
 			if 'lb' in kwargs.keys():
 				S, lb, ub, rxn, mtn = [kwargs[k] for k in ['S','lb','ub','reaction_names','metabolite_names']]
@@ -265,24 +267,29 @@ class TaskEvaluator(object):
 		with self.model as amodel:
 			return func(amodel)
 
-	def evaluate(self, context_function=None) -> [bool, Solution]:
+	def evaluate(self, context_function=None, flux_distribution_func=None) -> [bool, Solution]:
+		def apply_eval(model):
+			return self.__inner_evaluate(model, context_function, flux_distribution_func)
 		if context_function is None:
-			return self.__inner_evaluate(self.model)
+			return apply_eval(self.model)
 		else:
-			return self.__apply(self.__inner_evaluate(self.model, context_function))
+			return self.__apply(apply_eval)
 
-	def __inner_evaluate(self, model, context_function=None, flux_distribution_func=None):
+	def __inner_evaluate(self, model, context_function, flux_distribution_func):
 		if self.__activated_task is not None:
 			task_to_eval = self.__tasks[self.__activated_task]
 
 			if context_function is not None:
 				context_function(model)
 
-			involved_reactions_in_model = len(task_to_eval.involved_reactions - set(model.reaction_names)) == 0
+			involved_reactions = task_to_eval.involved_reactions
+
+			involved_reactions_in_model = len(involved_reactions - set(model.reaction_names)) == 0
 
 			if flux_distribution_func is not None:
 				sol = flux_distribution_func(model)
 			else:
+				self.model.set_objective({k:1 for k in involved_reactions})
 				sol = model.optimize()
 
 			evaluation, expected = task_to_eval.evaluate_solution(sol) if involved_reactions_in_model else (False, {})
