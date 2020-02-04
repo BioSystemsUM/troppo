@@ -1,5 +1,5 @@
 from numpy import array, where, logical_xor
-from troppo.tasks.task import Tasks
+from troppo.tasks.core import TaskEvaluator
 from time import time
 import warnings
 
@@ -34,7 +34,7 @@ class CombinatorialGapfill(object):
 		for i, items in partial_models.items():
 			model_params = {k:v for k,v in self.template.items()}
 			model_params['context'] = [model_params['rx_names'][k] for k in items] if 'rx_names' in model_params else items
-			task_instances[i] = Tasks(**model_params)
+			task_instances[i] = TaskEvaluator(**model_params)
 
 		return task_instances
 

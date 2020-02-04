@@ -295,7 +295,7 @@ class TaskEvaluator(object):
             if flux_distribution_func is not None:
                 sol = flux_distribution_func(model)
             else:
-                self.model.set_objective({k:1 for k in involved_reactions})
+                self.model.set_objective({k:1 for k in involved_reactions if k in self.model.reaction_names})
                 sol = model.optimize()
 
             evaluation, expected = task_to_eval.evaluate_solution(sol) if involved_reactions_in_model else (False, {})
