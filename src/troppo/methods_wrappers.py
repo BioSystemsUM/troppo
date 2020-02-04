@@ -77,7 +77,8 @@ class ReconstructionWrapper(object):
 
 		properties = algorithm_instance_map[algorithm].properties_class.from_integrated_scores(res, **kwargs)
 		algorithm_result = self.run(properties)
-		return [self.model_reader.r_ids[k] for k in algorithm_result]
+		result_names =  [self.model_reader.r_ids[k] for k in algorithm_result]
+		return {k: k in result_names for k in self.model_reader.r_ids}
 
 
 
