@@ -6,7 +6,6 @@ from troppo.methods.base import ContextSpecificModelReconstructionAlgorithm, Pro
 
 # TODO make a generic LPProblem, then update with the necessary information for the LP7 and LP9 - this should improve
 #  the performance of the algorithm
-from troppo.methods_reconstruction import MethodsReconstruction
 
 
 class FastcoreProperties(PropertiesReconstruction):
@@ -17,7 +16,7 @@ class FastcoreProperties(PropertiesReconstruction):
 						 'solver': lambda x: isinstance(x, str)}
 		new_optional = {}
 		super().__init__()
-		self.base_mandatory['method'] = MethodsReconstruction.FASTCORE
+		# self.base_mandatory['method'] = MethodsReconstruction.FASTCORE
 		self.add_new_properties(new_mandatory, new_optional)
 		self['flux_threshold'] = flux_threshold
 		self['core'] = list(core)

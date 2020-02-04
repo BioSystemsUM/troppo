@@ -2,6 +2,8 @@
 from numpy import setdiff1d, intersect1d, array, abs, ones, union1d, diag, where, inf, any, vstack, dot
 from numpy.linalg import norm
 from troppo.utilities.extra_functions_model import ExtraFunctionsModel
+
+from troppo.methods.base import PropertiesReconstruction
 from troppo.methods.reconstruction.fastcore import FASTcore
 
 
@@ -147,3 +149,24 @@ class FastCC(FASTcore):
 			print('Fastcc: the input model is entirely flux consistent')
 
 		return self.A, self.f_S, self.f_lb, self.f_ub, self.V
+
+
+class FastCCProperties(PropertiesReconstruction):
+	def __init__(self, flux_threshold, method, solver):
+		new_mandatory = {
+			'flux_threshold': lambda x: isinstance(x, float),
+			'method': lambda x: isinstance(x, str),
+			'solver': lambda x: isinstance(x, str)
+		}
+		new_optional = {
+
+		}
+		super().__init__()
+
+		self.add_new_properties(new_mandatory, new_optional)
+
+		self['flux_threshold'] = flux_threshold
+		if method in ['original', 'nonconvex']:
+			self['method'] = method
+		else:
+			raise Exception('Methods have to be \'original\' or \'nonconvex\'')

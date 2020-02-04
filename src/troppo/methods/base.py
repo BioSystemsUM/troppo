@@ -2,7 +2,6 @@ import abc
 
 from cobamp.utilities.property_management import PropertyDictionary
 from cobamp.wrappers.external_wrappers import model_readers
-from troppo.methods_reconstruction import MethodsReconstruction
 
 
 class ContextSpecificModelReconstructionAlgorithm(object):
@@ -23,7 +22,7 @@ class ContextSpecificModelReconstructionAlgorithm(object):
 
 class PropertiesReconstruction(PropertyDictionary):
 	def __init__(self):
-		self.base_mandatory = {'solver': str, 'template_model': model_readers, 'method': MethodsReconstruction,
+		self.base_mandatory = {'solver': str, 'template_model': model_readers,
 							   'omics_type': 'omics'}
 		self.base_optional = {'env_conditions': dict, 'flux_threshold': float}
 		super().__init__(self.base_mandatory, self.base_optional)

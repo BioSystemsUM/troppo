@@ -13,7 +13,7 @@ from troppo.methods.base import ContextSpecificModelReconstructionAlgorithm, Pro
 from pathos.multiprocessing import cpu_count
 from pathos.pools import _ProcessPool
 
-from troppo.reconstruction_properties import is_list
+from troppo.utilities.list import is_list
 
 
 def _init_corda_worker(corso_fba, constraint, constrainby, costfx, costbase, ntimes, eps, lb):

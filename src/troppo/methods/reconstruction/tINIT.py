@@ -8,7 +8,8 @@ from cobamp.core.optimization import LinearSystemOptimizer
 
 from cobamp.core.models import make_irreversible_model, make_irreversible_model_raven
 from troppo.methods.base import ContextSpecificModelReconstructionAlgorithm, PropertiesReconstruction
-from troppo.reconstruction_properties import is_list_else_empty, if_none_return_list
+from troppo.utilities.list import is_list_else_empty, if_none_return_list
+
 
 class tINITProperties(PropertiesReconstruction):
 	def __init__(self, reactions_scores, present_metabolites=[], essential_reactions=[], production_weight=0.5,
