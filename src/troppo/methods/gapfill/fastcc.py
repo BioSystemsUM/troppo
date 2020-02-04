@@ -1,9 +1,8 @@
 # import numpy as np
 from numpy import setdiff1d, intersect1d, array, abs, ones, union1d, diag, where, inf, any, vstack, dot
 from numpy.linalg import norm
-from troppo.reconstruction_properties import FastCCProperties
 from troppo.utilities.extra_functions_model import ExtraFunctionsModel
-from troppo.methods.fastcore import FASTcore
+from troppo.methods.reconstruction.fastcore import FASTcore
 
 
 class FastCC(FASTcore):

@@ -2,11 +2,11 @@ import abc
 import numpy as np
 from cobamp.wrappers.external_wrappers import model_readers, AbstractObjectReader
 
-from .methods.fastcore import FASTcore, FastcoreProperties
-from .methods.gimme import GIMME, GIMMEProperties
-from .methods.imat import IMAT, IMATProperties
-from .methods.corda import CORDA, CORDAProperties
-from .methods.tINIT import tINIT, tINITProperties
+from troppo.methods.reconstruction.fastcore import FASTcore, FastcoreProperties
+from troppo.methods.reconstruction.gimme import GIMME, GIMMEProperties
+from troppo.methods.reconstruction.imat import IMAT, IMATProperties
+from troppo.methods.reconstruction.corda import CORDA, CORDAProperties
+from troppo.methods.reconstruction.tINIT import tINIT, tINITProperties
 
 from .omics.core import OmicsContainer
 

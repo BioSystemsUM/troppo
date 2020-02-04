@@ -1,4 +1,4 @@
-from troppo.methods.corda import CORDA, CORDAProperties
+from troppo.methods.reconstruction.corda import CORDA, CORDAProperties
 
 if __name__ == '__main__':
 	import numpy as np

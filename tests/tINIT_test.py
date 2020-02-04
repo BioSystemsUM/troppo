@@ -1,7 +1,7 @@
 if __name__ == '__main__':
 	import numpy as np
 	from numpy import int_
-	from troppo.methods.tINIT import tINIT, tINITProperties
+	from troppo.methods.reconstruction.tINIT import tINIT, tINITProperties
 
 	S = np.array([[1, -1, 0, 0, -1, 0, -1, 0, 0],
 				  [0, 1, -1, 0, 0, 0, 0, 0, 0],

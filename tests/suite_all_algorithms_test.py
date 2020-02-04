@@ -1,20 +1,17 @@
 import cobra
-import framed
 import cobamp
 import pandas as pd
 import numpy as np
-import pickle
 import scipy as sci
 
 # for testing the algorithms
 from cobamp.wrappers import MatFormatReader
-from troppo.methods.tINIT import tINIT, tINITProperties
-from troppo.methods.fastcore import FASTcore, FastcoreProperties
+from troppo.methods.reconstruction.tINIT import tINIT, tINITProperties
+from troppo.methods.reconstruction.fastcore import FASTcore, FastcoreProperties
 from troppo.utilities.statistics import normalize, z_score
 
 
 # other tests
-from itertools import permutations
 
 if __name__ == '__main__':
 	from random import random

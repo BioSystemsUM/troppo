@@ -1,5 +1,5 @@
 import numpy as np
-from troppo.methods.imat import IMAT, IMATProperties
+from troppo.methods.reconstruction.imat import IMAT, IMATProperties
 
 if __name__ == '__main__':
 
