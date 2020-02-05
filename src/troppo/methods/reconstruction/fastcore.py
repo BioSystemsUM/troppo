@@ -7,6 +7,7 @@ from troppo.methods.base import ContextSpecificModelReconstructionAlgorithm, Pro
 # TODO make a generic LPProblem, then update with the necessary information for the LP7 and LP9 - this should improve
 #  the performance of the algorithm
 
+# TODO reformulate LP7/9 into a uniform structure and change bounds/objective functions
 
 class FastcoreProperties(PropertiesReconstruction):
 
