@@ -192,9 +192,14 @@ class Task(object):
     def evaluate_solution(self, sol: Solution, ftol=1e-6):
         is_optimal = sol.status() == 'optimal'
         expected_activity = {k: abs(sol[k]) > ftol for k in self.mandatory_activity}
-        mandatory_are_valid = len([k for k,v in expected_activity.items() if v]) == len(self.mandatory_activity)
-        conditions_are_met = (is_optimal and mandatory_are_valid)
-        return (conditions_are_met and not self.should_fail), expected_activity
+        #mandatory_are_valid = len([k for k,v in expected_activity.items() if v]) == len(self.mandatory_activity)
+
+        if self.should_fail:
+            task_eval = not is_optimal
+        else:
+            task_eval = is_optimal
+
+        return task_eval, expected_activity
 
     def __repr__(self):
         name = "Task '" + self.name
