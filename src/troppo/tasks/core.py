@@ -11,15 +11,17 @@ from cobamp.wrappers.external_wrappers import get_model_reader, AbstractObjectRe
 
 MP_THREADS = cpu_count()
 INF = float('inf')
+DEFAULT_EPS = 1e-6
 
-from functools import partial
+from functools import partial, reduce
 
 
 class Task(object):
     __defaults__ = {
         'should_fail': False,
         'reaction_dict': {},
-        'flow_dict': {},
+        'inflow_dict': {},
+        'outflow_dict': {},
         'flux_constraints': {},
         'mandatory_activity': [],
         'name': 'default_task',
@@ -28,7 +30,8 @@ class Task(object):
 
     __types__ = {
         'reaction_dict': dict,
-        'flow_dict': dict,
+        'inflow_dict': dict,
+        'outflow_dict': dict,
         'should_fail': bool,
         'name': str,
         'flux_constraints': dict,
@@ -73,12 +76,20 @@ class Task(object):
         self.__flux_constraints = value
 
     @property
-    def flow_dict(self):
-        return self.__flow_dict
+    def outflow_dict(self):
+        return self.__outflow_dict
 
-    @flow_dict.setter
-    def flow_dict(self, value):
-        self.__flow_dict = value
+    @outflow_dict.setter
+    def outflow_dict(self, value):
+        self.__outflow_dict = value
+
+    @property
+    def inflow_dict(self):
+        return self.__inflow_dict
+
+    @inflow_dict.setter
+    def inflow_dict(self, value):
+        self.__inflow_dict = value
 
     @property
     def name(self):
@@ -120,23 +131,28 @@ class Task(object):
         ## reaction_dict - add reactions to the model
 
         reactions = {}
-        command_history = CommandHistory()
         for k, v in self.reaction_dict.items():
-            reaction_name = '_'.join([self.name, k, 'flow'])
+            reaction_name = '_'.join([self.name, k, 'task_reaction'])
             if reaction_name not in model.reaction_names:
                 reactions[reaction_name] = [v[0],0 if closed else v[1], reaction_name]
 
         ## flow_dict - add drains to the model
-        for k, v in self.flow_dict.items():
-            sink_name = '_'.join([k, 'flow'])
+        for k, v in self.inflow_dict.items():
+            sink_name = '_'.join([k, 'inflow'])
             if sink_name not in model.reaction_names:
                 reactions[sink_name] = [{k: 1}, (0,0) if closed else v, sink_name]
+
+        for k, v in self.outflow_dict.items():
+            sink_name = '_'.join([k, 'outflow'])
+            if sink_name not in model.reaction_names:
+                reactions[sink_name] = [{k: -1}, (0,0) if closed else v, sink_name]
+
 
         #reaction_names = list(reactions.keys())
         # arg, bounds = zip(*[reactions[k] for k in reaction_names])
         #
         # call_args = {'arg':arg, 'bounds':bounds, 'names': reaction_names}
-        added_rxs = set(self.reaction_dict.keys()) | set(['_'.join([k, 'flow']) for k in self.flow_dict.keys()])
+        added_rxs = set(reactions.keys())
 
         return reactions, added_rxs
 
@@ -145,27 +161,20 @@ class Task(object):
         ## reaction_dict - add reactions to the model
 
         command_history = CommandHistory()
-        for k, v in self.reaction_dict.items():
-            reaction_name = '_'.join([self.name, k, 'flow'])
-            if reaction_name not in model.reaction_names:
-                command_history.queue_command(model.add_reaction, {'arg': 0 if closed else v[0], 'bounds': 0 if closed
-                else v[1], 'name': reaction_name})
+        args, added_rx = self.get_add_reaction_args(model, closed)
+        ordered_rx_names = list(added_rx)
+        arg, bnd = list(zip(*[args[k] for k in ordered_rx_names]))
+        command_history.queue_command(model.add_reactions, {'args': arg, 'bounds': bnd, 'names': ordered_rx_names})
 
-        ## flow_dict - add drains to the model
-        for k, v in self.flow_dict.items():
-            sink_name = '_'.join([k, 'flow'])
-            if sink_name not in model.reaction_names:
-                command_history.queue_command(model.add_reaction, {'arg': {k: 1}, 'bounds': (0,0) if closed else v,
-                                                                   'name': sink_name})
-
-        return command_history, set(self.reaction_dict.keys()) | set(['_'.join([k, 'flow']) for k in self.flow_dict.keys()])
+        return command_history, added_rx
 
     def get_task_bounds(self):
         master_dict = {}
-        reac_bounds = {'_'.join([self.name, k, 'flow']): v[1] for k, v in self.reaction_dict.items()}
-        flow_bounds = {'_'.join([k, 'flow']): v for k, v in self.flow_dict.items()}
+        reac_bounds = {'_'.join([self.name, k, 'task_reaction']): v[1] for k, v in self.reaction_dict.items()}
+        inflow_bounds = {'_'.join([k, 'inflow']): v for k, v in self.inflow_dict.items()}
+        outflow_bounds = {'_'.join([k, 'outflow']): v for k, v in self.outflow_dict.items()}
         aflx_bounds = {k: (v[0], v[1]) for k, v in self.flux_constraints.items()}
-        for d in [reac_bounds, flow_bounds, aflx_bounds]:
+        for d in [reac_bounds, inflow_bounds, outflow_bounds, aflx_bounds]:
             master_dict.update(d)
 
         return master_dict
@@ -300,10 +309,13 @@ class TaskEvaluator(object):
             if flux_distribution_func is not None:
                 sol = flux_distribution_func(model)
             else:
-                self.model.set_objective({k:1 for k in involved_reactions if k in self.model.reaction_names})
+                _, nflows = task_to_eval.get_add_reaction_args(model)
+
+                self.model.set_objective({k:1 for k in nflows})
                 sol = model.optimize()
 
-            evaluation, expected = task_to_eval.evaluate_solution(sol) if involved_reactions_in_model else (False, {})
+            #evaluation, expected = task_to_eval.evaluate_solution(sol) if involved_reactions_in_model else (False, {})
+            evaluation, expected = task_to_eval.evaluate_solution(sol)
 
             if not involved_reactions_in_model:
                 warnings.warn('Task '+task_to_eval.name+' has references to missing reactions and was evaluated as '
