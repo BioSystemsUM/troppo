@@ -1,5 +1,5 @@
 from random import randint
-from typing import Iterable, TypeVar
+from typing import Iterable
 
 import warnings
 from pathos.multiprocessing import cpu_count
@@ -134,7 +134,7 @@ class Task(object):
         for k, v in self.reaction_dict.items():
             reaction_name = '_'.join([self.name, k, 'task_reaction'])
             if reaction_name not in model.reaction_names:
-                reactions[reaction_name] = [v[0],0 if closed else v[1], reaction_name]
+                reactions[reaction_name] = [v[0],(0,0) if closed else v[1], reaction_name]
 
         ## flow_dict - add drains to the model
         for k, v in self.inflow_dict.items():
