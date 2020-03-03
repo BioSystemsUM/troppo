@@ -6,7 +6,7 @@ from numpy import zeros, array, where, nan
 from collections import Counter
 
 class SubEFMGapfill(object):
-	def __init__(self, template_model, subset_forced_reactions, media, iterative=True, max_time=0, max_threads=0,
+	def __init__(self, template_model, task_reactions, subset_forced_reactions, iterative=True, max_time=0, max_threads=0,
 				 big_m=False, big_m_value=1000, solver=None, at_most_n_sols=1, populate_max_size=None):
 		'''
 		:param template_model: dict - must contain {S, lb, ub} and possibly rx_names/met_names
@@ -22,8 +22,8 @@ class SubEFMGapfill(object):
 			self.cb_model = template_model
 
 		self.cb_model.make_irreversible()
+		self.task_reactions = task_reactions
 		self.subset_forced_reactions = subset_forced_reactions
-		self.met_pr, self.met_co, self.met_nc =  [media[k] for k in ['produced','consumed','non_consumed']]
 		self.__iterative = iterative
 		self.__max_time = max_time
 		self.__max_threads = max_threads
@@ -37,8 +37,7 @@ class SubEFMGapfill(object):
 		lbi, ubi = list(zip(*self.cb_model.bounds))
 
 		lsys = IrreversibleLinearSystem(
-			S = Si, lb = array(lbi), ub = array(ubi), non_consumed=self.met_nc, consumed=self.met_co,
-			produced=self.met_pr, solver=solver)
+			S = Si, lb = array(lbi), ub = array(ubi), solver=solver)
 
 		self.enumerator_obj = KShortestEnumerator(
 			linear_system=lsys,
@@ -50,26 +49,43 @@ class SubEFMGapfill(object):
 
 		self.__mask_len = Si.shape[1]
 
-	def gapfill(self, missing_set, initial_set=None):
+	def gapfill(self, missing_set, forced=(), non_forced=()):
 
 
 
 		self.enumerator_obj.reset_enumerator_state()
 		dvmap = self.enumerator_obj.get_model().get_dvar_mapping()
-		if not isinstance(initial_set, type(None)):
-			initial_mask = zeros(self.__mask_len)
-			initial_mask[list(initial_set)] = 1
-			self.enumerator_obj.set_objective_expression(initial_mask)
-			sol = self.enumerator_obj.get_single_solution(cut=False, allow_suboptimal=True)
-			print(len(sol.get_active_indicator_varids()))
-			forced_off = set([i for i in range(self.__mask_len) if i not in sol.get_active_indicator_varids()])
-			forced_off_irrev = forced_off | set([dvmap[i][1] for i in forced_off if isinstance(dvmap[i],tuple)])
-			self.enumerator_obj.set_indicator_activity(forced_off=forced_off_irrev)
 
 		final_subset = missing_set | set(self.subset_forced_reactions)
 		subset_mask = zeros(self.__mask_len)
 		subset_mask[list(final_subset)] = 1
 
+		# forced_on = task reactions
+		# forced_off = non task reactions
+		n_ivars = len(self.enumerator_obj.model.get_dvars())
+
+		non_forced_rxs = set(non_forced)
+		non_forced_rxs |= set([dvmap[i][1] for i in non_forced if isinstance(dvmap[i],(list,tuple))])
+
+		io_rxs = set(forced)
+		io_rxs |= set([dvmap[i][1] for i in io_rxs if isinstance(dvmap[i],(list,tuple))])
+		non_io_rxs = set(self.task_reactions)
+		non_io_rxs |= set([dvmap[i][1] for i in non_io_rxs if isinstance(dvmap[i],(list,tuple))])
+
+		non_io_rxs -= io_rxs
+		io_rxs_mask, non_io_rxs_mask = zeros(n_ivars,), zeros(n_ivars,)
+
+		io_mask_idx = array(list([int(i) for i in (io_rxs - non_forced_rxs)]))
+		non_io_mask_idx = array(list([int(i) for i in (non_io_rxs - non_forced_rxs)]))
+
+		if len(io_mask_idx):
+			io_rxs_mask[io_mask_idx] = 1
+
+		if len(non_io_mask_idx):
+			non_io_rxs_mask[non_io_mask_idx] = 1
+
+
+		self.enumerator_obj.set_indicator_activity(forced_on=io_rxs_mask, forced_off=non_io_rxs_mask)
 		self.enumerator_obj.set_objective_expression(subset_mask)
 
 
@@ -83,7 +99,6 @@ class SubEFMGapfill(object):
 		while has_next and (len(solutions) < self.__at_most_n_sols):
 			try:
 				sol_result = next(enumerator)
-				print(len(sol_result.get_active_indicator_varids()))
 				if isinstance(sol_result, (list,tuple)):
 					solutions.extend(sol_result)
 				else:
