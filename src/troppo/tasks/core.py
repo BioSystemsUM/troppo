@@ -3,7 +3,7 @@ from typing import Iterable
 
 import warnings
 from pathos.multiprocessing import cpu_count
-from cobamp.utilities.parallel import batch_run
+from collections import Counter
 from cobamp.utilities.context import CommandHistory
 from cobamp.core.models import ConstraintBasedModel
 from cobamp.core.optimization import Solution
@@ -13,10 +13,14 @@ MP_THREADS = cpu_count()
 INF = float('inf')
 DEFAULT_EPS = 1e-6
 
+
+
 from functools import partial, reduce
 
 
 class Task(object):
+
+
     __defaults__ = {
         'should_fail': False,
         'reaction_dict': {},
@@ -50,6 +54,63 @@ class Task(object):
         for k, v in self.__defaults__.items():
             itype, dval = self.__types__[k], self.__defaults__[k]
             setattr(self, k, dval if k not in kwargs.keys() else kwargs[k])
+
+    def combine(self, other, add=True):
+        assert isinstance(other, Task), 'Could not apply + operator between types Task and '+str(type(other))
+        assert self.should_fail == other.should_fail, 'Tasks with different failure criteria cannot be added'
+        def bound_dict_add(lst):
+            ndict = {}
+            for dct in lst:
+                for k,d in dct.items():
+                    if k not in ndict.keys():
+                        ndict[k] = d
+                    else:
+                        ndict[k][0] += max((d[0] if add else -d[0]), 0)
+                        ndict[k][1] += max((d[1] if add else -d[0]), 0)
+            return ndict
+        shfail = self.should_fail
+        rx_dict = {k:v for k,v in list(self.reaction_dict.items())+list(other.reaction_dict.items())}
+        flx_dict = bound_dict_add([self.flux_constraints, other.flux_constraints])
+        in_dict = bound_dict_add([self.inflow_dict, other.inflow_dict])
+        out_dict = bound_dict_add([self.outflow_dict, other.outflow_dict])
+        mnd_act = set(self.mandatory_activity) | set(other.mandatory_activity)
+        name = (' minus ' if not add else ' plus ').join([self.name, other.name])
+        annotations = {}
+        if self.name not in self.annotations:
+            annotations[self.name] = self.annotations
+        annotations[other.name] = other.annotations
+
+        return shfail, rx_dict, flx_dict, in_dict, out_dict, mnd_act, name, annotations
+
+    def combine_inplace(self, other, add=True):
+        shfail, rx_dict, flx_dict, in_dict, out_dict, mnd_act, name, annotations = self.combine(other, add)
+        self.should_fail = shfail
+        self.reaction_dict = rx_dict
+        self.flux_constraints = flx_dict
+        self.outflow_dict = out_dict
+        self.inflow_dict = in_dict
+        self.mandatory_activity = mnd_act
+        self.name = name
+        self.annotations = annotations
+
+
+    def __add__(self, other):
+        shfail, rx_dict, flx_dict, in_dict, out_dict, mnd_act, name, annotations = self.combine(other, True)
+        return Task(should_fail=shfail, reaction_dict=rx_dict, flux_constraints=flx_dict, inflow_dict=in_dict,
+                    outflow_dict=out_dict, mandatory_activity=mnd_act, name=name, annotations=annotations)
+
+    def __sub__(self, other):
+        shfail, rx_dict, flx_dict, in_dict, out_dict, mnd_act, name, annotations = self.combine(other, False)
+        return Task(should_fail=shfail, reaction_dict=rx_dict, flux_constraints=flx_dict, inflow_dict=in_dict,
+                    outflow_dict=out_dict, mandatory_activity=mnd_act, name=name, annotations=annotations)
+
+    def __iadd__(self, other):
+        self.combine_inplace(other, True)
+        return self
+
+    def __isub__(self, other):
+        self.combine_inplace(other, False)
+        return self
 
     @property
     def should_fail(self):
