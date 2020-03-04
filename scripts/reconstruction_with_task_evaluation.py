@@ -7,11 +7,10 @@ from cobra.io import write_sbml_model
 from cobra.flux_analysis.variability import find_blocked_reactions
 from cobamp.utilities.parallel import batch_run
 import pandas as pd
-from json import JSONEncoder
+from json import JSONEncoder, JSONDecoder
 
 from numpy import log
 import re
-
 if __name__ == '__main__':
 
 	# helper functions
@@ -70,6 +69,9 @@ if __name__ == '__main__':
 	# the second should be a dictionary with static variables needed to build the model:
 	# - threshold
 	# - reconstruction wrapper
+	def integration_fx(data_map):
+		return [[k for k,v in data_map.get_scores().items() if (v is not None and v > t) or k in ['biomass_reaction']]]
+
 	def reconstruction_func(omics_container, params):
 		t, rw = [params[k] for k in ['t', 'rw']]  # load parameters
 		try:
@@ -78,12 +80,14 @@ if __name__ == '__main__':
 			# for fastcore, a threshold-based integration strategy retrieves core reactions if the score
 			# is above the threshold t
 			return rw.run_from_omics(omics_container=omics_container, algorithm='fastcore',
-									 integration_strategy=('threshold', t), solver='CPLEX')
+									 integration_strategy=('custom', [integration_fx]), solver='CPLEX')
 		except:
 			# the result from run_from_omics is a dict mapping reaction ids and a boolean flag - True if
 			# the reaction is in the model or false otherwise
 			# in case an error arises, assume all reactions are False
 			return {r: False for r in rw.model_reader.r_ids}
+
+
 
 
 	# parallel reconstruction can be achieved with the batch_run function that takes in 4 key arguments:
@@ -100,16 +104,23 @@ if __name__ == '__main__':
 	# write these results as a dataframe for future reference
 	pd.DataFrame.from_dict(fastcore_res_dict, orient='index').to_csv(CS_MODEL_DF_PATH)
 
+	fastcore_res_dict = pd.read_csv(CS_MODEL_DF_PATH, index_col=[0, 1]).T.to_dict()
 	# Task evaluation #
+
+	# read the original model to avoid compatibility issues with the tasks (e.g. missing metabolites from the block)
+	task_model = read_sbml_model(CMODL_PATH)
 
 	# parse tasks from a previously existing JSON
 	# the supplied file contains tasks adapted from the publication of Richelle et. al, 2019
-	task_list = JSONTaskIO().read_task(TASKS_PATH)
+	task_list = [t for t in JSONTaskIO().read_task(TASKS_PATH)
+	             if len((set(t.inflow_dict) | set(t.outflow_dict)) - set([m.id for m in task_model.metabolites])) == 0]
+	for task in task_list:
+		task.inflow_dict = {k:v if k not in task.outflow_dict.keys() else [-1000, 1000] for k,v in task.inflow_dict.items()}
+		task.outflow_dict = {k:v for k,v in task.outflow_dict.items() if k not in task.inflow_dict.items()}
+	for task in task_list:
+		task.mandatory_activity = []
 
-	# read the original model to avoid compatibility issues with the tasks (e.g. missing metabolites from the block)
-	task_model = read_sbml_model(MODEL_PATH)
-
-	# tasks should be evaluated without open boundary reactions. we can easily close them on the COBRA model
+	# tasks should be evaluated without open boundary reactions. We can easily close them on the COBRA model
 	for k in task_model.boundary:
 		k.knock_out()
 
@@ -146,9 +157,12 @@ if __name__ == '__main__':
 
 		# keep only items 0 and 2 of the task result - we don't need the flux distribution
 		task_csm_res = {k: (v[0], v[2]) for k, v in dict(zip(task_names, batch_res_tasks)).items()}
+		print(k,len(protected),len([v for k,v in task_csm_res.items() if v[0]]),'tasks completed.')
 		# assign this dictionary to it's sample on the master results dictionary
 		task_eval_results[k] = task_csm_res
 
+
 	# save these results for later analysis as a JSON file
 	with open(TASK_RESULTS_PATH, 'w') as f:
-		f.write(JSONEncoder().encode(task_eval_results))
+		f.write(JSONEncoder().encode([(k,v) for k,v in task_eval_results.items()]))
+
