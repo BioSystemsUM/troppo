@@ -4,16 +4,16 @@
  generic_reader
  
 """
-from pandas import read_csv
+from pandas import read_csv, DataFrame
 
 from ..core import OmicsContainer
 
 
 class TabularReader(object):
-    def __init__(self, path, index_col=0, sample_in_rows=True, header_offset=0, cache_df=False, ignore_samples=None,
+    def __init__(self, path_or_df, index_col=0, sample_in_rows=True, header_offset=0, cache_df=False, ignore_samples=None,
                  omics_type='transcriptomics', nomenclature=None, dsapply=None, **kwargs):
         self.path, self.index_col, self.sample_axis, self.header_offset = \
-            path, index_col, sample_in_rows, header_offset
+            path_or_df, index_col, sample_in_rows, header_offset
         self.pandas_args = kwargs
         self.dsapply = dsapply
         self.dfcache = None
@@ -24,7 +24,10 @@ class TabularReader(object):
 
     def __iter__(self):
         if self.dfcache is None:
-            df = read_csv(self.path, index_col=self.index_col, **self.pandas_args)
+            if isinstance(self.path, DataFrame):
+                df = self.path
+            else:
+                df = read_csv(self.path, index_col=self.index_col, **self.pandas_args)
             self.dfcache = df
         elif self.cache_df:
             df = self.dfcache
