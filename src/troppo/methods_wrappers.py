@@ -7,6 +7,7 @@ from troppo.methods.reconstruction.gimme import GIMME, GIMMEProperties
 from troppo.methods.reconstruction.imat import IMAT, IMATProperties
 from troppo.methods.reconstruction.corda import CORDA, CORDAProperties
 from troppo.methods.reconstruction.tINIT import tINIT, tINITProperties
+from troppo.methods.reconstruction.swiftcore import SWIFTCORE, SwiftcoreProperties
 
 from .omics.core import OmicsContainer
 
@@ -18,7 +19,8 @@ map_properties_algorithms = {
 	GIMMEProperties : GIMME,
 	IMATProperties : IMAT,
 	tINITProperties : tINIT,
-	CORDAProperties : CORDA
+	CORDAProperties : CORDA,
+	SwiftcoreProperties: SWIFTCORE
 }
 
 algorithm_instance_map = {
@@ -26,7 +28,8 @@ algorithm_instance_map = {
 	'gimme': GIMME,
 	'imat': IMAT,
 	'tinit': tINIT,
-	'corda': CORDA
+	'corda': CORDA,
+	'swiftcore': SWIFTCORE
 }
 
 integration_strategy_map = {
@@ -79,10 +82,3 @@ class ReconstructionWrapper(object):
 		algorithm_result = self.run(properties)
 		result_names =  [self.model_reader.r_ids[k] for k in algorithm_result]
 		return {k: k in result_names for k in self.model_reader.r_ids}
-
-
-
-
-
-
-
