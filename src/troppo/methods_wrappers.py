@@ -68,7 +68,8 @@ class ReconstructionWrapper(object):
 
 		ordered_ids = {r:i for i,r in enumerate(self.model_reader.r_ids)}
 		afx, ofx = 	and_or_funcs
-		strat = tuple_to_strat(integration_strategy)
+		strat = tuple_to_strat(integration_strategy) \
+			if isinstance(integration_strategy, (list, tuple)) else integration_strategy
 		scores = strat.integrate(omics_container.get_integrated_data_map(self.model_reader, afx, ofx))
 		if isinstance(scores, dict):
 			res = [scores[k] for k in self.model_reader.r_ids]
