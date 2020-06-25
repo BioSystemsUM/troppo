@@ -468,6 +468,20 @@ if __name__ == '__main__':
 
     cbm = ConstraintBasedModel(S, list(zip(lb, ub)), rx_names, mt_names)
 
+    from troppo.tasks.core import Task
+
+    task = Task(
+        should_fail=False,
+        inflow_dict={'glucose':[0, 5]},
+        outflow_dict={'etanol':[3,5]},
+        # 'm1 => 2 m2'
+        reaction_dict={'r1':
+                           ({'m1':-1, 'm2':2}, (0, 1000))}
+    )
+
+    from troppo.tasks.task_io import JSONTaskIO
+
+    print(JSONTaskIO().write_to_string([task, task]))
     tasks = [Task(
         flow_dict={'M4': (-4, -4)},
         should_fail=False,

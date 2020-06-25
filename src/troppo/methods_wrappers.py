@@ -9,6 +9,9 @@ from troppo.methods.reconstruction.corda import CORDA, CORDAProperties
 from troppo.methods.reconstruction.tINIT import tINIT, tINITProperties
 from troppo.methods.reconstruction.swiftcore import SWIFTCORE, SwiftcoreProperties
 
+from .methods.base import GapfillAlgorithm
+from .methods.gapfill.efm import EFMGapfill, EFMGapfillProperties
+
 from .omics.core import OmicsContainer
 
 from .omics.integration import ContinuousScoreIntegrationStrategy, CustomSelectionIntegrationStrategy, \
@@ -38,10 +41,15 @@ integration_strategy_map = {
 	'threshold': ThresholdSelectionIntegrationStrategy
 }
 
+gapfill_algorithm_map = {
+	'efm': EFMGapfill
+}
+gapfill_properties_map = {
+	EFMGapfillProperties: EFMGapfill
+}
 
-class ReconstructionWrapper(object):
+class ModelBasedWrapper(object):
 	__metaclass__ = abc.ABCMeta
-
 	def __init__(self, model, **kwargs):
 		self.__model = model
 		if model.__module__ in model_readers.keys():
@@ -54,9 +62,32 @@ class ReconstructionWrapper(object):
 					list(model_readers.keys())))
 		self.S = self.model_reader.get_stoichiometric_matrix()
 		self.lb, self.ub  = [np.array(bounds) for bounds in self.model_reader.get_model_bounds(False, True)]
-		# ...
-		pass
 
+		# ...
+class GapfillWrapper(ModelBasedWrapper):
+	def run(self, avbl_fluxes, algorithm, ls_override=None, **kwargs):
+		if ls_override is None:
+			ls_override = {}
+
+		rx_map, mt_map = [{v:k for k,v in dict(enumerate(l)).items()} for l in
+		          [self.model_reader.r_ids, self.model_reader.m_ids]]
+
+		algo_class = gapfill_algorithm_map[algorithm]
+		algo_props = algo_class.properties_class
+
+		prop_kwargs = {'avbl_fluxes': avbl_fluxes, 'lsystem_args': ls_override}
+		prop_kwargs.update(**kwargs)
+
+		decoders = algo_props.decoder_functions
+		prop_kwargs = {k: decoders[k](v, rx_map, mt_map) if k in decoders.keys() else v for k,v in prop_kwargs.items()}
+		algo_props_inst = algo_props(**prop_kwargs)
+
+		algo_inst: GapfillAlgorithm = algo_class(self.S, self.lb, self.ub, algo_props_inst)
+		res = algo_inst.run()
+		return [[self.model_reader.r_ids[k] for k in s] for s in res]
+
+
+class ReconstructionWrapper(ModelBasedWrapper):
 	def run(self, properties):
 		algo = map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
 		return algo.run()
