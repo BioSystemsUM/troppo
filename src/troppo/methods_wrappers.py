@@ -82,7 +82,7 @@ class GapfillWrapper(ModelBasedWrapper):
 		prop_kwargs = {k: decoders[k](v, rx_map, mt_map) if k in decoders.keys() else v for k,v in prop_kwargs.items()}
 		algo_props_inst = algo_props(**prop_kwargs)
 
-		algo_inst: GapfillAlgorithm = algo_class(self.S, self.lb, self.ub, algo_props_inst)
+		algo_inst = algo_class(self.S, self.lb, self.ub, algo_props_inst)
 		res = algo_inst.run()
 		return [[self.model_reader.r_ids[k] for k in s] for s in res]
 
