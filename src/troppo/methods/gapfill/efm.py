@@ -129,5 +129,5 @@ if __name__ == '__main__':
             for r in sol: m.set_reaction_bounds(r, lb=0, ub=0)
             sol_before = m.optimize({BIOMASS_DRAIN_NAME: 1})
 
-        if not (sol_after.objective_value() > 0 or sol_after.status() == 'infeasible'):
+        if (not sol_after.objective_value() > 0) or sol_after.status() == 'infeasible':
             failed.append((kos, sol, sol_before, sol_after, sol))
