@@ -1,5 +1,6 @@
 import abc
 import numpy as np
+from typing import Union
 from cobamp.wrappers.external_wrappers import model_readers, AbstractObjectReader
 
 from troppo.methods.reconstruction.fastcore import FASTcore, FastcoreProperties
@@ -92,8 +93,8 @@ class ReconstructionWrapper(ModelBasedWrapper):
 		algo = map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
 		return algo.run()
 
-	def run_from_omics(self, omics_container: OmicsContainer, algorithm, integration_strategy, and_or_funcs=(min, max),
-					   **kwargs):
+	def run_from_omics(self, omics_data: Union[dict,list,tuple,OmicsContainer], algorithm, integration_strategy,
+	                   and_or_funcs=(min, max), **kwargs):
 		def tuple_to_strat(x):
 			return integration_strategy_map[x[0]](x[1])
 
@@ -101,7 +102,13 @@ class ReconstructionWrapper(ModelBasedWrapper):
 		afx, ofx = 	and_or_funcs
 		strat = tuple_to_strat(integration_strategy) \
 			if isinstance(integration_strategy, (list, tuple)) else integration_strategy
-		scores = strat.integrate(omics_container.get_integrated_data_map(self.model_reader, afx, ofx))
+		if isinstance(omics_data, OmicsContainer):
+			scores = strat.integrate(omics_data.get_integrated_data_map(self.model_reader, afx, ofx))
+		elif isinstance(omics_data, (dict, list, tuple)):
+			scores = omics_data
+		else:
+			raise TypeError('omics_data must be an OmicsContainer instance, a dict[str,Number] or an tuple/list with'+\
+			                'reactions')
 		if isinstance(scores, dict):
 			res = [scores[k] for k in self.model_reader.r_ids]
 		else:
