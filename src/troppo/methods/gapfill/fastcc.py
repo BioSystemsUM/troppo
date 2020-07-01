@@ -1,7 +1,7 @@
 # import numpy as np
 from numpy import setdiff1d, intersect1d, array, abs, ones, union1d, diag, where, inf, any, vstack, dot
 from numpy.linalg import norm
-from troppo.utilities.extra_functions_model import ExtraFunctionsModel
+# from troppo.utilities.extra_functions_model import ExtraFunctionsModel
 
 from troppo.methods.base import PropertiesReconstruction
 from troppo.methods.reconstruction.fastcore import FASTcore
@@ -21,7 +21,7 @@ class FastCC(FASTcore):
 		self.incI, self.irrev_reverse = None, None
 
 	def prepocessing(self):
-		extra = ExtraFunctionsModel()
+		# extra = ExtraFunctionsModel()
 		self.irrev_reverse = where(self.ub <= 0)[0]
 		print(self.irrev_reverse)
 		self.reverse_irreversible_reactions_in_reverse_direction(self.irrev_reverse)
@@ -61,8 +61,8 @@ class FastCC(FASTcore):
 		singleton = False
 		JiRev = array([])
 		orientation = ones(self.o_S.shape[1]).T
-		self.generate_base_LPproblem()
-		self.generate_LP3_problem()
+		# self.generate_base_LPproblem()
+		# self.generate_LP3_problem()
 		while self.J.size != 0:
 			if self.method == 'original':
 				if singleton:
@@ -103,7 +103,7 @@ class FastCC(FASTcore):
 					self.V = vstack([self.V, array(list(self.v.values()))])
 				print(str(self.A.size) + ' Flux consistent reactions')
 
-			# second part -if the set of reactions in V with absolute value less than epsilon has
+			# second part - if the set of reactions in V with absolute value less than epsilon has
 			# no reactions in common with the set of reactions in V with absolute value
 			# greater than epsilon, then flip the sign of the reactions with absolute
 			# value less than epsilon because perhaps they are flux consistent in
@@ -123,8 +123,9 @@ class FastCC(FASTcore):
 						print(str(self.reactions[Ji]) + ' flux is inconsistent')
 					else:
 						singleton = True
+						self.generate_LP3_problem()
 				else:
-					self.reverse_irreversible_reactions_in_reverse_direction_LP3problem(JiRev)
+					self.reverse_irreversible_reactions_in_reverse_direction(JiRev)
 					flipped = True
 					orientation[JiRev] = dot(orientation[JiRev], -1)
 					print(str(JiRev.size) + ' reversible reactions flipped')
@@ -136,19 +137,23 @@ class FastCC(FASTcore):
 		self.V = dot(diag(flippedReverseOrientation), self.V.T)
 
 		if norm(dot(self.o_S, self.V), inf) > (self.epsilon / 100):
-			print(str((self.epsilon / 100)) + ' = epsilon=100')
+			print(str((self.epsilon / 100)) + ' = epsilon/100')
 			print(str(norm(dot(self.s_S, self.V), inf)) + ' = ||S*V||.')
 			print('Flux consistency numerically challenged')
 			return self.A, self.f_S, self.f_lb, self.f_ub, self.V
 		else:
 			print('Flux consistency check finished')
-			print((sum(any(
-				abs(self.V)) >= 0.99 * self.epsilon)) + ' = Number of flux consistent columns')  # this should fuck up here
-			print((norm(dot(self.o_S, self.V)), inf) + ' ||S*V||')
+			# print((sum(any(
+			# 	abs(self.V)) >= 0.99 * self.epsilon)) + ' = Number of flux consistent columns')  # this should fuck up here
+			# print((norm(dot(self.o_S, self.V)), inf) + ' ||S*V||')
 		if self.A.size == self.n_reactions:
 			print('Fastcc: the input model is entirely flux consistent')
 
 		return self.A, self.f_S, self.f_lb, self.f_ub, self.V
+
+	def run(self):
+		self.prepocessing()
+		return self.fastcc()
 
 
 class FastCCProperties(PropertiesReconstruction):
