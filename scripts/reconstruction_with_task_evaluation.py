@@ -2,7 +2,7 @@ from troppo.omics.readers.generic import TabularReader
 from troppo.methods_wrappers import ReconstructionWrapper
 from troppo.tasks.core import TaskEvaluator
 from troppo.tasks.task_io import JSONTaskIO
-from cobra.io import read_sbml_model
+from cobra.io import read_sbml_model, load_matlab_model
 from cobra.io import write_sbml_model
 from cobra.flux_analysis.variability import find_blocked_reactions
 from cobamp.utilities.parallel import batch_run
@@ -32,6 +32,7 @@ if __name__ == '__main__':
 	CS_MODEL_DF_PATH = os.path.join(ROOT_FOLDER, 'results',
 									'r3d_compact_ccle_bc_fastcore.csv')  # context-specific models extracted from algos
 
+	mdl = load_matlab_model(os.path.join(ROOT_FOLDER, 'Recon3DModel_301.mat'))
 	# Context-specific model reconstruction #
 
 	# model preprocessing only if the model isn't loaded already
@@ -79,8 +80,8 @@ if __name__ == '__main__':
 			# algorithm string, integration strategy (how the core is determined) and a solver
 			# for fastcore, a threshold-based integration strategy retrieves core reactions if the score
 			# is above the threshold t
-			return rw.run_from_omics(omics_container=omics_container, algorithm='fastcore',
-									 integration_strategy=('custom', [integration_fx]), solver='CPLEX')
+			return rw.run_from_omics(omics_data=omics_container, algorithm='fastcore',
+                                     integration_strategy=('custom', [integration_fx]), solver='CPLEX')
 		except:
 			# the result from run_from_omics is a dict mapping reaction ids and a boolean flag - True if
 			# the reaction is in the model or false otherwise

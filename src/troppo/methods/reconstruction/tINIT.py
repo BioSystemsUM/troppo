@@ -285,9 +285,9 @@ class tINIT(ContextSpecificModelReconstructionAlgorithm):
 
 		## TODO: Remove this later
 		if self.properties['solver'] == 'CPLEX':
-			problem.model.problem.parameters.mip.tolerances.mipgap.set(1e-9)
+			problem.model.problem.parameters.mip.tolerances.mipgap.set(1e-3)
 		elif self.properties['solver'] == 'GUROBI':
-			problem.model.problem.Params.MIPGap = 1e-9
+			problem.model.problem.Params.MIPGap = 1e-3
 
 		problem.model.configuration.tolerances.feasibility = 1e-8
 		problem.model.configuration.tolerances.optimality = 1e-8
