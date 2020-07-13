@@ -1,1 +1,2 @@
-from . import methods,omics,readers
+from . import methods,omics,utilities,tasks
+from .omics import readers

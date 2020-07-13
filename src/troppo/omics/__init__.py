@@ -5,4 +5,4 @@
  
 """
 
-from . import id_converter,omics_container,omics_data_map
+from . import core,id_converter

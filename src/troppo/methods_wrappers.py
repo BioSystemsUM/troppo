@@ -1,31 +1,60 @@
 import abc
 import numpy as np
+from typing import Union
 from cobamp.wrappers.external_wrappers import model_readers, AbstractObjectReader
 
-from .methods.fastcore import FASTcore
-from .methods.gimme import GIMME
-from .methods.imat import IMAT
-from .methods.corda import CORDA
-from .methods.tINIT import tINIT
+from troppo.methods.reconstruction.fastcore import FASTcore, FastcoreProperties
+from troppo.methods.reconstruction.gimme import GIMME, GIMMEProperties
+from troppo.methods.reconstruction.imat import IMAT, IMATProperties
+from troppo.methods.reconstruction.corda import CORDA, CORDAProperties
+from troppo.methods.reconstruction.tINIT import tINIT, tINITProperties
+from troppo.methods.reconstruction.swiftcore import SWIFTCORE, SwiftcoreProperties
 
-from .reconstruction_properties import FastcoreProperties, GIMMEProperties, IMATProperties, tINITProperties, \
-	CORDAProperties
+from .methods.base import GapfillAlgorithm
+from .methods.gapfill.efm import EFMGapfill, EFMGapfillProperties
+
+from .omics.core import OmicsContainer
+
+from .omics.integration import ContinuousScoreIntegrationStrategy, CustomSelectionIntegrationStrategy, \
+	ThresholdSelectionIntegrationStrategy
 
 map_properties_algorithms = {
 	FastcoreProperties : FASTcore,
 	GIMMEProperties : GIMME,
 	IMATProperties : IMAT,
 	tINITProperties : tINIT,
-	CORDAProperties : CORDA
+	CORDAProperties : CORDA,
+	SwiftcoreProperties: SWIFTCORE
 }
 
-class ReconstructionWrapper(object):
-	__metaclass__ = abc.ABCMeta
+algorithm_instance_map = {
+	'fastcore': FASTcore,
+	'gimme': GIMME,
+	'imat': IMAT,
+	'tinit': tINIT,
+	'corda': CORDA,
+	'swiftcore': SWIFTCORE
+}
 
-	def __init__(self, model):
+integration_strategy_map = {
+	'continuous': ContinuousScoreIntegrationStrategy,
+	'custom': CustomSelectionIntegrationStrategy,
+	'threshold': ThresholdSelectionIntegrationStrategy
+}
+
+gapfill_algorithm_map = {
+	'efm': EFMGapfill
+}
+gapfill_properties_map = {
+	EFMGapfillProperties: EFMGapfill
+}
+
+class ModelBasedWrapper(object):
+	__metaclass__ = abc.ABCMeta
+	def __init__(self, model, **kwargs):
 		self.__model = model
 		if model.__module__ in model_readers.keys():
-			self.model_reader = model_readers[model.__module__](model)
+			self.model_reader = model_readers[model.__module__](model, **kwargs)
 		elif isinstance(model, AbstractObjectReader):
 			self.model_reader = model
 		else:
@@ -34,28 +63,61 @@ class ReconstructionWrapper(object):
 					list(model_readers.keys())))
 		self.S = self.model_reader.get_stoichiometric_matrix()
 		self.lb, self.ub  = [np.array(bounds) for bounds in self.model_reader.get_model_bounds(False, True)]
-		# ...
-		pass
 
+		# ...
+class GapfillWrapper(ModelBasedWrapper):
+	def run(self, avbl_fluxes, algorithm, ls_override=None, **kwargs):
+		if ls_override is None:
+			ls_override = {}
+
+		rx_map, mt_map = [{v:k for k,v in dict(enumerate(l)).items()} for l in
+		          [self.model_reader.r_ids, self.model_reader.m_ids]]
+
+		algo_class = gapfill_algorithm_map[algorithm]
+		algo_props = algo_class.properties_class
+
+		prop_kwargs = {'avbl_fluxes': avbl_fluxes, 'lsystem_args': ls_override}
+		prop_kwargs.update(**kwargs)
+
+		decoders = algo_props.decoder_functions
+		prop_kwargs = {k: decoders[k](v, rx_map, mt_map) if k in decoders.keys() else v for k,v in prop_kwargs.items()}
+		algo_props_inst = algo_props(**prop_kwargs)
+
+		algo_inst = algo_class(self.S, self.lb, self.ub, algo_props_inst)
+		res = algo_inst.run()
+		return [[self.model_reader.r_ids[k] for k in s] for s in res]
+
+
+class ReconstructionWrapper(ModelBasedWrapper):
 	def run(self, properties):
-		# if properties['core']:
-		# 	properties.add_new_properties({'core_idx': lambda x: isinstance(x, list) and len(x) > 0})
-		# 	properties['core_idx'] = np.array([self.model_reader.reaction_id_to_index(reaction) for reaction in properties['core']])
 		algo = map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
 		return algo.run()
-		# else:
-		# 	map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
 
+	def run_from_omics(self, omics_data: Union[dict,list,tuple,OmicsContainer], algorithm, integration_strategy,
+	                   and_or_funcs=(min, max), **kwargs):
+		def tuple_to_strat(x):
+			return integration_strategy_map[x[0]](x[1])
 
-# class FASTcoreWrapper(ReconstructionWrapper):
-#
-# 	def __init__(self, model, properties):
-# 		super.__init__(model)
-# 		if isinstance(properties, FastcoreProperties):
-# 			self.properties = properties
-# 		else:
-# 			raise Exception('The properties are not from the FASTcore algorithm')
-#
-# 	def run(self, proper):
-# 		algorithm = FASTcore(self.S, self.lb, self.ub, self.properties)
-# 		return [for r in algorithm]
+		ordered_ids = {r:i for i,r in enumerate(self.model_reader.r_ids)}
+		afx, ofx = 	and_or_funcs
+		strat = tuple_to_strat(integration_strategy) \
+			if isinstance(integration_strategy, (list, tuple)) else integration_strategy
+		if isinstance(omics_data, OmicsContainer):
+			scores = strat.integrate(omics_data.get_integrated_data_map(self.model_reader, afx, ofx))
+		elif isinstance(omics_data, (dict, list, tuple)):
+			scores = omics_data
+		else:
+			raise TypeError('omics_data must be an OmicsContainer instance, a dict[str,Number] or an tuple/list with'+\
+			                'reactions')
+		if isinstance(scores, dict):
+			res = [scores[k] for k in self.model_reader.r_ids]
+		else:
+			if isinstance(scores, (tuple, list)) and len(scores) > 0:
+				res = [[ordered_ids[k] for k in l] for l in scores]
+			else:
+				res = [ordered_ids[k] for k in scores]
+
+		properties = algorithm_instance_map[algorithm].properties_class.from_integrated_scores(res, **kwargs)
+		algorithm_result = self.run(properties)
+		result_names =  [self.model_reader.r_ids[k] for k in algorithm_result]
+		return {k: k in result_names for k in self.model_reader.r_ids}
