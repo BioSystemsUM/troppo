@@ -11,10 +11,10 @@ class Nathan2019ConsensusPaper():
 	'''
 
 	def __init__(self):
-		self.root_path = './data/Nathan2019ConsensusPaper/'
+		self.root_path = 'projects/breast_mcf7/data/nl_consensus/'
 
 	def load_medium_constraints(self):
-		original = pd.read_excel(self.root_path + 'pcbi.1006867.s003.xlsx')
+		original = pd.read_excel(self.root_path + 'pcbi.1006867.s003.xlsx', index_col=0)
 		cell_lines = [col for col in original.columns if 'Unnamed' not in col]
 		gen_names = lambda x: (str(x) + '_LB', str(x) + '_UB')
 		new_cols = [bound for pair in [gen_names(cell) for cell in cell_lines] for bound in pair]
