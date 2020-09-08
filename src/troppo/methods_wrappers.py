@@ -75,16 +75,21 @@ class GapfillWrapper(ModelBasedWrapper):
 
 		algo_class = gapfill_algorithm_map[algorithm]
 		algo_props = algo_class.properties_class
-
 		prop_kwargs = {'avbl_fluxes': avbl_fluxes, 'lsystem_args': ls_override}
 		prop_kwargs.update(**kwargs)
 
 		decoders = algo_props.decoder_functions
-		prop_kwargs = {k: decoders[k](v, rx_map, mt_map) if k in decoders.keys() else v for k,v in prop_kwargs.items()}
+		prop_kwargs = {k: decoders[k](v, rx_map, mt_map) if k in decoders.keys() else v
+		               for k, v in prop_kwargs.items()}
 		algo_props_inst = algo_props(**prop_kwargs)
 
 		algo_inst = algo_class(self.S, self.lb, self.ub, algo_props_inst)
+		# if isinstance(avbl_fluxes[0], (str,int)):
 		res = algo_inst.run()
+		# else:
+		# 	avbl_flux_list = [decoders['avbl_fluxes'](v, rx_map, mt_map) for v in avbl_fluxes]
+		# 	res = algo_inst.batch_run(avbl_flux_list)
+
 		return [[self.model_reader.r_ids[k] for k in s] for s in res]
 
 

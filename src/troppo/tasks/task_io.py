@@ -85,7 +85,7 @@ class ExcelTaskIO(TaskIO):
 		flx_const = [('CHANGED ' + x).strip() for x in ['RXN'] + bounds]
 
 		core_info = shd_fail + inflows + outflows + eqs + flx_const
-		tdf = pd.read_excel((string))
+		tdf = pd.read_excel(string, engine='xlrd')
 		valid_tdf = tdf.loc[tdf.iloc[:, 0] != '#', :].iloc[:, 1:]
 
 		# create unique ids

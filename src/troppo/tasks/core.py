@@ -350,7 +350,7 @@ class TaskEvaluator(object):
         else:
             return self.__apply(apply_eval)
 
-    def batch_evaluate(self, bound_changes, threads=MP_THREADS):
+    def batch_evaluate(self, bound_changes, threads=MP_THREADS,output_sol=False, mp_batch_size=5000):
         self.current_task = None
         cobamp_model = self.model
         task_bounds = {k:v.get_task_bounds() for k,v in self.__tasks.items()}
@@ -370,15 +370,19 @@ class TaskEvaluator(object):
         del bound_change_runs
         cobamp_model.initialize_optimizer()
         bopt = BatchOptimizer(linear_system=cobamp_model.model, threads=threads)
-        sols = dict(zip(bc_names,bopt.batch_optimize(bc_runs, objective_coef, objective_sense)))
+        res_dict = {i:{} for i in range(len(bound_changes))}
+        ind = 0
+        while ind < len(bc_runs):
+            sols = dict(zip(bc_names[ind:ind+mp_batch_size],
+                                 bopt.batch_optimize(bc_runs[ind:ind+mp_batch_size],
+                                                     objective_coef[ind:ind+mp_batch_size],
+                                                     objective_sense[ind:ind+mp_batch_size])))
+            ind += mp_batch_size
+            for k,sol in sols.items():
+                i, tn = k
+                truth, expected = self.__tasks[tn].evaluate_solution(sol)
+                res_dict[i][tn] = (truth, expected, sol if output_sol else None)
 
-        res_dict = {}
-        for i in range(len(bound_changes)):
-            res_dict[i] = {}
-            for tn, task in self.__tasks.items():
-                sol = sols[(i, tn)]
-                truth, expected = task.evaluate_solution(sol)
-                res_dict[i][tn] = (truth, expected, sol)
         return res_dict
 
     @staticmethod
