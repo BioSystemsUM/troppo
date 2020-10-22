@@ -1,7 +1,9 @@
 import abc
 import numpy as np
 from typing import Union
-from cobamp.wrappers.external_wrappers import model_readers, AbstractObjectReader
+
+from cobamp.wrappers import model_readers
+from cobamp.wrappers.core import AbstractObjectReader
 
 from troppo.methods.reconstruction.fastcore import FASTcore, FastcoreProperties
 from troppo.methods.reconstruction.gimme import GIMME, GIMMEProperties
@@ -10,13 +12,11 @@ from troppo.methods.reconstruction.corda import CORDA, CORDAProperties
 from troppo.methods.reconstruction.tINIT import tINIT, tINITProperties
 from troppo.methods.reconstruction.swiftcore import SWIFTCORE, SwiftcoreProperties
 
-from .methods.base import GapfillAlgorithm
 from .methods.gapfill.efm import EFMGapfill, EFMGapfillProperties
 
 from .omics.core import OmicsContainer
 
-from .omics.integration import ContinuousScoreIntegrationStrategy, CustomSelectionIntegrationStrategy, \
-	ThresholdSelectionIntegrationStrategy
+from .omics.integration import *
 
 map_properties_algorithms = {
 	FastcoreProperties : FASTcore,
@@ -39,7 +39,14 @@ algorithm_instance_map = {
 integration_strategy_map = {
 	'continuous': ContinuousScoreIntegrationStrategy,
 	'custom': CustomSelectionIntegrationStrategy,
-	'threshold': ThresholdSelectionIntegrationStrategy
+	'threshold': ThresholdSelectionIntegrationStrategy,
+	'default_core': DefaultCoreIntegrationStrategy,
+	'adjusted_score': AdjustedScoreIntegrationStrategy
+}
+
+ao_function_pair_map = {
+	'minmax': MINMAX,
+	'minsum': MINSUM
 }
 
 gapfill_algorithm_map = {
@@ -63,6 +70,10 @@ class ModelBasedWrapper(object):
 					list(model_readers.keys())))
 		self.S = self.model_reader.get_stoichiometric_matrix()
 		self.lb, self.ub  = [np.array(bounds) for bounds in self.model_reader.get_model_bounds(False, True)]
+
+	@property
+	def original_model_instance(self):
+		return self.__model
 
 		# ...
 class GapfillWrapper(ModelBasedWrapper):
@@ -99,7 +110,7 @@ class ReconstructionWrapper(ModelBasedWrapper):
 		return algo.run()
 
 	def run_from_omics(self, omics_data: Union[dict,list,tuple,OmicsContainer], algorithm, integration_strategy,
-	                   and_or_funcs=(min, max), **kwargs):
+	                   and_or_funcs=(min, max), raise_errors=True,**kwargs):
 		def tuple_to_strat(x):
 			return integration_strategy_map[x[0]](x[1])
 
@@ -123,6 +134,13 @@ class ReconstructionWrapper(ModelBasedWrapper):
 				res = [ordered_ids[k] for k in scores]
 
 		properties = algorithm_instance_map[algorithm].properties_class.from_integrated_scores(res, **kwargs)
-		algorithm_result = self.run(properties)
-		result_names =  [self.model_reader.r_ids[k] for k in algorithm_result]
-		return {k: k in result_names for k in self.model_reader.r_ids}
+
+		try:
+			algorithm_result = self.run(properties)
+			result_names =  [self.model_reader.r_ids[k] for k in algorithm_result]
+			return {k: k in result_names for k in self.model_reader.r_ids}
+		except Exception as e:
+			if raise_errors:
+				raise e
+			else:
+				return {r: False for r in self.model_reader.r_ids}

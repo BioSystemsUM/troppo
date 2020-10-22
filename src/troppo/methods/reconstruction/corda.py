@@ -1,13 +1,14 @@
-from multiprocessing import cpu_count
+from copy import deepcopy
 from numbers import Number
 
+from collections import OrderedDict
 from numpy import array, zeros, sqrt, vstack, where, floor, random, unique, \
-	apply_along_axis, nan, logical_or
+	apply_along_axis, nan, logical_or, int_, append
 
-from cobamp.core.models import CORSOModel
 from cobamp.core.models import ConstraintBasedModel
 from time import time
 
+from cobamp.core.optimization import Solution
 from troppo.methods.base import ContextSpecificModelReconstructionAlgorithm, PropertiesReconstruction
 
 from pathos.multiprocessing import cpu_count
@@ -51,11 +52,116 @@ def _corda_dependent_rxs_per_sense(rx, constraint, forward):
 	if not to_del:
 		for i in range(_ntimes - 1):
 			cost = _costbase + _costfx()
-			flux, corso_sol = _corso_fba.optimize_corso(cost, of_dict, not forward, constraint, _constrainby, eps=_eps, flux1=flux)
+			flux, corso_sol = _corso_fba.optimize_corso(cost, of_dict,
+			                                            not forward, constraint,
+			                                            _constrainby, eps=_eps, flux1=flux)
 			dependent = (abs(corso_sol.x()) > _eps) | dependent
 	else:
 		dependent = zeros(dependent.shape).astype(bool)
 	return dependent, to_del
+
+class CORSOSolution(Solution):
+	def __init__(self, sol_max, sol_min, f, index_map, var_names, eps=1e-8):
+		x = sol_min.x()
+		rev = index_map[max(index_map) + 1:]
+
+		nx = x[:max(index_map) + 1]
+		nx[rev] = x[rev] - sol_min.x()[max(index_map) + 1:-1]
+		nx[abs(nx) < eps] = 0
+		nvalmap = OrderedDict([(k, v) for k, v in zip(var_names, nx)])
+		super().__init__(nvalmap, [sol_max.status(), sol_min.status()], objective_value=f)
+
+
+class CORSOModel(ConstraintBasedModel):
+	def __init__(self, cbmodel, corso_element_names=('R_PSEUDO_CORSO', 'M_PSEUDO_CORSO'), solver=None):
+		if not cbmodel.model:
+			cbmodel.initialize_optimizer()
+
+		self.cbmodel = cbmodel
+
+		irrev_model, self.mapping = cbmodel.make_irreversible()
+
+		S = irrev_model.get_stoichiometric_matrix()
+		bounds = irrev_model.bounds
+
+		self.cost_index_mapping = zeros(S.shape[1], dtype=int_)
+
+		self.corso_rx, self.corso_mt = corso_element_names
+		super().__init__(S, bounds, irrev_model.reaction_names, irrev_model.metabolite_names, solver=solver)
+		self.add_metabolite(zeros(len(self.reaction_names)), self.corso_mt)
+
+		self.add_reaction(zeros(len(self.metabolite_names)), (0, 0), self.corso_rx)
+
+		self.original_bounds = deepcopy(self.bounds)
+
+		for orx, nrx in self.mapping.items():
+			if isinstance(nrx, int):
+				self.cost_index_mapping[nrx] = orx
+			else:
+				for nrx_split in nrx:
+					self.cost_index_mapping[nrx_split] = orx
+
+	def solve_original_model(self, of_dict, minimize=False):
+		self.cbmodel.set_objective(of_dict, minimize)
+		sol = self.cbmodel.optimize()
+		return sol
+
+	def set_costs(self, cost):
+		true_cost = cost[self.cost_index_mapping]
+		true_cost = append(true_cost, array([-1]))
+		self.set_stoichiometric_matrix(true_cost.reshape(1, len(true_cost)), rows=[self.corso_mt])
+
+	# def set_reaction_bounds(self, index, **kwargs):
+	# 	super().set_reaction_bounds(index, **kwargs)
+	# 	self.original_bounds[self.decode_index(index, 'reaction')] = self.get_reaction_bounds(index)
+
+	def set_corso_objective(self):
+		self.set_objective({self.corso_rx: 1}, True)
+
+	def optimize_corso(self, cost, of_dict, minimize=False, constraint=1, constraintby='val', eps=1e-6, flux1=None):
+		if flux1 is None:
+			flux1 = self.solve_original_model(of_dict, minimize)
+
+		if abs(flux1.objective_value()) < eps:
+			return flux1, flux1
+		f1_x = flux1.x()
+		if constraintby == 'perc':
+			# f1_f = flux1.x()[self.cbmodel.c != 0]
+			f1_f = {idx: f1_x[idx] * (constraint / 100) for idx in of_dict.keys()}
+		elif constraintby == 'val':
+			if (flux1.objective_value() < constraint and not minimize) or (
+					flux1.objective_value() > constraint and minimize):
+				raise Exception('Objective flux is not sufficient for the the set constraint value.')
+			else:
+				f1_f = {idx: constraint for idx in of_dict.keys()}
+		else:
+			raise Exception('Invalid constraint options.')
+
+		self.set_reaction_bounds(self.corso_rx, lb=0, ub=1e20)
+		# corso_of_dict = deepcopy(of_dict)
+		# corso_of_dict[self.corso_rx] = 1
+
+		self.set_costs(cost)
+		for rx in f1_f.keys():
+			true_idx = self.decode_index(rx, 'reaction')
+			involved = self.mapping[true_idx]
+			fluxval = f1_f[rx]  # if isinstance(f1_f, ndarray) else f1_f
+
+			if isinstance(involved, (int, int_)):
+				self.set_reaction_bounds(involved, lb=fluxval, ub=fluxval, temporary=True)
+			else:
+				self.set_reaction_bounds(involved[0], lb=fluxval, ub=fluxval, temporary=True)
+				self.set_reaction_bounds(involved[1], lb=0, ub=0, temporary=True)
+
+		self.set_objective({self.corso_rx: 1}, True)
+
+		sol = self.optimize()
+		self.revert_to_original_bounds()
+
+		return flux1, CORSOSolution(flux1, sol, sum([of_dict[k] * f1_f[k] for k in of_dict.keys()]),
+									self.cost_index_mapping, self.cbmodel.reaction_names, eps=eps)
+
+
 
 class CORDAProperties(PropertiesReconstruction):
 	CONSTRAINBY_VAL = 'val'
@@ -386,10 +492,9 @@ class CORDA(ContextSpecificModelReconstructionAlgorithm):
 		if not to_del:
 			for i in range(n_times - 1):
 				cost = costbase + costfx()
-				flux, corso_sol = self.corso_fba.optimize_corso(cost, of_dict, not forward, constraint, constrainby, eps=eps, flux1=flux)
+				flux, corso_sol = self.corso_fba.optimize_corso(cost, of_dict, not forward, constraint, constrainby,
+				                                                eps=eps, flux1=flux)
 				dependent = (abs(corso_sol.x()) > eps) | dependent
 		else:
 			dependent = zeros(dependent.shape).astype(bool)
 		return dependent, to_del
-
-
