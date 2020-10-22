@@ -61,7 +61,8 @@ class GIMMEModel(ConstraintBasedModel):
                 objective_lbs[rx] = v * ov * obj_frac
 
         objective_ids = np.nonzero(objective_lbs)[0]
-        for idx, lb in zip(objective_ids, objective_lbs):
+        lbs_id = objective_lbs[objective_ids]
+        for idx, lb in zip(objective_ids, lbs_id):
             self.set_reaction_bounds(idx, lb=lb, temporary=True)
 
         self.set_objective(gimme_model_objective, True)
