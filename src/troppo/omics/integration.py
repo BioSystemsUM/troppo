@@ -43,9 +43,8 @@ class CustomSelectionIntegrationStrategy(ScoreIntegrationStrategy):
 
 class AdjustedScoreIntegrationStrategy(ScoreIntegrationStrategy, ReactionProtectionMixin):
     def __init__(self, protected_reactions):
-        super(ReactionProtectionMixin).__init__(protected_reactions)
+        super().__init__(protected_reactions)
 
-    @staticmethod
     def integrate(self, data_map):
         maxv = max([k for k in data_map.get_scores().values() if k is not None])
         scores = {k: (v / maxv if v < 0 else v) if v is not None else 0 for k, v in data_map.get_scores().items()}
@@ -54,7 +53,7 @@ class AdjustedScoreIntegrationStrategy(ScoreIntegrationStrategy, ReactionProtect
 
 class DefaultCoreIntegrationStrategy(ScoreIntegrationStrategy, ReactionProtectionMixin):
     def __init__(self, threshold, protected_reactions):
-        super(ReactionProtectionMixin).__init__(protected_reactions)
+        super().__init__(protected_reactions)
         self.__threshold = threshold
 
     def integrate(self, data_map):
