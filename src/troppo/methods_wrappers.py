@@ -2,7 +2,7 @@ import abc
 import numpy as np
 from typing import Union
 
-from cobamp.wrappers import model_readers
+from cobamp.wrappers import available_readers_dict, get_model_reader
 from cobamp.wrappers.core import AbstractObjectReader
 
 from troppo.methods.reconstruction.fastcore import FASTcore, FastcoreProperties
@@ -52,6 +52,7 @@ ao_function_pair_map = {
 gapfill_algorithm_map = {
 	'efm': EFMGapfill
 }
+
 gapfill_properties_map = {
 	EFMGapfillProperties: EFMGapfill
 }
@@ -60,14 +61,14 @@ class ModelBasedWrapper(object):
 	__metaclass__ = abc.ABCMeta
 	def __init__(self, model, **kwargs):
 		self.__model = model
-		if model.__module__ in model_readers.keys():
-			self.model_reader = model_readers[model.__module__](model, **kwargs)
+		if model.__module__ in available_readers_dict.keys():
+			self.model_reader = get_model_reader(model, **kwargs)
 		elif isinstance(model, AbstractObjectReader):
 			self.model_reader = model
 		else:
 			raise TypeError(
 				"The `model` instance is not currently supported by cobamp. Currently available readers are: " + str(
-					list(model_readers.keys())))
+					list(available_readers_dict.keys())))
 		self.S = self.model_reader.get_stoichiometric_matrix()
 		self.lb, self.ub  = [np.array(bounds) for bounds in self.model_reader.get_model_bounds(False, True)]
 
@@ -140,6 +141,7 @@ class ReconstructionWrapper(ModelBasedWrapper):
 			result_names =  [self.model_reader.r_ids[k] for k in algorithm_result]
 			return {k: k in result_names for k in self.model_reader.r_ids}
 		except Exception as e:
+			print('Model reconstruction failed with exception:',e)
 			if raise_errors:
 				raise e
 			else:
