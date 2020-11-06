@@ -179,7 +179,7 @@ class tINIT(ContextSpecificModelReconstructionAlgorithm):
 		# non-essential reactions to produce a fake metabolite
 
 		ids_to_keep = np.setdiff1d(np.arange(self.n_reactions_irrev), self.essential_reactions_idx)
-		matrix_to_add = sprs.eye(self.n_reactions_irrev, format='csc')[:, ids_to_keep]
+		matrix_to_add = sprs.eye(self.n_reactions_irrev, format='csc')[ids_to_keep,:]
 
 		self.irreversible_S = sprs.vstack(
 			[self.irreversible_S, matrix_to_add])
@@ -207,7 +207,7 @@ class tINIT(ContextSpecificModelReconstructionAlgorithm):
 
 		if self.fwd_idx.size > 0:
 			self.n_rev_bounds = self.fwd_idx.size
-			I = sprs.eye(self.n_reactions_irrev) * -1
+			I = sprs.csc_matrix(sprs.eye(self.n_reactions_irrev) * -1)
 			temp = sprs.vstack([I[self.fwd_idx,], I[self.bwd_idx,]])
 			# padding
 			temp = sprs.hstack([temp, sprs.csc_matrix(np.zeros([temp.shape[0], self.irreversible_S.shape[1] - self.n_reactions_irrev]))])
@@ -263,6 +263,7 @@ class tINIT(ContextSpecificModelReconstructionAlgorithm):
 									np.zeros(self.n_rev_bounds * 2)])
 
 		self.problem_a = self.irreversible_S
+		self.problem_a = self.problem_a.astype(np.float32)
 
 	def solve_problem(self):
 
