@@ -23,7 +23,7 @@ class TaskIO(object):
 		if isinstance(buffer_or_path, TextIOBase):
 			buffer_or_path.write(task_string)
 		elif isinstance(buffer_or_path, str):
-			with open(buffer_or_path, 'w'('b' if binary_mode else '')) as f:
+			with open(buffer_or_path, 'w'+('b' if binary_mode else '')) as f:
 				return f.write(task_string)
 		else:
 			raise TypeError('Invalid buffer or path')
