@@ -111,7 +111,8 @@ class tINIT(ContextSpecificModelReconstructionAlgorithm):
 			self.bwd_idx = np.array([self.rev_map[i][1] for i in self.essential_reversible_reactions])
 
 		# remove the essential reactions from the self.reactions_scores
-		self.reaction_scores = np.delete(self.reaction_scores, self.essential_reactions_idx)
+		if len(self.essential_reactions_idx) > 0:
+			self.reaction_scores = np.delete(self.reaction_scores, self.essential_reactions_idx)
 
 		# this part will create fake metabolites for the self.present_metabolites to insert on the self.irreversible_S
 		# TODO this should also be a function in a superclass
