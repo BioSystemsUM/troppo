@@ -5,4 +5,4 @@
  
 """
 
-from . import core,id_converter
+from . import core,id_converter,integration

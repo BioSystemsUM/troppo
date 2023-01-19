@@ -39,8 +39,8 @@ class Nathan2019ConsensusPaper():
 	LINK : https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006867
 	'''
 
-	def __init__(self, path):
-		self.root_path = path
+	def __init__(self):
+		self.root_path = 'projects/breast_mcf7/data/nl_consensus/'
 
 	def load_medium_constraints(self):
 		original = pd.read_excel(self.root_path + 'pcbi.1006867.s003.xlsx', index_col=0)

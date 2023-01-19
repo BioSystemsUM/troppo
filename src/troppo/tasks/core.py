@@ -6,7 +6,7 @@ from pathos.multiprocessing import cpu_count
 from collections import Counter
 from cobamp.utilities.context import CommandHistory
 from cobamp.core.models import ConstraintBasedModel
-from cobamp.core.optimization import Solution
+from cobamp.core.optimization import Solution, BatchOptimizer
 from cobamp.wrappers.external_wrappers import get_model_reader, AbstractObjectReader
 
 MP_THREADS = cpu_count()
@@ -179,9 +179,9 @@ class Task(object):
     def id_replace(self, func):
         for prop, typ in self.__types__.items():
             prop_data = getattr(self, prop)
-            if isinstance(typ, list):
+            if typ == list:
                 setattr(self, prop, [func(k) for k in prop_data])
-            elif isinstance(typ, dict) and prop != 'annotations':
+            elif typ == dict and prop != 'annotations':
                 setattr(self, prop, {func(k): v for k, v in prop_data.items()})
             else:
                 pass
@@ -349,6 +349,41 @@ class TaskEvaluator(object):
             return apply_eval(self.model)
         else:
             return self.__apply(apply_eval)
+
+    def batch_evaluate(self, bound_changes, threads=MP_THREADS,output_sol=False, mp_batch_size=5000):
+        self.current_task = None
+        cobamp_model = self.model
+        task_bounds = {k:v.get_task_bounds() for k,v in self.__tasks.items()}
+
+        bound_change_runs = {}
+        for k,tb in task_bounds.items():
+            for i,bc in enumerate(bound_changes):
+                fd = {}
+                fd.update(tb)
+                fd.update(bc)
+                bound_change_runs[(i,k)] = {cobamp_model.map_labels['reaction'][x]:y for x,y in fd.items()}
+
+        objective_sense = [False]*len(bound_change_runs)
+        objective_coef = [{0:1}]*len(bound_change_runs)
+        bc_names = list(bound_change_runs.keys())
+        bc_runs = [bound_change_runs[k] for k in bc_names]
+        del bound_change_runs
+        cobamp_model.initialize_optimizer()
+        bopt = BatchOptimizer(linear_system=cobamp_model.model, threads=threads)
+        res_dict = {i:{} for i in range(len(bound_changes))}
+        ind = 0
+        while ind < len(bc_runs):
+            sols = dict(zip(bc_names[ind:ind+mp_batch_size],
+                                 bopt.batch_optimize(bc_runs[ind:ind+mp_batch_size],
+                                                     objective_coef[ind:ind+mp_batch_size],
+                                                     objective_sense[ind:ind+mp_batch_size])))
+            ind += mp_batch_size
+            for k,sol in sols.items():
+                i, tn = k
+                truth, expected = self.__tasks[tn].evaluate_solution(sol)
+                res_dict[i][tn] = (truth, expected, sol if output_sol else None)
+
+        return res_dict
 
     @staticmethod
     def batch_function(task, params):

@@ -16,11 +16,10 @@ if __name__ == '__main__':
 
 	names = ['R' + str(i + 1) for i in range(N)]
 	exp_vector = np.random.random(N)
-	exp_vector[[0,2,5,8]] = -1
 	properties = GIMMEProperties(
 		exp_vector=exp_vector,
 		obj_frac=0.8,
-		objectives=[np.array([0,0,0,0,0,0,0,0,1])],
+		objectives=[{8:1}],
 		preprocess=True,
 		flux_threshold=0.8
 	)
