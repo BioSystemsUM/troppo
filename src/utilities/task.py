@@ -2,11 +2,11 @@ import pandas as pd
 import numpy as np
 import re
 
-class Task():
-	'''
-	This class is to create an object to accommodate the metabolic tasks proposed by this paper
-	'''
 
+class Task:
+	"""
+	This class is to create an object to accommodate the metabolic tasks proposed by this paper.
+	"""
 	def __init__(self, matrix_with_info):
 		self._matrix_with_info = matrix_with_info
 		self._id = self.parse_id()
@@ -150,16 +150,17 @@ class Task():
 			zip(self._matrix_with_info['OUT'], zip(self._matrix_with_info['OUT LB'], self._matrix_with_info['OUT UB'])))
 
 	def parse_equation(self):
-		if self._matrix_with_info['PATHWAYS USED'].dropna().tolist()!=[]:
+		if self._matrix_with_info['PATHWAYS USED'].dropna().tolist():
 			base = self._matrix_with_info['PATHWAYS USED'].dropna().tolist()[0]
-			first_split = re.split( " \W*- *(?=[A-Z])", base)
-			dict_equations= {s[0:s.find(' (')]:s[s.find(' (')+2:-1] for s in first_split}
+			first_split = re.split(" \W*- *(?=[A-Z])", base)
+			dict_equations = {s[0:s.find(' (')]: s[s.find(' (') + 2:-1] for s in first_split}
 			return dict_equations
 		return {}
+
 
 if __name__ == '__main__':
 	path = './data/Nathan2019ConsensusPaper/'
 	z = pd.read_excel(path + 'pcbi.1006867.s005.xlsx')
 	idx = np.where(z.ID.isna() == False)[0]
 
-	t = Task(z.iloc[idx[0]:idx[1],:])
+	t = Task(z.iloc[idx[0]:idx[1], :])
