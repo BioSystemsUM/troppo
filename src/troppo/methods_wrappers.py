@@ -86,7 +86,7 @@ class GapfillWrapper(ModelBasedWrapper):
     """
     This Class is used to wrap the gap-fill algorithms implemented in troppo.
     """
-    def run(self, available_fluxes, algorithm, ls_override=None, **kwargs):
+    def run(self, avbl_fluxes, algorithm, ls_override=None, **kwargs):
         if ls_override is None:
             ls_override = {}
 
@@ -96,7 +96,7 @@ class GapfillWrapper(ModelBasedWrapper):
         algo_class = gapfill_algorithm_map[algorithm]
         algo_props = algo_class.properties_class
 
-        prop_kwargs = {'avbl_fluxes': available_fluxes, 'lsystem_args': ls_override}
+        prop_kwargs = {'avbl_fluxes': avbl_fluxes, 'lsystem_args': ls_override}
         prop_kwargs.update(**kwargs)
 
         decoders = algo_props.decoder_functions
