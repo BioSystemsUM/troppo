@@ -1,5 +1,8 @@
 # import numpy as np
-from numpy import setdiff1d, intersect1d, array, abs, ones, union1d, diag, where, inf, any, vstack, dot
+from abc import ABC
+
+import numpy
+from numpy import setdiff1d, intersect1d, array, abs, ones, union1d, diag, where, inf, vstack, dot
 from numpy.linalg import norm
 # from troppo.utilities.extra_functions_model import ExtraFunctionsModel
 
@@ -8,19 +11,39 @@ from troppo.methods.reconstruction.fastcore import FASTcore
 
 
 class FastCC(FASTcore):
+	"""
+	FASTCC gap-filling method for the reconstruction of metabolic models using the FASTcore algorithm.
+
+	Parameters
+	----------
+	S : numpy.ndarray
+		The stoichiometric matrix of the model.
+	lb : numpy.ndarray
+		The lower bounds of the model.
+	ub : numpy.ndarray
+		The upper bounds of the model.
+	properties : dict
+		The properties of the model.
+	"""
+
 	# notes: compared to the MATLAB version, modeFlag is always 'on'
 
-	def __init__(self, S, lb, ub, properties):
+	def __init__(self, S: numpy.ndarray, lb: numpy.ndarray, ub: numpy.ndarray, properties: dict):
 		super().__init__(S, lb, ub, properties)
 		self.epsilon = self.properties['flux_threshold']
 		self.method = self.properties['method']
 		self.o_S, self.o_lb, self.o_ub = self.S.copy(), self.lb.copy(), self.ub.copy()
+		self.s_S, self.s_lb, self.s_ub = None, None, None
 		self.f_S, self.f_lb, self.f_ub = None, None, None
 		self.I, self.A, self.J = None, None, None
 		self.V, self.v, self.Supp = None, None, None
 		self.incI, self.irrev_reverse = None, None
+		self.nA1, self.nA2 = None, None
 
 	def prepocessing(self):
+		"""
+		Preprocessing of the model.
+		"""
 		# extra = ExtraFunctionsModel()
 		self.irrev_reverse = where(self.ub <= 0)[0]
 		print(self.irrev_reverse)
@@ -36,8 +59,8 @@ class FastCC(FASTcore):
 		# self.generate_base_LPproblem()
 		# self.update_LP7_problem(self.J)
 		self.v = self.LP7(self.J, self.epsilon)
-		self.Supp = array([i for i, k in self.v.items() if
-						   (abs(k) >= 0.99 * self.properties['flux_threshold']) and i <= self.n_reactions - 1])
+		self.Supp = array([i for i, k in self.v.items() if (abs(k) >= 0.99 * self.properties['flux_threshold'])
+							and i <= self.n_reactions - 1])
 
 		self.A = self.Supp
 		print(str(self.A.size) + ' Flux consistent reactions, without flipping')
@@ -52,11 +75,25 @@ class FastCC(FASTcore):
 		if self.incI.size > 0:
 			print(str(self.incI.size) + ' Flux inconsistent irreversible reactions, without flipping')
 
-		self.J = setdiff1d(setdiff1d(self.reactions, self.A),
-						   self.incI)  # set of reactions with absolute value less than epsilon in the first LP7
+		self.J = setdiff1d(setdiff1d(self.reactions, self.A), self.incI)
+		# set of reactions with absolute value less than epsilon in the first LP7
 		print(str(self.J.size) + ' Flux inconsistent reactions, without flipping')
 
 	def fastcc(self):
+		"""
+		FASTCC algorithm.
+
+		Returns
+		-------
+		self.A : numpy.ndarray
+			The set of reactions that are flux consistent.
+		self.V : numpy.ndarray
+			The flux vectors of the flux consistent reactions.
+		self.incI : numpy.ndarray
+			The set of irreversible reactions that are flux inconsistent.
+		self.irrev_reverse : numpy.ndarray
+			The set of irreversible reactions that are in reverse direction.
+		"""
 		flipped = False
 		singleton = False
 		JiRev = array([])
@@ -75,8 +112,8 @@ class FastCC(FASTcore):
 				pass
 
 			# Supp is the set of reactions in v with absolute value greater than epsilon
-			self.Supp = array([i for i, k in self.v.items() if
-							   (abs(k) >= 0.99 * self.properties['flux_threshold']) and i <= self.n_reactions - 1])
+			self.Supp = array([i for i, k in self.v.items() if (abs(k) >= 0.99 * self.properties['flux_threshold'])
+								and i <= self.n_reactions - 1])
 
 			# A is the set of reactions in self.v with an absolute value greater than epsilon
 			self.nA1 = self.A.size
@@ -143,9 +180,9 @@ class FastCC(FASTcore):
 			return self.A, self.f_S, self.f_lb, self.f_ub, self.V
 		else:
 			print('Flux consistency check finished')
-			# print((sum(any(
-			# 	abs(self.V)) >= 0.99 * self.epsilon)) + ' = Number of flux consistent columns')  # this should fuck up here
-			# print((norm(dot(self.o_S, self.V)), inf) + ' ||S*V||')
+		# print((sum(any(
+		# 	abs(self.V)) >= 0.99 * self.epsilon)) + ' = Number of flux consistent columns'  # this should fuck up here
+		# print((norm(dot(self.o_S, self.V)), inf) + ' ||S*V||')
 		if self.A.size == self.n_reactions:
 			print('Fastcc: the input model is entirely flux consistent')
 
@@ -156,8 +193,20 @@ class FastCC(FASTcore):
 		return self.fastcc()
 
 
-class FastCCProperties(PropertiesReconstruction):
-	def __init__(self, flux_threshold, method, solver):
+class FastCCProperties(PropertiesReconstruction, ABC):
+	"""
+	Properties for FastCC
+
+	Parameters
+	----------
+	flux_threshold : float
+		Flux threshold
+	method : str
+		'original' or 'nonconvex'
+	solver : str
+		Solver to use
+	"""
+	def __init__(self, flux_threshold: float, method: str, solver: str):
 		new_mandatory = {
 			'flux_threshold': lambda x: isinstance(x, float),
 			'method': lambda x: isinstance(x, str),
@@ -171,6 +220,7 @@ class FastCCProperties(PropertiesReconstruction):
 		self.add_new_properties(new_mandatory, new_optional)
 
 		self['flux_threshold'] = flux_threshold
+		self['solver'] = solver
 		if method in ['original', 'nonconvex']:
 			self['method'] = method
 		else:
