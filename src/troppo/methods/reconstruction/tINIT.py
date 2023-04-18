@@ -465,7 +465,7 @@ class tINIT(ContextSpecificModelReconstructionAlgorithm):
 
 		return np.append(used_reactions, self.essential_reactions_idx)
 
-	def run_tINIT(self):
+	def run_tINIT(self) -> np.array:
 		"""
 		Runs the tINIT algorithm
 
@@ -479,7 +479,7 @@ class tINIT(ContextSpecificModelReconstructionAlgorithm):
 		res = self.solve_problem()
 		return np.unique(np.int_(np.sort(res)))
 
-	def run(self):
+	def run(self) -> np.array:
 		return self.run_tINIT()
 
 
