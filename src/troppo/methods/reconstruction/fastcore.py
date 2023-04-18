@@ -11,8 +11,20 @@ from troppo.methods.base import ContextSpecificModelReconstructionAlgorithm, Pro
 # TODO reformulate LP7/9 into a uniform structure and change bounds/objective functions
 
 class FastcoreProperties(PropertiesReconstruction):
+    """
+    Properties for FASTcore algorithm.
 
-    def __init__(self, core, flux_threshold=1e-4, solver=None):
+    Parameters
+    ----------
+    core: list
+        List of reactions that are considered core, as determined by the integrated scores
+    flux_threshold: float
+        Flux threshold for the algorithm
+    solver: str
+        Solver to be used
+    """
+
+    def __init__(self, core: list, flux_threshold: float = 1e-4, solver: str = None):
         new_mandatory = {'core': lambda x: isinstance(x, list) and len(x) > 0,
                          'core_idx': lambda x: isinstance(x, list) and len(x) > 0,
                          'solver': lambda x: isinstance(x, str)}
@@ -27,17 +39,47 @@ class FastcoreProperties(PropertiesReconstruction):
         self['solver'] = solver
 
     @staticmethod
-    def from_integrated_scores(scores, **kwargs):
+    def from_integrated_scores(scores: list, **kwargs) -> 'FastcoreProperties':
+        """
+        Creates a FastcoreProperties object from integrated scores.
+
+        Parameters
+        ----------
+        scores: list
+            Integrated scores
+        kwargs: dict
+            Additional arguments
+
+        Returns
+        -------
+        FastcoreProperties
+            FastcoreProperties object
+        """
         # TODO change later, idk why core_idx is here
         return FastcoreProperties(core=scores,
                                   **dict({k: v for k, v in kwargs.items() if k not in ['core', 'core_idx']}))
 
 
 class FASTcore(ContextSpecificModelReconstructionAlgorithm):
+    """
+    FASTcore algorithm for context-specific model reconstruction.
+
+    Parameters
+    ----------
+    S: numpy.ndarray
+        Stoichiometric matrix
+    lb: numpy.ndarray
+        Lower bounds
+    ub: numpy.ndarray
+        Upper bounds
+    properties: FastcoreProperties
+        Properties for the algorithm
+    """
     properties_class = FastcoreProperties
 
-    def __init__(self, S, lb, ub, properties):
+    def __init__(self, S: np.ndarray, lb: np.ndarray, ub: np.ndarray, properties: FastcoreProperties):
         super().__init__(S, lb, ub, properties)
+        self.LP3problem = None
         self.S = np.array(S)
         self.model_lb, self.model_ub = np.array(lb), np.array(ub)
         self.lb, self.ub = np.array(lb), np.array(ub)
@@ -48,14 +90,26 @@ class FASTcore(ContextSpecificModelReconstructionAlgorithm):
         self.counter = 0
         self.LPproblem, self.lsoLP3, self.lsoLP7, self.lsoLP9 = None, None, None, None
 
-    def reverse_irreversible_reactions_in_reverse_direction(self, irrev_reverse_idx):
-        '''
+    def reverse_irreversible_reactions_in_reverse_direction(self, irrev_reverse_idx: np.ndarray):
+        """
         Identifies the irreversible reactions in the reverse direction and returns the S matrix with the signals for the
-        metabolites reversed, a vector with the upper bounds as reversed form the lower bounds and a vector with the lower
-        bounds as the reverse of the upper ones.
-        Returns: S, ub, lb after modifications
+        metabolites reversed, a vector with the upper bounds as reversed form the lower bounds and a vector with the
+        lower bounds as the reverse of the upper ones.
 
-        '''
+        Parameters
+        ----------
+        irrev_reverse_idx: numpy.ndarray
+            Indices of the irreversible reactions in the reverse direction
+
+        Returns
+        -------
+        S: numpy.ndarray
+            Modified stoichiometric matrix
+        ub: numpy.ndarray
+            Modified upper bounds
+        lb: numpy.ndarray
+            Modified lower bounds
+        """
         if irrev_reverse_idx.size > 0:  # if they exist
             self.S[:, irrev_reverse_idx] = -self.S[:, irrev_reverse_idx]
             temp = self.ub[irrev_reverse_idx]
@@ -64,12 +118,33 @@ class FASTcore(ContextSpecificModelReconstructionAlgorithm):
         return
 
     def generate_LP3_problem(self):
+        """
+        Generates the LP3 problem.
+        """
         self.LP3problem = SteadyStateLinearSystem(self.S, self.lb, self.ub,
                                                   ['V' + str(i) for i in range(self.S.shape[1])],
                                                   solver=self.properties['solver'])
         self.lsoLP3 = LinearSystemOptimizer(self.LP3problem)
 
-    def LP3(self, J, basis=None):
+    def LP3(self, J: np.ndarray, basis=None) -> dict:
+        """
+        LP3 problem.
+
+        Parameters
+        ----------
+        J: numpy.ndarray
+            Indices of the reactions to be considered
+        basis: None
+            Not used
+
+        Returns
+        -------
+        dict
+            Dictionary with the solution of the LP3 problem
+        """
+        if basis is None:
+            pass
+
         # objective function
         f = np.zeros(self.n_reactions)
         f[J] = -1
@@ -81,14 +156,33 @@ class FASTcore(ContextSpecificModelReconstructionAlgorithm):
         return {i: k[1] for i, k in enumerate(solution.var_values().items()) if i <= self.n_reactions - 1}
 
     def LP7(self, J, basis=None):
+        """
+        LP7 problem.
+
+        Parameters
+        ----------
+        J: numpy.ndarray
+            Indices of the reactions to be considered
+        basis: None
+            Not used
+
+        Returns
+        -------
+        dict
+            Dictionary with the solution of the LP3 problem
+        """
         # TODO implement basis (from CPLEX) to improve the speed of the algorithm
         print('LP7')
+
+        if basis is None:
+            pass
+
         nJ = J.size  # number of irreversible reactions
         # m,n and m2,n2 are the same since the matrix S does not change throughout the algorithm, so we'll be using
         # self.n_metabolites and self.n_reactions
 
         # objective function
-        f = -np.concatenate([np.zeros((self.n_reactions)), np.ones((nJ))])
+        f = -np.concatenate([np.zeros(self.n_reactions), np.ones(nJ)])
 
         # equalities
         Aeq = hstack([self.S, lil_matrix((self.n_metabolites, nJ))])
@@ -130,10 +224,25 @@ class FASTcore(ContextSpecificModelReconstructionAlgorithm):
             return [np.nan] * self.n_reactions
 
     def LP9(self, K, P):
+        """
+        LP9 problem.
+
+        Parameters
+        ----------
+        K: numpy.ndarray
+            Indices of the reactions to be considered
+        P: numpy.ndarray
+            Indices of the reactions to be considered
+
+        Returns
+        -------
+        dict
+            Dictionary with the solution of the LP3 problem
+        """
         print('LP9')
         scalingFactor = 1e5
 
-        V = []
+        # V = []
         if K.size == 0 or P.size == 0:
             return np.array([])
 
@@ -141,7 +250,7 @@ class FASTcore(ContextSpecificModelReconstructionAlgorithm):
         nK = K.size
 
         # objective
-        f = np.concatenate([np.zeros((self.n_reactions)), np.ones((nP))])
+        f = np.concatenate([np.zeros(self.n_reactions), np.ones(nP)])
 
         # equalities
         Aeq = hstack([self.S, lil_matrix((self.n_metabolites, nP))])
@@ -179,11 +288,29 @@ class FASTcore(ContextSpecificModelReconstructionAlgorithm):
         else:
             return [np.nan] * self.n_reactions
 
-    def findSparseMode(self, J, P, singleton, basis=None):
+    def findSparseMode(self, J: np.ndarray or tuple, P: np.ndarray, singleton: bool, basis=None) -> np.ndarray:
+        """
+        Find sparse mode.
+
+        Parameters
+        ----------
+        J: numpy.ndarray or tuple
+            Indices of the reactions to be considered
+        P: numpy.ndarray
+            Indices of the reactions to be considered
+        singleton: bool
+            If True, the algorithm will consider only one reaction at a time
+        basis
+            List of basis vectors
+
+        Returns
+        -------
+        numpy.ndarray
+        """
         if J.size == 0:
             return np.array([], dtype=int)
 
-        supp = []
+        # supp = []
 
         if basis is None:
             basis = []
@@ -206,7 +333,14 @@ class FASTcore(ContextSpecificModelReconstructionAlgorithm):
         else:
             return np.array([])
 
-    def preprocessing(self):
+    def preprocessing(self) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
+        """
+        Preprocessing of the model.
+
+        Returns
+        -------
+        np.ndarray, np.ndarray, np.ndarray, np.ndarray
+        """
         irreversible_reactions_idx_to_change = np.where(self.model_ub <= 0)[0]
         self.reverse_irreversible_reactions_in_reverse_direction(irreversible_reactions_idx_to_change)
         irreversible_reactions_idx = np.where(self.model_lb >= 0)[0]
@@ -227,7 +361,15 @@ class FASTcore(ContextSpecificModelReconstructionAlgorithm):
 
         return np.setdiff1d(self.properties['core_idx'], supp), supp, P, irreversible_reactions_idx
 
-    def fastcore(self):
+    def fastcore(self) -> list:
+        """
+        Fastcore algorithm.
+
+        Returns
+        -------
+        list
+            List with the reaction IDs of the reactions in the resulting model
+        """
         flipped = False
         singleton = False
         J, A, P, irreversible_reactions_idx = self.preprocessing()
@@ -267,4 +409,13 @@ class FASTcore(ContextSpecificModelReconstructionAlgorithm):
         return sorted(A)
 
     def run(self):
+        """
+        Run Fastcore algorithm.
+
+        Returns
+        -------
+        list
+            List with the reaction IDs of the reactions in the resulting model
+
+        """
         return self.fastcore()
