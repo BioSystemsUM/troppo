@@ -222,8 +222,8 @@ class FASTcore(ContextSpecificModelReconstructionAlgorithm):
 
         supp = self.findSparseMode(J, P, singleton)
 
-        if np.setdiff1d(J, supp).size > 0:
-            raise Exception('Inconsistent irreversible core reactions \n\tImpossible to build model')
+#         if np.setdiff1d(J, supp).size > 0:
+#             raise Exception('Inconsistent irreversible core reactions \n\tImpossible to build model')
 
         return np.setdiff1d(self.properties['core_idx'], supp), supp, P, irreversible_reactions_idx
 
