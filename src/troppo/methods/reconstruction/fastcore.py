@@ -12,7 +12,7 @@ from troppo.methods.base import ContextSpecificModelReconstructionAlgorithm, Pro
 
 class FastcoreProperties(PropertiesReconstruction):
 
-    def __init__(self, core, flux_threshold=1e-4, solver=None):
+    def __init__(self, core, flux_threshold=1e-6, solver=None):
         new_mandatory = {'core': lambda x: isinstance(x, list) and len(x) > 0,
                          'core_idx': lambda x: isinstance(x, list) and len(x) > 0,
                          'solver': lambda x: isinstance(x, str)}
