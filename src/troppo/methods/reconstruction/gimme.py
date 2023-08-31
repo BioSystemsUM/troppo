@@ -8,7 +8,25 @@ from troppo.methods.base import ContextSpecificModelReconstructionAlgorithm, Pro
 
 
 class GIMMEModel(ConstraintBasedModel):
-    def __init__(self, cbmodel, solver=None):
+    """
+    A GIMME model is a model that is used to reconstruct a context-specific model using the GIMME algorithm.
+
+    Parameters:
+    -----------
+    cbmodel: ConstraintBasedModel
+        The template model that is used to reconstruct the context-specific model.
+    solver: str or None
+        The solver that is used to solve the optimization problem.
+
+    Attributes:
+    -----------
+    cbmodel: ConstraintBasedModel
+        The template model that is used to reconstruct the context-specific model.
+    mapping: dict
+        A dictionary that maps the reactions of the template model to the reactions of the GIMME model.
+
+    """
+    def __init__(self, cbmodel: ConstraintBasedModel, solver: str or None = None):
         self.cbmodel = cbmodel
         if not self.cbmodel.model:
             self.cbmodel.initialize_optimizer()
@@ -41,7 +59,28 @@ class GIMMEModel(ConstraintBasedModel):
                 exp_vector_n[rxmap] = val
         return exp_vector_n
 
-    def optimize_gimme(self, exp_vector, objectives, obj_frac, flux_thres):
+    def optimize_gimme(self, exp_vector: list, objectives: list or tuple, obj_frac: list or tuple or float = 0.9,
+                       flux_thres: float = None):
+        """
+        Optimize the GIMME model.
+
+        Parameters
+        ----------
+        exp_vector: list
+            A list of expression values for each reaction in the GIMME model.
+        objectives: list or tuple
+            A list of dictionaries that define the objectives of the GIMME model.
+        obj_frac: list or tuple or float
+            A list of fractions that define the lower bounds of the objectives. If a float is given, the same fraction
+            is used for all objectives.
+        flux_thres: float
+            A threshold that defines the minimum flux that is allowed for each reaction in the GIMME model.
+
+        Returns
+        -------
+        GIMMESolution:
+            The solution of the GIMME model.
+        """
         N = len(self.cbmodel.reaction_names)
         objectives_irr = [self.__adjust_objective_to_irreversible(obj) for obj in objectives]
         exp_vector_irr = self.__adjust_expression_vector_to_irreversible(exp_vector)
@@ -72,6 +111,21 @@ class GIMMEModel(ConstraintBasedModel):
 
 
 class GIMMESolution(Solution):
+    """
+    A GIMME solution is a solution of a GIMME model.
+
+    Parameters:
+    -----------
+    sol: Solution
+        The solution of the GIMME model.
+    exp_vector: list or ndarray
+        Expression vector
+    var_names: list
+        List of variable names
+    mapping: dict
+        A dictionary that maps the reactions of the template model to the reactions of the GIMME model.
+
+    """
     def __init__(self, sol, exp_vector, var_names, mapping=None):
         self.exp_vector = exp_vector
         gimme_solution = sol.x()
@@ -85,7 +139,20 @@ class GIMMESolution(Solution):
             objective_value=sol.objective_value()
         )
 
-    def get_reaction_activity(self, flux_threshold):
+    def get_reaction_activity(self, flux_threshold: float):
+        """
+        Get the reaction activity of the GIMME solution.
+
+        Parameters
+        ----------
+        flux_threshold: float
+            The flux threshold that is used to determine the reaction activity.
+
+        Returns
+        -------
+        reaction_index: list
+            List of reaction indices from active reactions.
+        """
         gimme_fluxes = array([kv[1] for i, kv in enumerate(self.var_values().items())])
         activity = np.zeros(gimme_fluxes.shape)
         ones = (self.exp_vector > flux_threshold) | (self.exp_vector == -1)
@@ -93,48 +160,132 @@ class GIMMESolution(Solution):
         activity[ones] = 1
         activity[twos & ~ones] = 2
 
-        return activity
+        reaction_index = [idx for idx, val in enumerate(activity) if val != 0]
+        return reaction_index
 
 
 class GIMMEProperties(PropertiesReconstruction):
-    def __init__(self, exp_vector, objectives, obj_frac=0.9, preprocess=False, flux_threshold=None):
+    """
+    Properties for GIMME
+
+    Parameters:
+    -----------
+    exp_vector: list or ndarray
+        Expression vector
+    objectives: list or tuple
+        List of objective vectors
+    obj_frac: list or tuple or float
+        Fraction of the objective vector to be used
+    preprocess: bool
+        Preprocess the model
+    flux_threshold: float
+        Flux threshold
+    solver: str
+        Solver to be used
+    reaction_ids: list
+        List of reaction ids
+    metabolite_ids: list
+        List of metabolite ids
+
+    """
+    def __init__(self, exp_vector: list, objectives: list or tuple, obj_frac: list or tuple or float = 0.9,
+                 preprocess: bool = False, flux_threshold: float = None, solver: str = None, reaction_ids: list = None,
+                 metabolite_ids: list = None):
         new_mandatory = {
             'exp_vector': lambda x: isinstance(x, list) and len(x) > 0 or isinstance(x, ndarray),
             'preprocess': lambda x: isinstance(x, bool) or x is None,
-            'objectives': lambda x: type(x) in [list, tuple, ndarray]}
-        new_optional = {'obj_frac': lambda x: type(x) in [ndarray, list, tuple, float]}
+            'objectives': lambda x: type(x) in [list, tuple, ndarray],
+            'reaction_ids': lambda x: isinstance(x, list) and len(x) > 0 or isinstance(x, ndarray),
+            'metabolite_ids': lambda x: isinstance(x, list) and len(x) > 0 or isinstance(x, ndarray)}
+
+        new_optional = {'obj_frac': lambda x: type(x) in [ndarray, list, tuple, float],
+                        'flux_threshold': lambda x: isinstance(x, float) or x is None,
+                        'solver': lambda x: isinstance(x, str) or x is None}
         super().__init__()
 
         self.add_new_properties(new_mandatory, new_optional)
 
         self['objectives'] = objectives
         self['exp_vector'] = exp_vector
+        self['solver'] = solver
+        self['reaction_ids'] = reaction_ids
+        self['metabolite_ids'] = metabolite_ids
         self['obj_frac'] = obj_frac if isinstance(obj_frac, ndarray) else array([obj_frac] * len(objectives))
         self['preprocess'] = True if preprocess else False
         self['flux_threshold'] = 1e-4 if flux_threshold is None else flux_threshold
 
     @staticmethod
     def from_integrated_scores(scores, **kwargs):
+        """
+        Create GIMMEProperties from integrated scores
+
+        Parameters
+        ----------
+        scores: list or ndarray
+            Integrated scores
+        kwargs: dict
+            Additional arguments
+
+        Returns
+        -------
+        GIMMEProperties
+
+        """
         return GIMMEProperties(exp_vector=scores, **{k: v for k, v in kwargs.items() if 'exp_vector' not in k})
 
 
 class GIMME(ContextSpecificModelReconstructionAlgorithm):
+    """
+    GIMME algorithm
+
+    Parameters
+    ----------
+    S: list or ndarray
+        Stoichiometric matrix
+    lb: list or ndarray
+        Lower bounds
+    ub: list or ndarray
+        Upper bounds
+    properties: GIMMEProperties
+        GIMME properties
+
+    Attributes
+    ----------
+    S: ndarray
+        Stoichiometric matrix
+    lb: ndarray
+        Lower bounds
+    ub: ndarray
+        Upper bounds
+    properties: GIMMEProperties
+        GIMME properties
+    sol: GIMMESolution
+        GIMME solution
+    gm: GIMMEModel
+        GIMME model
+    """
     properties_class = GIMMEProperties
 
-    def __init__(self, S, lb, ub, properties):
+    def __init__(self, S: list, lb: list, ub: list, properties: GIMMEProperties):
         super().__init__(S, lb, ub, properties)
         self.S = np.array(S)
         self.lb, self.ub = np.array(lb), np.array(ub)
         self.properties = properties
         self.model = GIMMEModel
         self.sol = None
-        metabolite_names = ['M' + str(i) for i in range(S.shape[0])]
-        reaction_names = ['R' + str(i) for i in range(S.shape[1])]
-        cbm = ConstraintBasedModel(S, list(zip(lb, ub)), reaction_names=reaction_names,
-                                   metabolite_names=metabolite_names)
+        cbm = ConstraintBasedModel(S, list(zip(lb, ub)), reaction_names=self.properties['reaction_ids'],
+                                   metabolite_names=self.properties['metabolite_ids'])
         self.gm = GIMMEModel(cbm, self.properties['solver'])
 
     def run(self):
+        """
+        Run GIMME algorithm
+
+        Returns
+        -------
+        list: List with index of active reactions.
+
+        """
         sol = self.gm.optimize_gimme(
             exp_vector=self.properties['exp_vector'],
             objectives=self.properties['objectives'],
@@ -143,3 +294,4 @@ class GIMME(ContextSpecificModelReconstructionAlgorithm):
         )
         self.sol = sol
         return sol.get_reaction_activity(self.properties['flux_threshold'])
+

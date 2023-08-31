@@ -21,7 +21,8 @@ if __name__ == '__main__':
                                  obj_frac=0.8,
                                  objectives=[{8: 1}],
                                  preprocess=True,
-                                 flux_threshold=0.8)
+                                 flux_threshold=0.8,
+                                 solver='CPLEX')
 
     algorithm = GIMME(s_matrix, lower_bounds, upper_bounds, properties)
 
