@@ -155,7 +155,7 @@ class GIMMESolution(Solution):
         """
         gimme_fluxes = array([kv[1] for i, kv in enumerate(self.var_values().items())])
         activity = np.zeros(gimme_fluxes.shape)
-        ones = (self.exp_vector > flux_threshold) | (self.exp_vector == -1)
+        ones = (np.array(self.exp_vector) > flux_threshold) | (self.exp_vector == -1)
         twos = gimme_fluxes > 0
         activity[ones] = 1
         activity[twos & ~ones] = 2
@@ -215,7 +215,7 @@ class GIMMEProperties(PropertiesReconstruction):
         self['flux_threshold'] = 1e-4 if flux_threshold is None else flux_threshold
 
     @staticmethod
-    def from_integrated_scores(scores, **kwargs):
+    def from_integrated_scores(scores: list, **kwargs):
         """
         Create GIMMEProperties from integrated scores
 
@@ -294,4 +294,3 @@ class GIMME(ContextSpecificModelReconstructionAlgorithm):
         )
         self.sol = sol
         return sol.get_reaction_activity(self.properties['flux_threshold'])
-
