@@ -14,7 +14,7 @@ class IMATProperties(PropertiesReconstruction):
 
     Parameters
     ----------
-    exp_vector : list
+    exp_vector : np.ndarray or list
         The vector of expression values
     objectives : list
         The list of objectives
@@ -27,7 +27,7 @@ class IMATProperties(PropertiesReconstruction):
     epsilon : float, optional
         The epsilon, by default 1
     """
-    def __init__(self, exp_vector: list, exp_thresholds: tuple or list or ndarray,
+    def __init__(self, exp_vector: np.ndarray or list, exp_thresholds: tuple or list or ndarray,
                  core: ndarray or list or tuple = None, tolerance: float = 1e-8, epsilon: int or float = 1):
         new_mandatory = {
             'exp_vector': lambda x: isinstance(x, list) and len(x) > 0 or isinstance(x, ndarray),

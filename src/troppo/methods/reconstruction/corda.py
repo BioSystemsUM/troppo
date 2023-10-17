@@ -196,7 +196,7 @@ class CORDAProperties(PropertiesReconstruction):
         cost assigned to reactions when calculating dependencies
     ntimes : int
         Number of CORSO FBA simulations performed per dependency assessment
-    nl : int
+    nl : int or float
         Number of loops to perform
     solver : str
         Solver to use for optimization
@@ -219,7 +219,7 @@ class CORDAProperties(PropertiesReconstruction):
             'constrainby': [self.CONSTRAINBY_VAL, self.CONSTRAINBY_PERC],
             'om': lambda x: isinstance(x, Number),
             'ntimes': lambda x: isinstance(x, int) and x > 0,
-            'nl': lambda x: isinstance(x, int) and x >= 0,
+            'nl': lambda x: isinstance(x, Number) and x >= 0,
             'threads': int
         }
 
