@@ -1,4 +1,4 @@
-
+from cobamp.core.models import ConstraintBasedModel
 from cobamp.wrappers import available_readers_dict, get_model_reader
 from cobamp.wrappers.core import AbstractObjectReader
 from numpy import array
@@ -57,10 +57,16 @@ gapfill_properties_map = {
 class ModelBasedWrapper(object):
     """
     This Class is used to wrap the cobamp model readers for the troppo methods.
+
+    Parameters
+    ----------
+    model : ConstraintBasedModel or AbstractObjectReader
+        The model to wrap
+
     """
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, model, **kwargs):
+    def __init__(self, model: ConstraintBasedModel or AbstractObjectReader, **kwargs):
         self.__model = model
 
         if model.__module__ in available_readers_dict.keys():
@@ -85,8 +91,28 @@ class ModelBasedWrapper(object):
 class GapfillWrapper(ModelBasedWrapper):
     """
     This Class is used to wrap the gap-fill algorithms implemented in troppo.
+
     """
-    def run(self, avbl_fluxes, algorithm, ls_override=None, **kwargs):
+    def run(self, avbl_fluxes: dict, algorithm: str, ls_override: dict = None, **kwargs) -> list:
+        """
+        Run the gap-fill algorithm.
+
+        Parameters
+        ----------
+        avbl_fluxes: dict
+            The available fluxes
+        algorithm: str
+            The algorithm to use
+        ls_override: dict, optional
+            The local system override, by default None
+        kwargs: dict
+            The keyword arguments to pass to the algorithm
+
+        Returns
+        -------
+        list : The gap-filled reactions
+
+        """
         if ls_override is None:
             ls_override = {}
 
@@ -116,12 +142,50 @@ class ReconstructionWrapper(ModelBasedWrapper):
     """
     This Class is used to wrap the reconstruction algorithms implemented in troppo.
     """
-    def run(self, properties):
+    def run(self, properties: Union[FastcoreProperties, GIMMEProperties, IMATProperties, tINITProperties,
+            CORDAProperties, SwiftcoreProperties]) -> list:
+        """
+        Run the reconstruction algorithm.
+
+        Parameters
+        ----------
+        properties: Union[FastcoreProperties, GIMMEProperties, IMATProperties, tINITProperties,
+                          CORDAProperties, SwiftcoreProperties]
+            An Instance of the properties class of the algorithm to run.
+
+        Returns
+        -------
+        list : The reconstructed reactions
+
+        """
         algo = map_properties_algorithms[type(properties)](self.S, self.lb, self.ub, properties)
         return algo.run()
 
-    def run_from_omics(self, omics_data: Union[dict, list, tuple, OmicsContainer], algorithm, integration_strategy,
-                       and_or_funcs=(min, max), raise_errors=True, **kwargs):
+    def run_from_omics(self, omics_data: Union[dict, list, tuple, OmicsContainer], algorithm: str,
+                       integration_strategy: Union[str, tuple, list] = 'continuous',
+                       and_or_funcs: tuple = (min, max), raise_errors: bool = True, **kwargs) -> dict:
+        """
+        Run the reconstruction algorithm from omics data.
+
+        Parameters
+        ----------
+        omics_data: Union[dict, list, tuple, OmicsContainer]
+            The omics data to use
+        algorithm: str
+            The algorithm to use
+        integration_strategy: Union[str, tuple, list]
+            The integration strategy to use
+        and_or_funcs: tuple, optional
+            The and/or functions to use, by default (min, max)
+        raise_errors: bool, optional
+            Whether to raise errors, by default True
+        kwargs: dict
+            The keyword arguments to pass to the algorithm
+
+        Returns
+        -------
+        dict : The reconstructed reactions
+        """
         def tuple_to_strat(x):
             return integration_strategy_map[x[0]](x[1])
 
