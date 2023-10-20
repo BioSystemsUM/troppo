@@ -1,11 +1,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='troppo',
-    version='0.0.6',
-    package_dir={'': 'src'},
-    packages=find_packages('src'),
-    install_requires=["cobamp==0.2.1"],
+
+  name = 'troppo',
+    version = '0.0.7',
+    package_dir = {'':'src'},
+    packages = find_packages('src'),
+    install_requires = ["cobamp==0.2.1"],
 
     author='Jorge Ferreira & Vítor Vieira',
     author_email='jorge.ferreira@ceb.uminho.pt',
