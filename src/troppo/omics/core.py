@@ -9,6 +9,10 @@ from numbers import Number
 import warnings
 import pandas as pd
 
+from troppo.omics.readers.generic import GenericReader
+from troppo.omics.readers.hpa import HpaReader
+from troppo.omics.readers.microarray import ProbeReader
+
 
 class OmicsContainer:
     """
@@ -25,25 +29,41 @@ class OmicsContainer:
         d) Log transformation, or data normalization
 
     Main attribute is .data() which is a dictionary containing : {gene_id: Expression Value}
+
+    Attributes
+    ----------
+    otype: str
+        The type of omics data stored in the container
+    condition: str
+        The condition from where the data was obtained
+    data: dict
+        The data stored in the container
+    nomenclature: str
+        The nomenclature used for the gene ids
     """
 
-    def __init__(self, omicstype=None, condition=None, data=None, nomenclature=None):
-        """
-        Creates an empty OmicsContainer object.
+    def __init__(self, omicstype: str = None, condition: str = None, data: dict = None, nomenclature: str = None):
 
-        Args:
-            omicstype: string, defines the type of omics data present (proteomics, transcriptomics, etç)
-            condition: string, contains the information describing the sample (cell type, tissue, disease)
-        """
         self.otype = omicstype
         self.condition = condition
         self.nomenclature = nomenclature
-        if data == None:
+        if data is None:
             self.data = {}
         else:
             self.load(data)
 
-    def load(self, arg, **kwargs):
+    def load(self, arg: dict or HpaReader or ProbeReader or GenericReader, **kwargs):
+        """
+        Loads data into the OmicsContainer object. Data can be loaded from a dictionary or from a reader object.
+
+        Parameters
+        ----------
+        arg: dict or reader object
+            The data to be loaded into the OmicsContainer object
+        kwargs: dict
+            The keyword arguments to be passed to the reader object
+
+        """
         if isinstance(arg, dict):
             self.data = arg
         else:
@@ -51,14 +71,19 @@ class OmicsContainer:
         if self.nomenclature is None:
             self.nomenclature = searchNomenclature(list(self.data.keys()))
 
-    def convertValues(self, mapping):
+    def convertValues(self, mapping: dict):
         """
         Converts the values in the exp_val field to different values based on a valid user supplied mapping.
         IMPORTANT: Will not work if _values contains NAs
         Mapping shall be a dictionary of either:
             - old value (may it be string or numeric): new value (may it be string or numeric)
             - tuple of (lower bound, upper bound) of old value: new value (numeric, string)
-        :param mapping: a dictionary containing the mapping between the values to be converted and the desired values
+
+        Parameters
+        ----------
+        mapping: dict
+            a dictionary containing the mapping between the values to be converted and the desired values
+
         """
         if self._isNumeric():
 
@@ -110,12 +135,15 @@ class OmicsContainer:
 
         print('Value conversion is complete!')
 
-    def convertIds(self, new):
+    def convertIds(self, new: str):
         """
         Redefines the ids(keys) on the data attribute.
 
-        Args:
-            new:string, designation of the new id according to hgnc
+        Parameters
+        ----------
+        new:string
+            designation of the new id according to hgnc
+
         """
         new_data = {}
         if self.nomenclature is None:
@@ -128,7 +156,9 @@ class OmicsContainer:
                 new_data[new] = self.data[old]
             lost = len(self.data) - len(new_data.keys())
 
-            print('ID conversion is complete! {0} entries were lost due to inexistent match in the HGNC platform'.format(lost))
+            print(
+                'ID conversion is complete! {0} entries were lost due to inexistent match in the HGNC platform'.format(
+                    lost))
             self.nomenclature = new
             self.set_data(new_data)
 
@@ -140,16 +170,23 @@ class OmicsContainer:
             if np.isnan(v):
                 del self.data[k]
 
-    def filterByValue(self, op, threshold):
+    def filterByValue(self, op: str, threshold: Union[int, float, tuple, str]) -> 'OmicsContainer':
         """
         Filters the _values attribute to match a user defined filter
         above and under use < and > operators, while between uses <= and >=.
 
-        :param op: string, one of (above, under, between, oneof)
-        :param threshold: numeric threshold for above and under, tuple of (lowerbound, upperbound) for between, string
-        for included discrete levels for levels operation
-        :return OmicsContainer object: a new OmicsContainer object is returned once this filter is applied. Original
-        instance remains unchanged.
+        Parameters
+        ----------
+        op: string
+            one of (above, under, between, oneof)
+        threshold: int, float, tuple, string
+            numeric threshold for above and under, tuple of (lowerbound, upperbound) for between, string
+            for included discrete levels for levels operation
+
+        Returns
+        -------
+        OmicsContainer:
+            a new OmicsContainer object is returned once this filter is applied. Original instance remains unchanged.
         """
         new_values = copy.deepcopy(self.data)
 
@@ -176,12 +213,20 @@ class OmicsContainer:
 
         return self.__createNew(new_values)
 
-    def filterById(self, regex):
+    def filterById(self, regex: str) -> 'OmicsContainer':
         """
         Filters the data attribute to contain genes that match a regular expression or string supplied by the user
-        :param regex: string, regular expression or string to be contained in the Gene Symbol field of the data attr.
-        :return OmicsContainer object: a new OmicsContainer object is returned once this filter is applied. Original
-        instance remains unchanged.
+
+        Parameters
+        ----------
+        regex: string
+            regular expression or string to be contained in the Gene Symbol field of the data attr.
+
+        Returns
+        -------
+        OmicsContainer:
+            a new OmicsContainer object is returned once this filter is applied. Original instance remains unchanged.
+
         """
         new_values = copy.deepcopy(self.data)
 
@@ -192,11 +237,15 @@ class OmicsContainer:
             print('Regex must be a string')
         return self.__createNew(new_values)
 
-    def transform(self, func):
+    def transform(self, func: str):
         """
         Applies the func to the exp_values of the data attr.
         Only compatible with numerical container.
-        :param func: string, a function to be applied to the values of the container, either 'norm' or 'logx'
+
+        Parameters
+        ----------
+        func: string
+            a function to be applied to the values of the container, either 'norm' or 'logx'
 
         Original number = x
         Transformed number x'=log10(x)
@@ -211,24 +260,39 @@ class OmicsContainer:
                 vals = [x for x in self.data.values()]
                 maxV, minV = max(vals), min(vals)
                 diff = maxV - minV
-                self.data = {k: (v-minV)/diff for k, v in self.data.items()}
+                self.data = {k: (v - minV) / diff for k, v in self.data.items()}
         except TypeError or ValueError:
             print('Convert to numeric values before applying normalization or log transformations')
 
     def _isNumeric(self):
         return type(list(self.data.values())[0]) in (int, float)
 
-    def _mapIsValid(self, task, mapping):
-        """Checks if a supllied mapping is valid, namely if all fields are present (case sensitive), and if all values
-        are numerical"""
+    def _mapIsValid(self, task: str, mapping: dict) -> bool:
+        """
+        Checks if a supllied mapping is valid, namely if all fields are present (case-sensitive), and if all values
+        are numerical
+
+        Parameters
+        ----------
+        task: string
+            one of (n2n, n2d, d2n, r2n)
+        mapping: dict
+            the mapping to be validated
+
+        Returns
+        -------
+        bool:
+            True if the mapping is valid, False otherwise
+
+        """
         unique = set(self.data.values())
 
         if task in ['n2n', 'd2n']:
             return set(mapping.keys()) == unique and len([x for x in mapping.values() if
-                                                         type(x) in [int, float]]) == len(unique)
+                                                          type(x) in [int, float]]) == len(unique)
         elif task == 'n2d':
             return set(mapping.keys()) == unique and len([x for x in mapping.values() if
-                                                         type(x) is str]) == len(unique)
+                                                          type(x) is str]) == len(unique)
 
         elif task == 'r2n':
             if len([x for x in mapping.values() if type(x) in (float, int, str)]) == len(mapping.values()):
@@ -244,19 +308,33 @@ class OmicsContainer:
             else:
                 return False
 
-    def __createNew(self, new_values):
+    def __createNew(self, new_values: dict) -> 'OmicsContainer':
+        """
+        Creates a new OmicsContainer object with the same attributes as the original one, but with a new data attribute
+
+        Parameters
+        ----------
+        new_values: dict
+            the new data attribute to be used in the new OmicsContainer object
+
+        Returns
+        -------
+        OmicsContainer:
+            a new OmicsContainer object is returned once this filter is applied. Original instance remains unchanged.
+
+        """
         newOC = OmicsContainer(omicstype=self.get_OmicsType(), condition=self.get_Condition())
         newOC.set_data(new_values)
         return newOC
 
     # setters
-    def set_type(self, newType):
+    def set_type(self, newType: str):
         self.otype = newType
 
-    def set_condition(self, newCond):
+    def set_condition(self, newCond: str):
         self.condition = newCond
 
-    def set_data(self, newData):
+    def set_data(self, newData: dict):
         self.data = newData
 
     # getters
@@ -275,24 +353,38 @@ class OmicsContainer:
     def get_Nomenclature(self):
         return self.nomenclature
 
-
-    def get_integrated_data_map(self, model_reader, and_func=min, or_func=max):
+    def get_integrated_data_map(self, model_reader: HpaReader or ProbeReader or GenericReader,
+                                and_func=min, or_func=max):
         """
         Function responsible for the integration of different omics data with a metabolic model loaded with framed package.
         Matches model ids for gene_ids, metabolites or reaction ids with those present in the omicsContainer object.
 
-        :param model_reader: (obj) a cobamp AbstractModelObjectReader object
-        :param and_func:(func) the mathematical function to replace the "AND" operator present in the Gene-Protein-Rules
-        :param or_func:(func) the mathematical function to replace the "OR" operator present in the Gene-Protein-Rules
+        Parameters
+        ----------
+        model_reader: HpaReader or ProbeReader or GenericReader
+            a cobamp AbstractModelObjectReader object
+        and_func:
+            the mathematical function to replace the "AND" operator present in the Gene-Protein-Rules
+        or_func:
+            the mathematical function to replace the "OR" operator present in the Gene-Protein-Rules
 
 
-        :return m: (obj) an OmicsDataMap object which contains the mapping between reactions/metabolites and its fluxes
-        based on the supplied omics data.
+        Returns
+        -------
+        OmicsDataMap:
+            an OmicsDataMap object which contains the mapping between reactions/metabolites and its fluxes
+            based on the supplied omics data.
+
         """
 
         def g2rIntegrate():
             """
             Handles integration of both proteomics and transcriptomics expression data relying on framed's gene2reaction
+
+            Returns
+            -------
+            OmicsDataMap:
+                an OmicsDataMap object which contains the mapping between reactions/metabolites and its fluxes
             """
             # suffixAndPrefix()
             d = model_reader.get_reaction_scores(self.get_Data(), or_fx=or_func, and_fx=and_func)
@@ -311,7 +403,6 @@ class OmicsContainer:
         else:
             raise Exception('Omics data type not yet supported')
 
-
     def print_values(self):
         print('Gene Symbol >>> Exp Value')
         for k, v in self.data.items():
@@ -327,6 +418,13 @@ class OmicsContainer:
 class OmicsDataMap:
     """
     Stores integrated omics data, matching a given metabolic model
+
+    Attributes
+    ----------
+    _mapType: str
+        The type of map stored in the object
+    _scores: dict
+        The scores stored in the object
 
     """
 
@@ -347,15 +445,22 @@ class OmicsDataMap:
     def get_scores(self):
         return self._scores
 
-    def select(self, op, threshold):
+    def select(self, op: str, threshold: Number) -> set or None:
         """
         Filtering the original reaction scores to be under or above a threshold. Above or under operations use the
         >= and <= operators
 
-        Args:
-            op: str, either "above" or "under" determining which scores shall be chosen
-            threshold: num, either a float or an integer whether under or above all scores shall be chosen
+        Parameters
+        ----------
+        op: str
+            either "above" or "under" determining which scores shall be chosen
+        threshold: Number
+            either a float or an integer whether under or above all scores shall be chosen
 
+        Returns
+        -------
+        set:
+            a set of reaction ids whose scores are above or under the threshold
 
         """
 
@@ -377,20 +482,47 @@ class OmicsDataMap:
         return set(res.keys())
 
     # setters
-    def set_scores(self, newScores):
-        self._scores = newScores
+    def set_scores(self, newScores: dict):
+        """
+        Sets the scores attribute to a new dictionary
 
+        Parameters
+        ----------
+        newScores: dict
+            the new scores to be set
+
+        """
+        self._scores = newScores
 
 
 lofl_array = Union[Sequence[Sequence[Number]], np.ndarray]
 
 
-def has_valid_dims(rows, cols, data):
+def has_valid_dims(rows: Sequence, cols: Sequence, data: lofl_array):
+    """
+    Checks if the data has the same dimensions as the rows and columns
+
+    Parameters
+    ----------
+    rows: Sequence
+        The rows of the data
+    cols: Sequence
+        The columns of the data
+    data: lofl_array
+        The data to be checked
+
+    Returns
+    -------
+    bool, bool:
+        True if the data has the same dimensions as the rows and columns, False otherwise
+
+    """
     shapes = tuple(map(len, (rows, cols)))
     return (data.shape == shapes), (data.shape[::-1] == shapes)
 
 
 class TabularContainer(object):
+
     def __init__(self, row_labels: Sequence[Union[str, int]], column_labels: Sequence[str], values: lofl_array):
         if not isinstance(values, np.ndarray):
             values = np.array(values)
@@ -419,7 +551,7 @@ class TabularContainer(object):
         # assert value.shape == self.data.shape
         self.__data = value
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: Union[str, int]):
         return self.data[item]
 
     @property
@@ -448,11 +580,22 @@ class TabularContainer(object):
         else:
             raise TypeError('value must be a dict, Series, list or tuple')
 
-    def transform(self, func):
+    def transform(self, func: callable):
         new_data = func(self.data)
         self.data = new_data
 
-    def drop(self, rows=None, columns=None):
+    def drop(self, rows: Sequence = None, columns: Sequence = None):
+        """
+        Drops the given rows and columns from the data attribute
+
+        Parameters
+        ----------
+        rows: Sequence
+            The rows to be dropped
+        columns: Sequence
+            The columns to be dropped
+
+        """
         self.data = self.data.drop(columns=columns, index=rows)
 
 
@@ -478,7 +621,7 @@ class OmicsMeasurementSet(TabularContainer):
         super().__init__(sample_labels, feature_labels, values)
 
     def to_omics_container(self, sample_id):
-        return OmicsContainer(None, condition=sample_id, data=self.data.loc[sample_id,:].to_dict())
+        return OmicsContainer(None, condition=sample_id, data=self.data.loc[sample_id, :].to_dict())
 
 
 class TypedOmicsMeasurementSet(OmicsMeasurementSet):
@@ -495,7 +638,6 @@ class TypedOmicsMeasurementSet(OmicsMeasurementSet):
     def omics_type(self, value: IdentifierMapping):
         self.__omics_type = value
 
-
     def convert_feature_ids(self, from_id, to_id):
         new_ids = self.omics_type.map_ids(self.data.columns.to_list(), from_id, to_id)
         self.column_names = new_ids
@@ -503,8 +645,7 @@ class TypedOmicsMeasurementSet(OmicsMeasurementSet):
 
     def to_omics_container(self, sample_id):
         return OmicsContainer(omicstype=self.omics_type.name, condition=sample_id,
-                              data=self.data.loc[sample_id,:].to_dict(), nomenclature='custom')
-
+                              data=self.data.loc[sample_id, :].to_dict(), nomenclature='custom')
 
 
 if __name__ == '__main__':
