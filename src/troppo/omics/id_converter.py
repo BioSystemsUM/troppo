@@ -23,7 +23,17 @@ searchNomenclature:
 """
 
 
-def _get_HGNC():
+def _get_HGNC() -> str:
+    """
+    This function downloads the HGNC complete set file from the HGNC ftp server.
+    The file is downloaded only once per day, if the file has already been downloaded today, the function will
+    return the file name.
+
+    Returns
+    -------
+    string: the file name of the HGNC complete set file
+
+    """
     # Download the file from `url` and save it locally under `hgnc_complete_set_[Date]`:
     now = date.today()
     url = "ftp://ftp.ebi.ac.uk/pub/databases/genenames/new/tsv/hgnc_complete_set.txt"
@@ -45,24 +55,31 @@ def _get_HGNC():
         return file
 
 
-def idConverter(ids, old, new):
+def idConverter(ids: list or set, old: str, new: str) -> dict or None:
     """
     This function converts the ids from a given omics dataset into the desired ones to better match a metabolic model.
     Conversion is done based on the HGNC database.
 
-    Args:
-        ids: list or set, containing the ids to be converted
-        old: string - exact match, the nomenclature designation of the input IDS.
-                      Must be different from new and contained in NOMENCLATURES
-        new: string - exact match, the nomenclature designation of the output IDs.
-                      Must be different from old and contained in NOMENCLATURES
+    NOMENCLATURES:
+    ["hgnc_id","symbol","name","entrez_id","ensembl_gene_id","vega_id","ucsc_id","ccds_id", "uniprot_ids",
+     "pubmed_id","omim_id","locus_group","locus_type","alias_symbol","alias_name", "prev_symbol","prev_name",
+     "ena","refseq_accession","rna_central_ids"]
 
-    NOMENCLATURES:["hgnc_id","symbol","name","entrez_id","ensembl_gene_id","vega_id","ucsc_id","ccds_id",
-                   "uniprot_ids","pubmed_id","omim_id","locus_group","locus_type","alias_symbol","alias_name",
-                   "prev_symbol","prev_name","ena","refseq_accession","rna_central_ids"]
+    Parameters
+    ----------
+    ids: list or set
+        containing the ids to be converted
+    old: string
+        exact match, the nomenclature designation of the input IDS. Must be different from new and contained in
+        NOMENCLATURES
+    new: string
+        exact match, the nomenclature designation of the output IDs. Must be different from old and contained in
+        NOMENCLATURES
 
-    Returns:
-        List of converted ids.
+    Returns
+    -------
+    dict: dictionary with the converted ids as keys and the original ids as values
+
     """
     file = _get_HGNC()
     ds = pd.read_csv(file, sep='\t', low_memory=False)
@@ -77,16 +94,21 @@ def idConverter(ids, old, new):
     return res
 
 
-def searchNomenclature(ids):
+def searchNomenclature(ids: list) -> str or None:
     """
     This function searches which gene identification nomenclature is used on the provided ids.
     When ids from different nomenclatures are input, the result will be the nomenclature with the most matches.
     Also handles cases where some ids do not match but others do.
 
-    Args:
-        ids: list, list of ids (all using the same nomenclature)
+    Parameters
+    -----------
+    ids: list
+        List of ids (all using the same nomenclature)
 
-    Returns: string, the nomenclature designation according to HGNC complete set table.
+    Returns
+    --------
+    string
+        the nomenclature designation according to HGNC complete set table.
     """
 
     file = _get_HGNC()
@@ -127,5 +149,5 @@ def searchNomenclature(ids):
 
 
 if __name__ == "__main__":
-    a = ['A1BG','HGNC:1']
+    a = ['A1BG', 'HGNC:1']
     print(idConverter(a, 'symbol', 'entrez_id'))

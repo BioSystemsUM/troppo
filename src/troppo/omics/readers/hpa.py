@@ -10,17 +10,21 @@ import numpy as np
 class HpaReader:
     """
     Reads the HPA pathology.tsv file from a fpath in the system.
-    Discrete values are converted to numerical and expression values account for the level with the most patients
+    Discrete values are converted to numerical and expression values account for the level with the most patients.
+
+    Parameters
+    ----------
+    fpath: str
+        complete path to the file from which omics data is read
+    tissue: str
+        Exactly as in the file, regarding the column where expression values should be retrieved
+    id_col: int,
+        either 0 (="ensembl") or 1(="gene_symbol") regarding which column shall be used for gene id
+    includeNA: bool
+        flag if NA values should be included or not
     """
 
-    def __init__(self, fpath, tissue, id_col=0, includeNA=False):
-        """
-        Args:
-            fpath: string, complete path to the file from which omics data is read
-            tissue: string, Exactly as in the file, regarding the column where expression values should be retrieved
-            id_col: int, either 0 (="ensembl") or 1(="gene_symbol") regarding which column shall be used for gene id
-            includeNA: boolean, flag if NA values should be included or not
-        """
+    def __init__(self, fpath: str, tissue: str, id_col: int = 0, includeNA: bool = False):
         self._tissue = tissue
         self._id_col = id_col
         self._path = fpath
@@ -28,9 +32,12 @@ class HpaReader:
 
     def load(self):
         """
-            Executes the loading of supplied omics file.
-            Returns: a dictionary of geneID: expressionValue
-            """
+        Executes the loading of supplied omics file.
+
+        Returns
+        -------
+        dict: a dictionary of geneID: expressionValue
+        """
         if self._id_col not in (0, 1):
             print('Invalid id_col. Using column 0 for gene ids')
             self._id_col = 0
@@ -55,8 +62,19 @@ class HpaReader:
 # Auxiliary functions
 
 
-def _handle_exp_val(exp_values):
-    """Retrieves the index of the expression value with the most patients."""
+def _handle_exp_val(exp_values: list) -> int or np.NaN:
+    """
+    Retrieves the index of the expression value with the most patients.
+
+    Parameters
+    ----------
+    exp_values: list
+        list of expression values for a given gene
+
+    Returns
+    -------
+    int: index of the expression value with the most patients
+    """
 
     if exp_values == ['', '', '', '']:
         return np.NaN
@@ -66,8 +84,20 @@ def _handle_exp_val(exp_values):
 
 
 # as of now not being used
-def _handle_prog(prog):
-    """Retrieves the output prognostic based on the score placement in HPA file"""
+def _handle_prog(prog: list) -> int or str:
+    """
+    Retrieves the output prognostic based on the score placement in HPA file.
+
+    Parameters
+    ----------
+    prog: list
+        list of prognostic scores for a given gene
+
+    Returns
+    -------
+    int: index of the prognostic score with the most patients. If all are empty, returns 'None'
+
+    """
     # record['Prognostic'].append(progs[handle_prog(fields[7:])].strip('\n') if handle_prog(fields[7:])
     # is not 'None' else 'None')
     if prog == ['', '', '', '\n']:
@@ -87,5 +117,3 @@ if __name__ == '__main__':
     hpa = HpaReader(PATH, 'breast cancer', id_col=2, includeNA=False)
     a = hpa.load()
     print(a)
-
-

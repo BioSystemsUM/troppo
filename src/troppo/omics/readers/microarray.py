@@ -14,21 +14,25 @@ class ProbeReader:
     Considers each value is identified by a probeID on the first column of the file. An annotation file supplied by
     the microarray chip vendor must be supplied for appropriate probe to gene Id conversion.
     Cases where a probe has no match with convTarget nomenclature will be ignored.
-    Handles cases where more than one probe translate to the same gene, and where a probe translates to more than a gene
+    Handles cases where more than one probe translate to the same gene, and where a probe translates to more
+    than a gene.
+
+    Parameters
+    ----------
+    fPath: str
+        complete path to the file from which expresion data is read.
+    expCol: int
+        index of the column where expression values are retrieved from.
+    annotFile: str
+        complete path to the annotation file.
+    convTarget: str
+        exact match to the column name of the nomenclature used for probeID to geneID conversion
+        recommended: Either Gene Symbol or Entrez Gene or equivalent.
+    expSep: str
+        field separator used in the probe intesity/expression file. Default is ","
     """
 
-    def __init__(self, fPath, expCol, annotFile, convTarget, convSep=',', expSep=','):
-        """
-        Args:
-            fPath: string, complete path to the file from which expresion data is read.
-            expCol: int, index of the column where expression values are retrieved from.
-            annotFile: string, complete path to the annotation file.
-            convTarget: string, exact match to the column name of the nomenclature used for probeID to geneID conversion
-                        recommended: Either Gene Symbol or Entrez Gene or equivalent.
-            convSep: string, field separator used in the annotation file. Default is ",".
-            expSep: string, field separator used in the probe intesity/expression file. Default is ",".
-        """
-
+    def __init__(self, fPath: str, expCol: int, annotFile: str, convTarget: str, convSep: str = ',', expSep: str = ','):
         self._fpath = fPath
         self._expCol = expCol
         self._cPath = annotFile
@@ -37,11 +41,13 @@ class ProbeReader:
         self._expSep = expSep
         self._IdMapping = self.__createMapping()
 
-    def load(self):
+    def load(self) -> dict or None:
         """
         Executes the loading of supplied omics file.
 
-        Returns: a dictionary of geneID: expressionValue
+        Returns
+        -------
+        dict: a dictionary of geneID: expressionValue
         """
         # avoid loading when mapping does not exist
         if self._IdMapping is None:
@@ -61,7 +67,7 @@ class ProbeReader:
                 for line in f:
                     fields = line.replace('\"', '').split(',')
                     # don't add genes to tuplist that don't have an id mapping
-                    if isinstance(self._IdMapping[fields[0]],str):
+                    if isinstance(self._IdMapping[fields[0]], str):
                         genes = self._IdMapping[fields[0]].replace(' ', '').split('///')  # 1 probe : many genes
                         for geneID in genes:
                             if geneID not in ('---', ''):  # filters cases where one probe does not match an id
@@ -75,7 +81,14 @@ class ProbeReader:
         return new_values
 
     # handles annotation file
-    def __createMapping(self):
+    def __createMapping(self) -> dict or None:
+        """
+        Creates a dictionary of probeID: geneID from the annotation file supplied.
+
+        Returns
+        -------
+        dict: a dictionary of probeID: geneID
+        """
         field_sep = self._convSep
         mapping = {}  # handling more of one probe for the same gene
 
@@ -89,10 +102,10 @@ class ProbeReader:
                     break
 
         # actually read the file
-        annot = read_csv(self._cPath, header=header_start,sep=field_sep)
+        annot = read_csv(self._cPath, header=header_start, sep=field_sep)
         if self._convTarget not in list(annot):
-            print('convTarget is not present in the annotation file please input one of the following:','\n'
-                  ,list(annot))
+            print('convTarget is not present in the annotation file please input one of the following:', '\n',
+                  list(annot))
             return
         else:
             return dict(zip(annot.iloc[:, 0], annot[self._convTarget]))
@@ -106,5 +119,3 @@ if __name__ == '__main__':
     help(ProbeReader)
     gr = ProbeReader(path, 3, convFile, convTarget="Gene Symbol")
     gr.load()
-
-
