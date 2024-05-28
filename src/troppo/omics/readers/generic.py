@@ -7,7 +7,7 @@
 import pandas as pd
 from pandas import read_csv, DataFrame
 
-from troppo.omics import OmicsContainer
+from troppo import omics
 
 
 class TabularReader(object):
@@ -93,7 +93,7 @@ class TabularReader(object):
         -------
         list : A list of OmicsContainers
         """
-        ocs = [OmicsContainer(data=data, condition=sample, nomenclature=self.nomenclature,
+        ocs = [omics.OmicsContainer(data=data, condition=sample, nomenclature=self.nomenclature,
                               omicstype=self.omics_type)
                for sample, data in self]
         self.dsapply = None
