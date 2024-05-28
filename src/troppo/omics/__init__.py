@@ -5,4 +5,7 @@
  
 """
 
-from . import core,id_converter,integration
+from .readers import (ProbeReader, HpaReader, TabularReader, GenericReader)
+from .core import (OmicsContainer, OmicsDataMap, TabularContainer, IdentifierMapping, OmicsMeasurementSet,
+                  TypedOmicsMeasurementSet)
+from . import id_converter, integration

@@ -4,4 +4,6 @@
  __init__.py
  
 """
-from . import generic, hpa, microarray
+from .generic import TabularReader, GenericReader
+from .hpa import HpaReader
+from .microarray import ProbeReader
