@@ -9,9 +9,9 @@ from numbers import Number
 import warnings
 import pandas as pd
 
-from troppo.omics.readers.generic import GenericReader
-from troppo.omics.readers.hpa import HpaReader
-from troppo.omics.readers.microarray import ProbeReader
+from . import GenericReader
+from . import HpaReader
+from . import ProbeReader
 
 
 class OmicsContainer:

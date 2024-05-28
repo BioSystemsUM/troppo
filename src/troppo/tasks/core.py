@@ -626,10 +626,27 @@ class TaskEvaluator(object):
 
     @property
     def tasks(self) -> Iterable[Task]:
+        """
+        Get the tasks
+
+        Returns
+        -------
+        list: The tasks
+
+        """
         return [n for n in self.__tasks.keys()]
 
     @tasks.setter
     def tasks(self, value: Iterable[Task]):
+        """
+        Set the tasks
+
+        Parameters
+        ----------
+        value: Iterable[Task]
+            The tasks to set
+
+        """
         ## TODO: improve task setter with an efficient method for adding reactions at once
         for tn in self.tasks:
             self.__remove_task(tn)
@@ -640,7 +657,16 @@ class TaskEvaluator(object):
         # 	self.__populate_task(t)
         self.__populate_tasks(value)
 
-    def __remove_task(self, task_name):
+    def __remove_task(self, task_name: Task):
+        """
+        Remove a task from the model
+
+        Parameters
+        ----------
+        task_name: str
+            The name of the task to remove
+
+        """
         to_remove = []
         for k, v in self.__task_rxs.items():
             if task_name in v and len(v) <= 1:
@@ -652,6 +678,15 @@ class TaskEvaluator(object):
         self.__tasks = {k: v for k, v in self.__tasks.items() if k != task_name}
 
     def __populate_task(self, task: Task):
+        """
+        Populate a task
+
+        Parameters
+        ----------
+        task: Task
+            The task to populate
+
+        """
         cmds, rxs = task.get_add_reaction_cmds(self.model, True)
         involved_reactions_in_model = len(task.involved_reactions - set(self.model.reaction_names)) == 0
         cmds.execute_all(True)
@@ -667,6 +702,15 @@ class TaskEvaluator(object):
                                                        'This task will be loaded but will never evaluate as True')
 
     def __populate_tasks(self, tasks: Iterable[Task]):
+        """
+        Populate a set of tasks
+
+        Parameters
+        ----------
+        tasks: Iterable[Task]
+            The tasks to populate
+
+        """
         k_names = ['args', 'bounds', 'names']
         add_rx_args = {k: [] for k in k_names}
         for task in tasks:

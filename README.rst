@@ -40,7 +40,7 @@ Instalation from github (latest development release)
 
 ::
 
-    pip install https://github.com/BioSystemsUM/troppo
+    pip install git+https://github.com/BioSystemsUM/troppo.git
 
 Credits and License
 ~~~~~~~~~~~~~~~~~~~
