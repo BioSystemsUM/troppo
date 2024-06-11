@@ -522,6 +522,25 @@ def has_valid_dims(rows: Sequence, cols: Sequence, data: lofl_array):
 
 
 class TabularContainer(object):
+    """
+    TabularContainer class to be used for the creation of objects that store tabular data and other useful information,
+    such as its row and column labels. This class is meant to be used as a base class for other classes that store
+    tabular data.
+
+    Parameters
+    ----------
+    row_labels: Sequence[Union[str, int]]
+        The row labels of the data
+    column_labels: Sequence[str]
+        The column labels of the data
+    values: lofl_array
+        The values of the data
+
+    Attributes
+    ----------
+    data: pd.DataFrame
+        The data stored in the container
+    """
 
     def __init__(self, row_labels: Sequence[Union[str, int]], column_labels: Sequence[str], values: lofl_array):
         if not isinstance(values, np.ndarray):
