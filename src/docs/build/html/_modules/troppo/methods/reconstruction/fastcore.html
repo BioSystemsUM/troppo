@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>troppo.methods.reconstruction.fastcore &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">Troppo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">troppo.methods.reconstruction.fastcore</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for troppo.methods.reconstruction.fastcore</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">lil_matrix</span><span class="p">,</span> <span class="n">hstack</span><span class="p">,</span> <span class="n">eye</span><span class="p">,</span> <span class="n">vstack</span>
+<span class="kn">from</span> <span class="nn">cobamp.core.linear_systems</span> <span class="kn">import</span> <span class="n">GenericLinearSystem</span><span class="p">,</span> <span class="n">VAR_CONTINUOUS</span><span class="p">,</span> <span class="n">SteadyStateLinearSystem</span>
+<span class="kn">from</span> <span class="nn">cobamp.core.optimization</span> <span class="kn">import</span> <span class="n">LinearSystemOptimizer</span>
+<span class="kn">from</span> <span class="nn">troppo.methods.base</span> <span class="kn">import</span> <span class="n">ContextSpecificModelReconstructionAlgorithm</span><span class="p">,</span> <span class="n">PropertiesReconstruction</span>
+
+
+<span class="c1"># TODO make a generic LPProblem, then update with the necessary information for the LP7 and LP9 - this should improve</span>
+<span class="c1">#  the performance of the algorithm</span>
+
+<span class="c1"># TODO reformulate LP7/9 into a uniform structure and change bounds/objective functions</span>
+
+<div class="viewcode-block" id="FastcoreProperties"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.fastcore.FastcoreProperties">[docs]</a><span class="k">class</span> <span class="nc">FastcoreProperties</span><span class="p">(</span><span class="n">PropertiesReconstruction</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Properties for FASTcore algorithm.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    core: list</span>
+<span class="sd">        List of reactions that are considered core, as determined by the integrated scores</span>
+<span class="sd">    flux_threshold: float</span>
+<span class="sd">        Flux threshold for the algorithm</span>
+<span class="sd">    solver: str</span>
+<span class="sd">        Solver to be used</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">core</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">flux_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="n">solver</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">new_mandatory</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;core&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+                         <span class="s1">&#39;core_idx&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+                         <span class="s1">&#39;solver&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">)}</span>
+        <span class="n">new_optional</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="c1"># self.base_mandatory[&#39;method&#39;] = MethodsReconstruction.FASTCORE</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_new_properties</span><span class="p">(</span><span class="n">new_mandatory</span><span class="p">,</span> <span class="n">new_optional</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;flux_threshold&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">flux_threshold</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;core&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">core</span><span class="p">)</span>
+        <span class="c1"># TODO change this later, this is only for testing</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;core_idx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">core</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">solver</span>
+
+<div class="viewcode-block" id="FastcoreProperties.from_integrated_scores"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.fastcore.FastcoreProperties.from_integrated_scores">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_integrated_scores</span><span class="p">(</span><span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;FastcoreProperties&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a FastcoreProperties object from integrated scores.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scores: list</span>
+<span class="sd">            Integrated scores</span>
+<span class="sd">        kwargs: dict</span>
+<span class="sd">            Additional arguments</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        FastcoreProperties</span>
+<span class="sd">            FastcoreProperties object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO change later, idk why core_idx is here</span>
+        <span class="k">return</span> <span class="n">FastcoreProperties</span><span class="p">(</span><span class="n">core</span><span class="o">=</span><span class="n">scores</span><span class="p">,</span>
+                                  <span class="o">**</span><span class="nb">dict</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;core&#39;</span><span class="p">,</span> <span class="s1">&#39;core_idx&#39;</span><span class="p">]}))</span></div></div>
+
+
+<div class="viewcode-block" id="FASTcore"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.fastcore.FASTcore">[docs]</a><span class="k">class</span> <span class="nc">FASTcore</span><span class="p">(</span><span class="n">ContextSpecificModelReconstructionAlgorithm</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    FASTcore algorithm for context-specific model reconstruction.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    S: numpy.ndarray</span>
+<span class="sd">        Stoichiometric matrix</span>
+<span class="sd">    lb: numpy.ndarray</span>
+<span class="sd">        Lower bounds</span>
+<span class="sd">    ub: numpy.ndarray</span>
+<span class="sd">        Upper bounds</span>
+<span class="sd">    properties: FastcoreProperties</span>
+<span class="sd">        Properties for the algorithm</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">properties_class</span> <span class="o">=</span> <span class="n">FastcoreProperties</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">lb</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">ub</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">properties</span><span class="p">:</span> <span class="n">FastcoreProperties</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">,</span> <span class="n">properties</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">LP3problem</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">S</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">lb</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ub</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">lb</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ub</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="n">properties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metabolites</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites</span><span class="p">)]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">LPproblem</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lsoLP3</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lsoLP7</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lsoLP9</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="FASTcore.reverse_irreversible_reactions_in_reverse_direction"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.fastcore.FASTcore.reverse_irreversible_reactions_in_reverse_direction">[docs]</a>    <span class="k">def</span> <span class="nf">reverse_irreversible_reactions_in_reverse_direction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">irrev_reverse_idx</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Identifies the irreversible reactions in the reverse direction and returns the S matrix with the signals for the</span>
+<span class="sd">        metabolites reversed, a vector with the upper bounds as reversed form the lower bounds and a vector with the</span>
+<span class="sd">        lower bounds as the reverse of the upper ones.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        irrev_reverse_idx: numpy.ndarray</span>
+<span class="sd">            Indices of the irreversible reactions in the reverse direction</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        S: numpy.ndarray</span>
+<span class="sd">            Modified stoichiometric matrix</span>
+<span class="sd">        ub: numpy.ndarray</span>
+<span class="sd">            Modified upper bounds</span>
+<span class="sd">        lb: numpy.ndarray</span>
+<span class="sd">            Modified lower bounds</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">irrev_reverse_idx</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># if they exist</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">[:,</span> <span class="n">irrev_reverse_idx</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">[:,</span> <span class="n">irrev_reverse_idx</span><span class="p">]</span>
+            <span class="n">temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ub</span><span class="p">[</span><span class="n">irrev_reverse_idx</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ub</span><span class="p">[</span><span class="n">irrev_reverse_idx</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">lb</span><span class="p">[</span><span class="n">irrev_reverse_idx</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lb</span><span class="p">[</span><span class="n">irrev_reverse_idx</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">temp</span>
+        <span class="k">return</span></div>
+
+<div class="viewcode-block" id="FASTcore.generate_LP3_problem"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.fastcore.FASTcore.generate_LP3_problem">[docs]</a>    <span class="k">def</span> <span class="nf">generate_LP3_problem</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates the LP3 problem.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">LP3problem</span> <span class="o">=</span> <span class="n">SteadyStateLinearSystem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ub</span><span class="p">,</span>
+                                                  <span class="p">[</span><span class="s1">&#39;V&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])],</span>
+                                                  <span class="n">solver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lsoLP3</span> <span class="o">=</span> <span class="n">LinearSystemOptimizer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">LP3problem</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FASTcore.LP3"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.fastcore.FASTcore.LP3">[docs]</a>    <span class="k">def</span> <span class="nf">LP3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">J</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        LP3 problem.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        J: numpy.ndarray</span>
+<span class="sd">            Indices of the reactions to be considered</span>
+<span class="sd">        basis: None</span>
+<span class="sd">            Not used</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            Dictionary with the solution of the LP3 problem</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">basis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="c1"># objective function</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span><span class="p">)</span>
+        <span class="n">f</span><span class="p">[</span><span class="n">J</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">LP3problem</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">minimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">LP3problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">presolve</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">solution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lsoLP3</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">var_values</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span> <span class="o">-</span> <span class="mi">1</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="FASTcore.LP7"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.fastcore.FASTcore.LP7">[docs]</a>    <span class="k">def</span> <span class="nf">LP7</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        LP7 problem.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        J: numpy.ndarray</span>
+<span class="sd">            Indices of the reactions to be considered</span>
+<span class="sd">        basis: None</span>
+<span class="sd">            Not used</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            Dictionary with the solution of the LP3 problem</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO implement basis (from CPLEX) to improve the speed of the algorithm</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;LP7&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">basis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="n">nJ</span> <span class="o">=</span> <span class="n">J</span><span class="o">.</span><span class="n">size</span>  <span class="c1"># number of irreversible reactions</span>
+        <span class="c1"># m,n and m2,n2 are the same since the matrix S does not change throughout the algorithm, so we&#39;ll be using</span>
+        <span class="c1"># self.n_metabolites and self.n_reactions</span>
+
+        <span class="c1"># objective function</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nJ</span><span class="p">)])</span>
+
+        <span class="c1"># equalities</span>
+        <span class="n">Aeq</span> <span class="o">=</span> <span class="n">hstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">lil_matrix</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites</span><span class="p">,</span> <span class="n">nJ</span><span class="p">))])</span>
+        <span class="n">beq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites</span><span class="p">)</span>
+
+        <span class="c1"># inequalities</span>
+        <span class="n">Ij</span> <span class="o">=</span> <span class="n">lil_matrix</span><span class="p">((</span><span class="n">nJ</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span><span class="p">))</span>
+        <span class="c1"># nJ x n_reactions</span>
+        <span class="n">Ij</span><span class="p">[</span><span class="nb">tuple</span><span class="p">([</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nJ</span><span class="p">)),</span> <span class="n">J</span><span class="p">])]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>  <span class="c1"># Ij(sub2ind(size(Ij),(1:nj)&#39;,J(:))) = -1; from the original code</span>
+        <span class="n">Aineq</span> <span class="o">=</span> <span class="n">hstack</span><span class="p">([</span><span class="n">Ij</span><span class="p">,</span> <span class="n">eye</span><span class="p">(</span><span class="n">nJ</span><span class="p">)])</span>
+        <span class="n">bineq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nJ</span><span class="p">,))</span>
+
+        <span class="c1"># bounds</span>
+        <span class="n">lb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">lb</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">nJ</span><span class="p">,))])</span>
+        <span class="n">ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">ub</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">nJ</span><span class="p">,))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;flux_threshold&#39;</span><span class="p">]])</span>
+
+        <span class="n">A</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">([</span><span class="n">Aeq</span><span class="p">,</span> <span class="n">Aineq</span><span class="p">])</span>
+        <span class="n">b_lb</span><span class="p">,</span> <span class="n">b_ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">beq</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">nJ</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">beq</span><span class="p">,</span> <span class="n">bineq</span><span class="p">])</span>
+        <span class="c1"># b_lb, b_ub = np.concatenate([beq, -np.inf * np.ones((nJ, ))]), np.concatenate([beq, bineq])</span>
+
+        <span class="n">problem</span> <span class="o">=</span> <span class="n">GenericLinearSystem</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">toarray</span><span class="p">(),</span> <span class="n">VAR_CONTINUOUS</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">,</span> <span class="n">b_lb</span><span class="p">,</span> <span class="n">b_ub</span><span class="p">,</span>
+                                      <span class="p">[</span><span class="s1">&#39;V&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])],</span> <span class="n">solver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">])</span>
+
+        <span class="n">lso</span> <span class="o">=</span> <span class="n">LinearSystemOptimizer</span><span class="p">(</span><span class="n">problem</span><span class="p">)</span>
+        <span class="n">problem</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">presolve</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># problem.model.configuration.lpmethod = &#39;dual&#39;</span>
+        <span class="n">solution</span> <span class="o">=</span> <span class="n">lso</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+        <span class="n">solution</span><span class="o">.</span><span class="n">x</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">objective_value</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">solution</span><span class="o">.</span><span class="n">status</span><span class="p">()</span> <span class="o">!=</span> <span class="s1">&#39;optimal&#39;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Warning, Solution is not optimal&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">solution</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">var_values</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span> <span class="o">-</span> <span class="mi">1</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span></div>
+
+<div class="viewcode-block" id="FASTcore.LP9"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.fastcore.FASTcore.LP9">[docs]</a>    <span class="k">def</span> <span class="nf">LP9</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">P</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        LP9 problem.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        K: numpy.ndarray</span>
+<span class="sd">            Indices of the reactions to be considered</span>
+<span class="sd">        P: numpy.ndarray</span>
+<span class="sd">            Indices of the reactions to be considered</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            Dictionary with the solution of the LP3 problem</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;LP9&#39;</span><span class="p">)</span>
+        <span class="n">scalingFactor</span> <span class="o">=</span> <span class="mf">1e5</span>
+
+        <span class="c1"># V = []</span>
+        <span class="k">if</span> <span class="n">K</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">P</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+        <span class="n">nP</span> <span class="o">=</span> <span class="n">P</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">nK</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">size</span>
+
+        <span class="c1"># objective</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nP</span><span class="p">)])</span>
+
+        <span class="c1"># equalities</span>
+        <span class="n">Aeq</span> <span class="o">=</span> <span class="n">hstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">lil_matrix</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites</span><span class="p">,</span> <span class="n">nP</span><span class="p">))])</span>
+        <span class="n">beq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites</span><span class="p">)</span>
+        <span class="c1"># inequalities</span>
+        <span class="n">Ip</span> <span class="o">=</span> <span class="n">lil_matrix</span><span class="p">((</span><span class="n">nP</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span><span class="p">))</span>
+        <span class="n">Ip</span><span class="p">[</span><span class="nb">tuple</span><span class="p">([</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nP</span><span class="p">)),</span> <span class="n">P</span><span class="p">])]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">Ik</span> <span class="o">=</span> <span class="n">lil_matrix</span><span class="p">((</span><span class="n">nK</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span><span class="p">))</span>
+        <span class="n">Ik</span><span class="p">[</span><span class="nb">tuple</span><span class="p">([</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nK</span><span class="p">)),</span> <span class="n">K</span><span class="p">])]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="n">Aineq</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">([</span><span class="n">hstack</span><span class="p">([</span><span class="n">Ip</span><span class="p">,</span> <span class="o">-</span><span class="n">eye</span><span class="p">(</span><span class="n">nP</span><span class="p">)]),</span> <span class="n">hstack</span><span class="p">([</span><span class="o">-</span><span class="n">Ip</span><span class="p">,</span> <span class="o">-</span><span class="n">eye</span><span class="p">(</span><span class="n">nP</span><span class="p">)]),</span> <span class="n">hstack</span><span class="p">([</span><span class="o">-</span><span class="n">Ik</span><span class="p">,</span> <span class="n">lil_matrix</span><span class="p">((</span><span class="n">nK</span><span class="p">,</span> <span class="n">nP</span><span class="p">))])])</span>
+        <span class="n">bineq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">nP</span><span class="p">,)),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">nK</span><span class="p">,))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;flux_threshold&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">scalingFactor</span><span class="p">])</span>
+        <span class="c1"># bounds</span>
+        <span class="n">lb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">lb</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nP</span><span class="p">,))])</span> <span class="o">*</span> <span class="n">scalingFactor</span>
+        <span class="n">ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">ub</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">max</span><span class="p">,</span> <span class="nb">zip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_lb</span><span class="p">[</span><span class="n">P</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_ub</span><span class="p">[</span><span class="n">P</span><span class="p">])))))])</span> <span class="o">*</span> <span class="n">scalingFactor</span>
+
+        <span class="n">A</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">([</span><span class="n">Aeq</span><span class="p">,</span> <span class="n">Aineq</span><span class="p">])</span>
+        <span class="n">b_lb</span><span class="p">,</span> <span class="n">b_ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">beq</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">nP</span> <span class="o">+</span> <span class="n">nK</span><span class="p">)]),</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">beq</span><span class="p">,</span> <span class="n">bineq</span><span class="p">])</span>
+
+        <span class="n">problem</span> <span class="o">=</span> <span class="n">GenericLinearSystem</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">toarray</span><span class="p">(),</span> <span class="n">VAR_CONTINUOUS</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">,</span> <span class="n">b_lb</span><span class="p">,</span> <span class="n">b_ub</span><span class="p">,</span>
+                                      <span class="p">[</span><span class="s1">&#39;V&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])],</span> <span class="n">solver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">])</span>
+
+        <span class="n">lso</span> <span class="o">=</span> <span class="n">LinearSystemOptimizer</span><span class="p">(</span><span class="n">problem</span><span class="p">)</span>
+        <span class="n">problem</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">solution</span> <span class="o">=</span> <span class="n">lso</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">objective_value</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">solution</span><span class="o">.</span><span class="n">status</span><span class="p">()</span> <span class="o">!=</span> <span class="s1">&#39;optimal&#39;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Warning, Solution is not optimal&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">solution</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">var_values</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span> <span class="o">-</span> <span class="mi">1</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span></div>
+
+<div class="viewcode-block" id="FASTcore.findSparseMode"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.fastcore.FASTcore.findSparseMode">[docs]</a>    <span class="k">def</span> <span class="nf">findSparseMode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">J</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="ow">or</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">P</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">singleton</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find sparse mode.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        J: numpy.ndarray or tuple</span>
+<span class="sd">            Indices of the reactions to be considered</span>
+<span class="sd">        P: numpy.ndarray</span>
+<span class="sd">            Indices of the reactions to be considered</span>
+<span class="sd">        singleton: bool</span>
+<span class="sd">            If True, the algorithm will consider only one reaction at a time</span>
+<span class="sd">        basis</span>
+<span class="sd">            List of basis vectors</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">J</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="c1"># supp = []</span>
+
+        <span class="k">if</span> <span class="n">basis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">basis</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;before LP7&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">singleton</span><span class="p">:</span>
+            <span class="n">V</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LP7</span><span class="p">(</span><span class="n">J</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">basis</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># V, basis = self.LP7(J, basis)</span>
+            <span class="n">V</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LP7</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">basis</span><span class="p">)</span>
+
+        <span class="n">K</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">rJ</span> <span class="k">for</span> <span class="n">rJ</span> <span class="ow">in</span> <span class="n">J</span> <span class="k">if</span> <span class="n">V</span><span class="p">[</span><span class="n">rJ</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.99</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;flux_threshold&#39;</span><span class="p">]])</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;done LP7&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">K</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">V</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LP9</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">P</span><span class="p">)</span>
+            <span class="n">Supp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">V</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span>
+                             <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mf">0.99</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;flux_threshold&#39;</span><span class="p">])</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;done LP9&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">Supp</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span></div>
+
+<div class="viewcode-block" id="FASTcore.preprocessing"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.fastcore.FASTcore.preprocessing">[docs]</a>    <span class="k">def</span> <span class="nf">preprocessing</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Preprocessing of the model.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        np.ndarray, np.ndarray, np.ndarray, np.ndarray</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">irreversible_reactions_idx_to_change</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_ub</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reverse_irreversible_reactions_in_reverse_direction</span><span class="p">(</span><span class="n">irreversible_reactions_idx_to_change</span><span class="p">)</span>
+        <span class="n">irreversible_reactions_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_lb</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">singleton</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;core_idx&#39;</span><span class="p">],</span> <span class="n">irreversible_reactions_idx</span><span class="p">)</span>  <span class="c1"># irreversible reactions in core</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;J size&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">J</span><span class="p">)))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">J</span><span class="p">)</span>
+
+        <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;core_idx&#39;</span><span class="p">])</span>  <span class="c1"># non-core reactions</span>
+
+        <span class="n">supp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">findSparseMode</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">singleton</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">supp</span><span class="p">)</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Inconsistent irreversible core reactions </span><span class="se">\n\t</span><span class="s1">Impossible to build model&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;core_idx&#39;</span><span class="p">],</span> <span class="n">supp</span><span class="p">),</span> <span class="n">supp</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">irreversible_reactions_idx</span></div>
+
+<div class="viewcode-block" id="FASTcore.fastcore"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.fastcore.FASTcore.fastcore">[docs]</a>    <span class="k">def</span> <span class="nf">fastcore</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fastcore algorithm.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">            List with the reaction IDs of the reactions in the resulting model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">flipped</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">singleton</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">J</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">irreversible_reactions_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocessing</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">J</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">J</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+
+            <span class="n">supp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">findSparseMode</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">singleton</span><span class="p">)</span>
+
+            <span class="c1"># print(A, supp)</span>
+
+            <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">union1d</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">supp</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">J</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]):</span>
+                <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+                <span class="n">flipped</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">singleton</span><span class="p">:</span>
+                    <span class="n">JiRev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">J</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">irreversible_reactions_idx</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">JiRev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">irreversible_reactions_idx</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">flipped</span> <span class="ow">or</span> <span class="n">JiRev</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]):</span>
+                    <span class="k">if</span> <span class="n">singleton</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error: Global network is not consistent&#39;</span><span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">J</span><span class="p">)</span>
+                        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">union1d</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">J</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">flipped</span> <span class="o">=</span> <span class="kc">False</span>
+                        <span class="n">singleton</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">reverse_irreversible_reactions_in_reverse_direction</span><span class="p">(</span><span class="n">JiRev</span><span class="p">)</span>
+                    <span class="n">flipped</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Flipped&#39;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">J</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">A</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FASTcore.run"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.fastcore.FASTcore.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run Fastcore algorithm.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">            List with the reaction IDs of the reactions in the resulting model</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fastcore</span><span class="p">()</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

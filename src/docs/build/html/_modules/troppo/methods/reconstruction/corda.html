@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>troppo.methods.reconstruction.corda &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">Troppo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">troppo.methods.reconstruction.corda</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for troppo.methods.reconstruction.corda</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">numbers</span> <span class="kn">import</span> <span class="n">Number</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">array</span><span class="p">,</span> <span class="n">zeros</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">vstack</span><span class="p">,</span> <span class="n">where</span><span class="p">,</span> <span class="n">floor</span><span class="p">,</span> <span class="n">random</span><span class="p">,</span> <span class="n">unique</span><span class="p">,</span> \
+    <span class="n">apply_along_axis</span><span class="p">,</span> <span class="n">nan</span><span class="p">,</span> <span class="n">logical_or</span><span class="p">,</span> <span class="n">int_</span><span class="p">,</span> <span class="n">append</span>
+
+<span class="kn">from</span> <span class="nn">cobamp.core.models</span> <span class="kn">import</span> <span class="n">ConstraintBasedModel</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
+
+<span class="kn">from</span> <span class="nn">cobamp.core.optimization</span> <span class="kn">import</span> <span class="n">Solution</span>
+<span class="kn">from</span> <span class="nn">troppo.methods.base</span> <span class="kn">import</span> <span class="n">ContextSpecificModelReconstructionAlgorithm</span><span class="p">,</span> <span class="n">PropertiesReconstruction</span>
+
+<span class="kn">from</span> <span class="nn">pathos.multiprocessing</span> <span class="kn">import</span> <span class="n">cpu_count</span>
+<span class="kn">from</span> <span class="nn">pathos.pools</span> <span class="kn">import</span> <span class="n">_ProcessPool</span>
+
+<span class="kn">from</span> <span class="nn">troppo.utilities.list</span> <span class="kn">import</span> <span class="n">is_list</span>
+
+
+<span class="k">def</span> <span class="nf">_init_corda_worker</span><span class="p">(</span><span class="n">corso_fba</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">constrainby</span><span class="p">,</span> <span class="n">costfx</span><span class="p">,</span> <span class="n">costbase</span><span class="p">,</span> <span class="n">ntimes</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">lb</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">_corso_fba</span><span class="p">,</span> <span class="n">_constraint</span><span class="p">,</span> <span class="n">_constrainby</span><span class="p">,</span> <span class="n">_costfx</span><span class="p">,</span> <span class="n">_costbase</span><span class="p">,</span> <span class="n">_ntimes</span><span class="p">,</span> <span class="n">_eps</span><span class="p">,</span> <span class="n">_lb</span>
+
+    <span class="n">_corso_fba</span> <span class="o">=</span> <span class="n">corso_fba</span>
+    <span class="n">_constraint</span> <span class="o">=</span> <span class="n">constraint</span>
+    <span class="n">_constrainby</span> <span class="o">=</span> <span class="n">constrainby</span>
+    <span class="n">_costfx</span> <span class="o">=</span> <span class="n">costfx</span>
+    <span class="n">_costbase</span> <span class="o">=</span> <span class="n">costbase</span>
+    <span class="n">_ntimes</span> <span class="o">=</span> <span class="n">ntimes</span>
+    <span class="n">_eps</span> <span class="o">=</span> <span class="n">eps</span>
+    <span class="n">_lb</span> <span class="o">=</span> <span class="n">lb</span>
+
+
+<span class="k">def</span> <span class="nf">_corda_dependent_reactions_iteration</span><span class="p">(</span><span class="n">rx</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">_corso_fba</span><span class="p">,</span> <span class="n">_constraint</span><span class="p">,</span> <span class="n">_constrainby</span><span class="p">,</span> <span class="n">_costfx</span><span class="p">,</span> <span class="n">_costbase</span>
+    <span class="k">global</span> <span class="n">_ntimes</span><span class="p">,</span> <span class="n">_forward</span><span class="p">,</span> <span class="n">_eps</span><span class="p">,</span> <span class="n">_lb</span>
+    <span class="n">dependent</span><span class="p">,</span> <span class="n">to_delete</span> <span class="o">=</span> <span class="n">_corda_dependent_rxs_per_sense</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="n">_constraint</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">_lb</span><span class="p">[</span><span class="n">rx</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">bkw_dep</span><span class="p">,</span> <span class="n">to_del_bkw</span> <span class="o">=</span> <span class="n">_corda_dependent_rxs_per_sense</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="o">-</span><span class="n">_constraint</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">dependent</span> <span class="o">=</span> <span class="n">dependent</span> <span class="o">|</span> <span class="n">bkw_dep</span>
+        <span class="n">to_delete</span> <span class="o">=</span> <span class="n">to_del_bkw</span> <span class="o">&amp;</span> <span class="n">to_delete</span>
+
+    <span class="k">return</span> <span class="n">rx</span><span class="p">,</span> <span class="p">(</span><span class="n">dependent</span><span class="p">,</span> <span class="n">to_delete</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_corda_dependent_rxs_per_sense</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">forward</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">_corso_fba</span><span class="p">,</span> <span class="n">_constrainby</span><span class="p">,</span> <span class="n">_costfx</span><span class="p">,</span> <span class="n">_costbase</span>
+    <span class="n">of_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">rx</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">_costbase</span> <span class="o">+</span> <span class="n">_costfx</span><span class="p">()</span>
+    <span class="n">flux</span><span class="p">,</span> <span class="n">corso_sol</span> <span class="o">=</span> <span class="n">_corso_fba</span><span class="o">.</span><span class="n">optimize_corso</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">of_dict</span><span class="p">,</span> <span class="ow">not</span> <span class="n">forward</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">_constrainby</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">_eps</span><span class="p">)</span>
+
+    <span class="n">dependent</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">corso_sol</span><span class="o">.</span><span class="n">x</span><span class="p">())</span> <span class="o">&gt;</span> <span class="n">_eps</span>
+    <span class="n">to_del</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">dependent</span><span class="o">.</span><span class="n">any</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">to_del</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">_ntimes</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">cost</span> <span class="o">=</span> <span class="n">_costbase</span> <span class="o">+</span> <span class="n">_costfx</span><span class="p">()</span>
+            <span class="n">flux</span><span class="p">,</span> <span class="n">corso_sol</span> <span class="o">=</span> <span class="n">_corso_fba</span><span class="o">.</span><span class="n">optimize_corso</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">of_dict</span><span class="p">,</span>
+                                                        <span class="ow">not</span> <span class="n">forward</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span>
+                                                        <span class="n">_constrainby</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">_eps</span><span class="p">,</span> <span class="n">flux1</span><span class="o">=</span><span class="n">flux</span><span class="p">)</span>
+            <span class="n">dependent</span> <span class="o">=</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">corso_sol</span><span class="o">.</span><span class="n">x</span><span class="p">())</span> <span class="o">&gt;</span> <span class="n">_eps</span><span class="p">)</span> <span class="o">|</span> <span class="n">dependent</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dependent</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">dependent</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dependent</span><span class="p">,</span> <span class="n">to_del</span>
+
+
+<div class="viewcode-block" id="CORSOSolution"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORSOSolution">[docs]</a><span class="k">class</span> <span class="nc">CORSOSolution</span><span class="p">(</span><span class="n">Solution</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A solution to a COBRA FBA problem.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sol_max</span><span class="p">,</span> <span class="n">sol_min</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">index_map</span><span class="p">,</span> <span class="n">var_names</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">sol_min</span><span class="o">.</span><span class="n">x</span><span class="p">()</span>
+        <span class="n">rev</span> <span class="o">=</span> <span class="n">index_map</span><span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">index_map</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span>
+
+        <span class="n">nx</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:</span><span class="nb">max</span><span class="p">(</span><span class="n">index_map</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">nx</span><span class="p">[</span><span class="n">rev</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">rev</span><span class="p">]</span> <span class="o">-</span> <span class="n">sol_min</span><span class="o">.</span><span class="n">x</span><span class="p">()[</span><span class="nb">max</span><span class="p">(</span><span class="n">index_map</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">nx</span><span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">nx</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">eps</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">nvalmap</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">var_names</span><span class="p">,</span> <span class="n">nx</span><span class="p">)])</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">nvalmap</span><span class="p">,</span> <span class="p">[</span><span class="n">sol_max</span><span class="o">.</span><span class="n">status</span><span class="p">(),</span> <span class="n">sol_min</span><span class="o">.</span><span class="n">status</span><span class="p">()],</span> <span class="n">objective_value</span><span class="o">=</span><span class="n">f</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CORSOModel"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORSOModel">[docs]</a><span class="k">class</span> <span class="nc">CORSOModel</span><span class="p">(</span><span class="n">ConstraintBasedModel</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cbmodel</span><span class="p">,</span> <span class="n">corso_element_names</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;R_PSEUDO_CORSO&#39;</span><span class="p">,</span> <span class="s1">&#39;M_PSEUDO_CORSO&#39;</span><span class="p">),</span> <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cbmodel</span><span class="o">.</span><span class="n">model</span><span class="p">:</span>
+            <span class="n">cbmodel</span><span class="o">.</span><span class="n">initialize_optimizer</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cbmodel</span> <span class="o">=</span> <span class="n">cbmodel</span>
+
+        <span class="n">irrev_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span> <span class="o">=</span> <span class="n">cbmodel</span><span class="o">.</span><span class="n">make_irreversible</span><span class="p">()</span>
+
+        <span class="n">S</span> <span class="o">=</span> <span class="n">irrev_model</span><span class="o">.</span><span class="n">get_stoichiometric_matrix</span><span class="p">()</span>
+        <span class="n">bounds</span> <span class="o">=</span> <span class="n">irrev_model</span><span class="o">.</span><span class="n">bounds</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost_index_mapping</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">int_</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">corso_rx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">corso_mt</span> <span class="o">=</span> <span class="n">corso_element_names</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">irrev_model</span><span class="o">.</span><span class="n">reaction_names</span><span class="p">,</span> <span class="n">irrev_model</span><span class="o">.</span><span class="n">metabolite_names</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_metabolite</span><span class="p">(</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reaction_names</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">corso_mt</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_reaction</span><span class="p">(</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metabolite_names</span><span class="p">)),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">corso_rx</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">original_bounds</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bounds</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">orx</span><span class="p">,</span> <span class="n">nrx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nrx</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cost_index_mapping</span><span class="p">[</span><span class="n">nrx</span><span class="p">]</span> <span class="o">=</span> <span class="n">orx</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">nrx_split</span> <span class="ow">in</span> <span class="n">nrx</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">cost_index_mapping</span><span class="p">[</span><span class="n">nrx_split</span><span class="p">]</span> <span class="o">=</span> <span class="n">orx</span>
+
+<div class="viewcode-block" id="CORSOModel.solve_original_model"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORSOModel.solve_original_model">[docs]</a>    <span class="k">def</span> <span class="nf">solve_original_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">of_dict</span><span class="p">,</span> <span class="n">minimize</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cbmodel</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">of_dict</span><span class="p">,</span> <span class="n">minimize</span><span class="p">)</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cbmodel</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">sol</span></div>
+
+<div class="viewcode-block" id="CORSOModel.set_costs"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORSOModel.set_costs">[docs]</a>    <span class="k">def</span> <span class="nf">set_costs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cost</span><span class="p">):</span>
+        <span class="n">true_cost</span> <span class="o">=</span> <span class="n">cost</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cost_index_mapping</span><span class="p">]</span>
+        <span class="n">true_cost</span> <span class="o">=</span> <span class="n">append</span><span class="p">(</span><span class="n">true_cost</span><span class="p">,</span> <span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_stoichiometric_matrix</span><span class="p">(</span><span class="n">true_cost</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">true_cost</span><span class="p">)),</span> <span class="n">rows</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">corso_mt</span><span class="p">])</span></div>
+
+    <span class="c1"># def set_reaction_bounds(self, index, **kwargs):</span>
+    <span class="c1"># 	super().set_reaction_bounds(index, **kwargs)</span>
+    <span class="c1"># 	self.original_bounds[self.decode_index(index, &#39;reaction&#39;)] = self.get_reaction_bounds(index)</span>
+
+<div class="viewcode-block" id="CORSOModel.set_corso_objective"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORSOModel.set_corso_objective">[docs]</a>    <span class="k">def</span> <span class="nf">set_corso_objective</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_objective</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">corso_rx</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CORSOModel.optimize_corso"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORSOModel.optimize_corso">[docs]</a>    <span class="k">def</span> <span class="nf">optimize_corso</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cost</span><span class="p">,</span> <span class="n">of_dict</span><span class="p">,</span> <span class="n">minimize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">constraint</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">constraintby</span><span class="o">=</span><span class="s1">&#39;val&#39;</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">flux1</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">flux1</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flux1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solve_original_model</span><span class="p">(</span><span class="n">of_dict</span><span class="p">,</span> <span class="n">minimize</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">flux1</span><span class="o">.</span><span class="n">objective_value</span><span class="p">())</span> <span class="o">&lt;</span> <span class="n">eps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">flux1</span><span class="p">,</span> <span class="n">flux1</span>
+        <span class="n">f1_x</span> <span class="o">=</span> <span class="n">flux1</span><span class="o">.</span><span class="n">x</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">constraintby</span> <span class="o">==</span> <span class="s1">&#39;perc&#39;</span><span class="p">:</span>
+            <span class="c1"># f1_f = flux1.x()[self.cbmodel.c != 0]</span>
+            <span class="n">f1_f</span> <span class="o">=</span> <span class="p">{</span><span class="n">idx</span><span class="p">:</span> <span class="n">f1_x</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">constraint</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">of_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+        <span class="k">elif</span> <span class="n">constraintby</span> <span class="o">==</span> <span class="s1">&#39;val&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">flux1</span><span class="o">.</span><span class="n">objective_value</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">constraint</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">minimize</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+                    <span class="n">flux1</span><span class="o">.</span><span class="n">objective_value</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">constraint</span> <span class="ow">and</span> <span class="n">minimize</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Objective flux is not sufficient for the the set constraint value.&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">f1_f</span> <span class="o">=</span> <span class="p">{</span><span class="n">idx</span><span class="p">:</span> <span class="n">constraint</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">of_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Invalid constraint options.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_reaction_bounds</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">corso_rx</span><span class="p">,</span> <span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="mf">1e20</span><span class="p">)</span>
+        <span class="c1"># corso_of_dict = deepcopy(of_dict)</span>
+        <span class="c1"># corso_of_dict[self.corso_rx] = 1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_costs</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="n">f1_f</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">true_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decode_index</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="s1">&#39;reaction&#39;</span><span class="p">)</span>
+            <span class="n">involved</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="p">[</span><span class="n">true_idx</span><span class="p">]</span>
+            <span class="n">fluxval</span> <span class="o">=</span> <span class="n">f1_f</span><span class="p">[</span><span class="n">rx</span><span class="p">]</span>  <span class="c1"># if isinstance(f1_f, ndarray) else f1_f</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">involved</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">int_</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_reaction_bounds</span><span class="p">(</span><span class="n">involved</span><span class="p">,</span> <span class="n">lb</span><span class="o">=</span><span class="n">fluxval</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="n">fluxval</span><span class="p">,</span> <span class="n">temporary</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_reaction_bounds</span><span class="p">(</span><span class="n">involved</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">lb</span><span class="o">=</span><span class="n">fluxval</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="n">fluxval</span><span class="p">,</span> <span class="n">temporary</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_reaction_bounds</span><span class="p">(</span><span class="n">involved</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">temporary</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_objective</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">corso_rx</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">sol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">revert_to_original_bounds</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">flux1</span><span class="p">,</span> <span class="n">CORSOSolution</span><span class="p">(</span><span class="n">flux1</span><span class="p">,</span> <span class="n">sol</span><span class="p">,</span> <span class="nb">sum</span><span class="p">([</span><span class="n">of_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">f1_f</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">of_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()]),</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">cost_index_mapping</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cbmodel</span><span class="o">.</span><span class="n">reaction_names</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="CORDAProperties"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORDAProperties">[docs]</a><span class="k">class</span> <span class="nc">CORDAProperties</span><span class="p">(</span><span class="n">PropertiesReconstruction</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Properties reconstruction using CORDA</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    high_conf_rx : list</span>
+<span class="sd">        High confidence reactions</span>
+<span class="sd">    medium_conf_rx : list</span>
+<span class="sd">        Medium confidence reactions</span>
+<span class="sd">    neg_conf_rx : list</span>
+<span class="sd">        Negative confidence reactions</span>
+<span class="sd">    pr_to_np : float</span>
+<span class="sd">        Threshold to include NP reactions if PR reactions depend on them</span>
+<span class="sd">    constraint : int</span>
+<span class="sd">        Value of the constraint</span>
+<span class="sd">    constrainby : str</span>
+<span class="sd">        either &#39;val&#39; (constrain fluxes by value) or &#39;perc&#39; (constraint by percentage)</span>
+<span class="sd">    om : float</span>
+<span class="sd">        cost assigned to reactions when calculating dependencies</span>
+<span class="sd">    ntimes : int</span>
+<span class="sd">        Number of CORSO FBA simulations performed per dependency assessment</span>
+<span class="sd">    nl : int or float</span>
+<span class="sd">        Number of loops to perform</span>
+<span class="sd">    solver : str</span>
+<span class="sd">        Solver to use for optimization</span>
+<span class="sd">    threads : int</span>
+<span class="sd">        Number of threads to use</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">CONSTRAINBY_VAL</span> <span class="o">=</span> <span class="s1">&#39;val&#39;</span>
+    <span class="n">CONSTRAINBY_PERC</span> <span class="o">=</span> <span class="s1">&#39;perc&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">high_conf_rx</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">medium_conf_rx</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">neg_conf_rx</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">pr_to_np</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">constraint</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">constrainby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">om</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ntimes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">nl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">solver</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">threads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+        <span class="n">new_mandatory</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">is_list</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;high_conf_rx&#39;</span><span class="p">,</span> <span class="s1">&#39;medium_conf_rx&#39;</span><span class="p">,</span> <span class="s1">&#39;neg_conf_rx&#39;</span><span class="p">]}</span>
+
+        <span class="n">new_optional</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="c1"># &#39;met_tests&#39;: lambda x: is_list(x) or x is None,</span>
+            <span class="s1">&#39;pr_to_np&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Number</span><span class="p">),</span>
+            <span class="s1">&#39;constraint&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Number</span><span class="p">),</span>
+            <span class="s1">&#39;constrainby&#39;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">CONSTRAINBY_VAL</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONSTRAINBY_PERC</span><span class="p">],</span>
+            <span class="s1">&#39;om&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Number</span><span class="p">),</span>
+            <span class="s1">&#39;ntimes&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s1">&#39;nl&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Number</span><span class="p">)</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s1">&#39;threads&#39;</span><span class="p">:</span> <span class="nb">int</span>
+        <span class="p">}</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_new_properties</span><span class="p">(</span><span class="n">new_mandatory</span><span class="p">,</span> <span class="n">new_optional</span><span class="p">)</span>
+
+        <span class="nb">vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">high_conf_rx</span><span class="p">,</span> <span class="n">medium_conf_rx</span><span class="p">,</span> <span class="n">neg_conf_rx</span><span class="p">,</span> <span class="n">pr_to_np</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">constrainby</span><span class="p">,</span> <span class="n">om</span><span class="p">,</span> <span class="n">ntimes</span><span class="p">,</span> <span class="n">nl</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span>
+                <span class="n">threads</span><span class="p">]</span>
+        <span class="n">defaults</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">CORDAProperties</span><span class="o">.</span><span class="n">CONSTRAINBY_VAL</span><span class="p">,</span> <span class="mf">1e4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mf">1e-2</span><span class="p">,</span> <span class="s1">&#39;CPLEX&#39;</span><span class="p">,</span> <span class="n">cpu_count</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;high_conf_rx&#39;</span><span class="p">,</span> <span class="s1">&#39;medium_conf_rx&#39;</span><span class="p">,</span> <span class="s1">&#39;neg_conf_rx&#39;</span><span class="p">,</span> <span class="s1">&#39;pr_to_np&#39;</span><span class="p">,</span> <span class="s1">&#39;constraint&#39;</span><span class="p">,</span> <span class="s1">&#39;constrainby&#39;</span><span class="p">,</span> <span class="s1">&#39;om&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;ntimes&#39;</span><span class="p">,</span> <span class="s1">&#39;nl&#39;</span><span class="p">,</span> <span class="s1">&#39;solver&#39;</span><span class="p">,</span> <span class="s1">&#39;threads&#39;</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">v</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">vars</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">defaults</span><span class="p">):</span>
+            <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">d</span>
+
+<div class="viewcode-block" id="CORDAProperties.from_integrated_scores"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORDAProperties.from_integrated_scores">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_integrated_scores</span><span class="p">(</span><span class="n">scores</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;CORDAProperties&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a CORDAProperties object from integrated scores</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scores: tuple</span>
+<span class="sd">            Tuple of high, medium and negative confidence scores</span>
+<span class="sd">        kwargs: dict</span>
+<span class="sd">            Additional arguments to pass to the constructor</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        CORDAProperties</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hi</span><span class="p">,</span> <span class="n">med</span><span class="p">,</span> <span class="n">neg</span> <span class="o">=</span> <span class="n">scores</span>
+        <span class="k">return</span> <span class="n">CORDAProperties</span><span class="p">(</span><span class="n">hi</span><span class="p">,</span> <span class="n">med</span><span class="p">,</span> <span class="n">neg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="CORDA"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORDA">[docs]</a><span class="k">class</span> <span class="nc">CORDA</span><span class="p">(</span><span class="n">ContextSpecificModelReconstructionAlgorithm</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    CORDA algorithm</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    S : array</span>
+<span class="sd">        Stoichiometric matrix</span>
+<span class="sd">    lb : array</span>
+<span class="sd">        Lower bounds</span>
+<span class="sd">    ub : array</span>
+<span class="sd">        Upper bounds</span>
+<span class="sd">    properties : CORDAProperties</span>
+<span class="sd">        Properties object</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    corso_fba : CORSOModel</span>
+<span class="sd">        CORSO FBA model</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">properties_class</span> <span class="o">=</span> <span class="n">CORDAProperties</span>
+
+<div class="viewcode-block" id="CORDA.costfx_factory"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORDA.costfx_factory">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">costfx_factory</span><span class="p">(</span><span class="n">nl</span><span class="p">,</span> <span class="n">om</span><span class="p">,</span> <span class="n">costbase</span><span class="p">):</span>
+        <span class="k">return</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">nl</span> <span class="o">*</span> <span class="n">floor</span><span class="p">(</span><span class="n">om</span> <span class="o">*</span> <span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">costbase</span><span class="p">),</span> <span class="p">))</span> <span class="o">/</span> <span class="n">om</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">,</span> <span class="n">properties</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">,</span> <span class="n">properties</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="n">S</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ub</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="n">lb</span><span class="p">),</span> <span class="n">array</span><span class="p">(</span><span class="n">ub</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="n">properties</span>
+
+        <span class="n">rx_names</span><span class="p">,</span> <span class="n">mt_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;V&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])],</span> <span class="p">[</span><span class="s1">&#39;M&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+        <span class="n">cbmodel</span> <span class="o">=</span> <span class="n">ConstraintBasedModel</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">)),</span> <span class="n">reaction_names</span><span class="o">=</span><span class="n">rx_names</span><span class="p">,</span>
+                                       <span class="n">metabolite_names</span><span class="o">=</span><span class="n">mt_names</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_m</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">corso_fba</span> <span class="o">=</span> <span class="n">CORSOModel</span><span class="p">(</span><span class="n">cbmodel</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">])</span>
+
+<div class="viewcode-block" id="CORDA.run"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORDA.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set up of the variables to be used and calls the run_corda method.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        array</span>
+<span class="sd">            Returns an Array of reaction categories</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">rx_cat</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="p">)</span>
+        <span class="n">rx_cat</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;high_conf_rx&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">rx_cat</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;medium_conf_rx&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">rx_cat</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;neg_conf_rx&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">3</span>
+
+        <span class="n">constraint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;constraint&#39;</span><span class="p">]</span>
+        <span class="n">constrainby</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;constrainby&#39;</span><span class="p">]</span>
+        <span class="n">nl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;nl&#39;</span><span class="p">]</span>
+        <span class="n">ntimes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;ntimes&#39;</span><span class="p">]</span>
+        <span class="n">om</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;om&#39;</span><span class="p">]</span>
+        <span class="n">pr_to_np</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;pr_to_np&#39;</span><span class="p">]</span>
+        <span class="n">threads</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;threads&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_corda</span><span class="p">(</span><span class="n">rx_cat</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">constrainby</span><span class="p">,</span> <span class="n">nl</span><span class="p">,</span> <span class="n">ntimes</span><span class="p">,</span> <span class="n">om</span><span class="p">,</span> <span class="n">pr_to_np</span><span class="p">,</span> <span class="n">threads</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CORDA.run_corda"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORDA.run_corda">[docs]</a>    <span class="k">def</span> <span class="nf">run_corda</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rx_cat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">constraint</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">constrainby</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">nl</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ntimes</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">om</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e4</span><span class="p">,</span>
+                  <span class="n">pr_to_np</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">threads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">cpu_count</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the CORDA algorithm</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rx_cat: np.ndarray</span>
+<span class="sd">            Array of reaction categories</span>
+<span class="sd">        constraint: int</span>
+<span class="sd">            Value of the constraint</span>
+<span class="sd">        constrainby: str</span>
+<span class="sd">            either &#39;val&#39; (constrain fluxes by value) or &#39;perc&#39; (constraint by percentage)</span>
+<span class="sd">        nl: int</span>
+<span class="sd">            Number of loops to perform</span>
+<span class="sd">        ntimes: int</span>
+<span class="sd">            Number of CORSO FBA simulations performed per dependency assessment</span>
+<span class="sd">        om: float</span>
+<span class="sd">            Cost assigned to reactions when calculating dependencies</span>
+<span class="sd">        pr_to_np: float</span>
+<span class="sd">            Threshold to include NP reactions if PR reactions depend on them</span>
+<span class="sd">        threads: int</span>
+<span class="sd">            Number of threads to use</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        np.ndarray</span>
+<span class="sd">            Returns an Array of reaction categories</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">_corda_find_all_dependencies</span><span class="p">(</span><span class="n">reaction_list</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Find all dependencies in a list of reactions</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            reaction_list: np.ndarray</span>
+<span class="sd">                Array of reactions</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            list</span>
+<span class="sd">                List of tuples of dependent reactions and reactions to delete</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="n">res_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">r</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">reaction_list</span><span class="p">)}</span>
+            <span class="n">true_threads</span> <span class="o">=</span> <span class="nb">min</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">reaction_list</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">threads</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">reaction_list</span><span class="p">)</span>
+            <span class="n">rx_per_job</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">reaction_list</span><span class="p">)</span> <span class="o">//</span> <span class="n">threads</span>
+            <span class="n">pool</span> <span class="o">=</span> <span class="n">_ProcessPool</span><span class="p">(</span>
+                <span class="n">processes</span><span class="o">=</span><span class="n">true_threads</span><span class="p">,</span>
+                <span class="n">initializer</span><span class="o">=</span><span class="n">_init_corda_worker</span><span class="p">,</span>
+                <span class="n">initargs</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">corso_fba</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">constrainby</span><span class="p">,</span> <span class="n">costfx</span><span class="p">,</span> <span class="n">costbase</span><span class="p">,</span> <span class="n">ntimes</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lb</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">pool</span><span class="o">.</span><span class="n">imap_unordered</span><span class="p">(</span><span class="n">_corda_dependent_reactions_iteration</span><span class="p">,</span> <span class="n">reaction_list</span><span class="p">,</span>
+                                                <span class="n">chunksize</span><span class="o">=</span><span class="n">rx_per_job</span><span class="p">):</span>
+                <span class="n">result</span><span class="p">[</span><span class="n">res_map</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">value</span>
+
+            <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+
+            <span class="k">return</span> <span class="n">result</span>
+
+        <span class="n">rx_cat</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="n">rx_cat</span><span class="p">)</span>
+        <span class="n">costbase</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">rx_cat</span><span class="p">)</span><span class="o">.</span><span class="n">value_counts</span><span class="p">())</span>
+
+        <span class="n">costbase</span><span class="p">[</span><span class="n">rx_cat</span> <span class="o">==</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">om</span><span class="p">)</span>
+        <span class="n">costbase</span><span class="p">[</span><span class="n">rx_cat</span> <span class="o">==</span> <span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">om</span>
+
+        <span class="n">costfx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">costfx_factory</span><span class="p">(</span><span class="n">nl</span><span class="p">,</span> <span class="n">om</span><span class="p">,</span> <span class="n">costbase</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">nested_dependent_rxs</span><span class="p">(</span><span class="n">rx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Find dependent reactions for a given reaction</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            rx: int</span>
+<span class="sd">                Reaction index</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            tuple</span>
+<span class="sd">               Dependent reactions and reactions to delete</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_dependent_reactions</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">constrainby</span><span class="p">,</span> <span class="n">costfx</span><span class="p">,</span> <span class="n">costbase</span><span class="p">,</span> <span class="n">ntimes</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">)</span>
+
+        <span class="n">HC_reactions</span> <span class="o">=</span> <span class="n">where</span><span class="p">(</span><span class="n">rx_cat</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Step 1 started&#39;</span><span class="p">)</span>
+        <span class="n">s1t</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># print(sum(dep),pd.Series(rx_cat).value_counts())</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">threads</span> <span class="ow">and</span> <span class="n">threads</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">HC_reactions</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">&gt;</span> <span class="n">threads</span><span class="p">):</span>
+            <span class="n">res1</span> <span class="o">=</span> <span class="n">_corda_find_all_dependencies</span><span class="p">(</span><span class="n">HC_reactions</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">res1</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">nested_dependent_rxs</span><span class="p">,</span> <span class="n">HC_reactions</span><span class="p">))</span>
+
+        <span class="n">s1_deps</span><span class="p">,</span> <span class="n">s1_block</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">res1</span><span class="p">))</span>
+        <span class="n">rx_cat</span><span class="p">[</span><span class="n">logical_or</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">s1_deps</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">s1_block</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">rx_cat</span><span class="p">[</span><span class="n">HC_reactions</span><span class="p">[</span><span class="n">s1_block</span><span class="p">]]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">- Finished in &#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">s1t</span><span class="p">),</span> <span class="s1">&#39;seconds&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">rx_cat</span><span class="p">)</span><span class="o">.</span><span class="n">value_counts</span><span class="p">())</span>
+        <span class="c1"># for rx in HC_reactions:</span>
+        <span class="c1"># 	dep, to_del = self.find_dependent_reactions(rx, constraint, constrainby, costfx, costbase, ntimes, eps=1e-6)</span>
+        <span class="c1"># 	rx_cat[dep] = 1</span>
+        <span class="c1"># 	if to_del:</span>
+        <span class="c1"># 		rx_cat[rx] = -1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">block_reactions_from_idxs</span><span class="p">(</span><span class="n">rx_cat</span><span class="p">)</span>
+
+        <span class="n">costbase</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="p">)</span>
+        <span class="n">costbase</span><span class="p">[</span><span class="n">rx_cat</span> <span class="o">==</span> <span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">om</span>
+
+        <span class="n">PR_reactions</span> <span class="o">=</span> <span class="n">where</span><span class="p">(</span><span class="n">rx_cat</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">NP_reactions</span> <span class="o">=</span> <span class="n">where</span><span class="p">(</span><span class="n">rx_cat</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">costfx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">costfx_factory</span><span class="p">(</span><span class="n">nl</span><span class="p">,</span> <span class="n">om</span><span class="p">,</span> <span class="n">costbase</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Step 2 started&#39;</span><span class="p">)</span>
+        <span class="n">s1t</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+        <span class="n">PR_NP</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># def _step_two(rx):</span>
+        <span class="c1"># 	dep, to_del = self.find_dependent_reactions(rx, constraint, constrainby, costfx, costbase, ntimes, eps=1e-6)</span>
+        <span class="c1"># 	PR_NP[rx] = dep[NP_reactions]</span>
+        <span class="c1"># 	if to_del:</span>
+        <span class="c1"># 		rx_cat[rx] = -1</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">threads</span> <span class="ow">and</span> <span class="n">threads</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">PR_reactions</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">&gt;</span> <span class="n">threads</span><span class="p">):</span>
+            <span class="n">res2</span> <span class="o">=</span> <span class="n">_corda_find_all_dependencies</span><span class="p">(</span><span class="n">PR_reactions</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">res2</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">nested_dependent_rxs</span><span class="p">,</span> <span class="n">PR_reactions</span><span class="p">))</span>
+
+        <span class="n">s2_deps</span><span class="p">,</span> <span class="n">s2_block</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">res2</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">rx</span><span class="p">,</span> <span class="n">dep</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">PR_reactions</span><span class="p">,</span> <span class="n">s2_deps</span><span class="p">):</span>
+            <span class="n">PR_NP</span><span class="p">[</span><span class="n">rx</span><span class="p">]</span> <span class="o">=</span> <span class="n">dep</span><span class="p">[</span><span class="n">NP_reactions</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">s2_block</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">rx_cat</span><span class="p">[</span><span class="n">PR_reactions</span><span class="p">[</span><span class="n">s2_block</span><span class="p">]]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">- Finished in &#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">s1t</span><span class="p">),</span> <span class="s1">&#39;seconds&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">rx_cat</span><span class="p">)</span><span class="o">.</span><span class="n">value_counts</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">block_reactions_from_idxs</span><span class="p">(</span><span class="n">rx_cat</span><span class="p">)</span>
+
+        <span class="n">PR_NP</span> <span class="o">=</span> <span class="p">[</span><span class="n">PR_NP</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">PR_NP</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="k">if</span> <span class="n">rx_cat</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">PR_NP</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">PR_NP</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">(</span><span class="n">PR_NP</span><span class="p">)</span>
+            <span class="n">NP_occurrence</span> <span class="o">=</span> <span class="n">apply_along_axis</span><span class="p">(</span><span class="nb">sum</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">PR_NP</span><span class="p">)</span>
+            <span class="n">np_to_pr_idx</span> <span class="o">=</span> <span class="n">NP_reactions</span><span class="p">[</span><span class="n">NP_occurrence</span> <span class="o">&gt;</span> <span class="n">pr_to_np</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">np_to_pr_idx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">rx_cat</span><span class="p">[</span><span class="n">np_to_pr_idx</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+                <span class="n">PR_NP</span> <span class="o">=</span> <span class="n">PR_NP</span><span class="p">[:,</span> <span class="n">NP_occurrence</span> <span class="o">&gt;</span> <span class="n">pr_to_np</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">PR_NP</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">PR_NP</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">([</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">np_to_pr_idx</span><span class="p">),</span> <span class="n">PR_NP</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">PR_NP</span> <span class="o">=</span> <span class="n">array</span><span class="p">([])</span>
+
+        <span class="c1"># 2.2</span>
+        <span class="n">PR_reactions</span> <span class="o">=</span> <span class="n">where</span><span class="p">(</span><span class="n">rx_cat</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">NP_reactions</span> <span class="o">=</span> <span class="n">where</span><span class="p">(</span><span class="n">rx_cat</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">PR_to_check_l8r</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">rx_cat</span><span class="p">[</span><span class="n">NP_reactions</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block_reactions_from_idxs</span><span class="p">(</span><span class="n">rx_cat</span><span class="p">)</span>
+
+        <span class="n">res2</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">rx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">PR_reactions</span><span class="p">):</span>
+            <span class="n">to_del</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_if_blocked</span><span class="p">(</span><span class="n">rx</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">to_del</span><span class="p">:</span>
+                <span class="c1"># PR_to_check_l8r.append(rx)</span>
+                <span class="c1"># if len(PR_NP) &gt; 0 and len(np_to_pr_idx) &gt; 0:</span>
+                <span class="c1"># 	np_from_rx = where(PR_NP[i, :] &gt; 0)[0]</span>
+                <span class="c1"># 	if len(np_from_rx) == 0:</span>
+                <span class="c1"># 		print(&#39;Undefined&#39;)</span>
+                <span class="c1"># 	else:</span>
+                <span class="c1"># 		for kn in np_from_rx:</span>
+                <span class="c1"># 			res2.append(kn)</span>
+                <span class="n">rx_cat</span><span class="p">[</span><span class="n">rx</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">res2</span> <span class="o">=</span> <span class="n">unique</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">array</span><span class="p">(</span><span class="n">res2</span><span class="p">)))</span>
+
+        <span class="n">PR_reactions</span> <span class="o">=</span> <span class="n">where</span><span class="p">(</span><span class="n">rx_cat</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">rx_cat</span><span class="p">[</span><span class="n">PR_reactions</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="c1"># rescued = set(sorted(PR_to_check_l8r + res2.tolist()))</span>
+
+        <span class="n">ES_reactions</span> <span class="o">=</span> <span class="n">rx_cat</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="n">OT_reactions</span> <span class="o">=</span> <span class="n">rx_cat</span> <span class="o">==</span> <span class="mi">0</span>
+
+        <span class="c1"># to_block = where(ES_reactions | OT_reactions)[0]</span>
+
+        <span class="c1"># rx_cat[to_block] = -1 # TODO: check this</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block_reactions_from_idxs</span><span class="p">(</span><span class="n">rx_cat</span><span class="p">)</span>
+
+        <span class="n">costbase</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="p">)</span>
+        <span class="n">costbase</span><span class="p">[</span><span class="n">OT_reactions</span><span class="p">]</span> <span class="o">=</span> <span class="n">om</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Step 3 started&#39;</span><span class="p">)</span>
+        <span class="n">s1t</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+        <span class="n">ES_OT</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># def _step_three(rx):</span>
+        <span class="c1"># 	dep, to_del = self.find_dependent_reactions(rx, constraint, constrainby, costfx, costbase, ntimes, 1e-6)</span>
+        <span class="c1"># 	ES_OT[rx] = dep[OT_reactions]</span>
+        <span class="c1">#</span>
+        <span class="n">ES_temp</span> <span class="o">=</span> <span class="n">where</span><span class="p">(</span><span class="n">ES_reactions</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">threads</span> <span class="ow">and</span> <span class="n">threads</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ES_temp</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">&gt;</span> <span class="n">threads</span><span class="p">):</span>
+            <span class="n">res3</span> <span class="o">=</span> <span class="n">_corda_find_all_dependencies</span><span class="p">(</span><span class="n">ES_temp</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">res3</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">nested_dependent_rxs</span><span class="p">,</span> <span class="n">ES_temp</span><span class="p">))</span>
+
+        <span class="n">s3_deps</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">res3</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">rx</span><span class="p">,</span> <span class="n">dep</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">where</span><span class="p">(</span><span class="n">ES_reactions</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="n">s3_deps</span><span class="p">):</span>
+            <span class="n">ES_OT</span><span class="p">[</span><span class="n">rx</span><span class="p">]</span> <span class="o">=</span> <span class="n">dep</span><span class="p">[</span><span class="n">OT_reactions</span><span class="p">]</span>
+
+        <span class="n">ES_OT</span> <span class="o">=</span> <span class="p">[</span><span class="n">ES_OT</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ES_OT</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="k">if</span> <span class="n">rx_cat</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">- Finished in &#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">s1t</span><span class="p">),</span> <span class="s1">&#39;seconds&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">rx_cat</span><span class="p">)</span><span class="o">.</span><span class="n">value_counts</span><span class="p">())</span>
+
+        <span class="n">OT_reaction_ids</span> <span class="o">=</span> <span class="n">where</span><span class="p">(</span><span class="n">OT_reactions</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">ES_OT</span><span class="p">:</span>
+            <span class="n">ES_OT</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">(</span><span class="n">ES_OT</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ES_OT</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">OT_occurrence</span> <span class="o">=</span> <span class="n">apply_along_axis</span><span class="p">(</span><span class="nb">sum</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ES_OT</span><span class="p">)</span>
+                <span class="n">ot_to_es_idx</span> <span class="o">=</span> <span class="n">OT_reaction_ids</span><span class="p">[</span><span class="n">OT_occurrence</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+                <span class="n">rx_cat</span><span class="p">[</span><span class="n">ot_to_es_idx</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">rx_cat</span></div>
+
+<div class="viewcode-block" id="CORDA.block_reactions_from_idxs"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORDA.block_reactions_from_idxs">[docs]</a>    <span class="k">def</span> <span class="nf">block_reactions_from_idxs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rxcat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Block reactions from a list of indices</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rxcat: np.ndarray</span>
+<span class="sd">            Array of reaction indices</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">block_corso</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">rx</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">corso_fba</span><span class="o">.</span><span class="n">set_reaction_bounds</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">block_cbmodel</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">rx</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">corso_fba</span><span class="o">.</span><span class="n">cbmodel</span><span class="o">.</span><span class="n">set_reaction_bounds</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">to_block</span> <span class="o">=</span> <span class="n">where</span><span class="p">(</span><span class="n">rxcat</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">to_block</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">do_function_for_reactions_on_both_models</span><span class="p">(</span><span class="n">reaction</span><span class="p">,</span> <span class="n">block_cbmodel</span><span class="p">,</span> <span class="n">block_corso</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CORDA.do_function_for_reactions_on_both_models"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORDA.do_function_for_reactions_on_both_models">[docs]</a>    <span class="k">def</span> <span class="nf">do_function_for_reactions_on_both_models</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reaction</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">mfunction</span><span class="p">,</span> <span class="n">corsofunction</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform a function on both models</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        reaction: int</span>
+<span class="sd">            Reaction index</span>
+<span class="sd">        mfunction: function</span>
+<span class="sd">            Function to perform on the CBModel</span>
+<span class="sd">        corsofunction: function</span>
+<span class="sd">            Function to perform on the CORSOModel</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">corso_fba</span><span class="o">.</span><span class="n">mapping</span><span class="p">[</span><span class="n">reaction</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">corsofunction</span><span class="p">(</span><span class="n">reaction</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">rxsplit</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">corso_fba</span><span class="o">.</span><span class="n">mapping</span><span class="p">[</span><span class="n">reaction</span><span class="p">]:</span>
+                <span class="n">corsofunction</span><span class="p">(</span><span class="n">rxsplit</span><span class="p">)</span>
+
+        <span class="n">mfunction</span><span class="p">(</span><span class="n">reaction</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CORDA.find_reaction_limits"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORDA.find_reaction_limits">[docs]</a>    <span class="k">def</span> <span class="nf">find_reaction_limits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find the minimum and maximum flux for a given reaction</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rx: int</span>
+<span class="sd">            Reaction index</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple</span>
+<span class="sd">            Minimum and maximum flux</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">corso_fba</span><span class="o">.</span><span class="n">cbmodel</span><span class="o">.</span><span class="n">set_objective</span><span class="p">({</span><span class="n">rx</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">fmin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corso_fba</span><span class="o">.</span><span class="n">cbmodel</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span><span class="o">.</span><span class="n">objective_value</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">corso_fba</span><span class="o">.</span><span class="n">cbmodel</span><span class="o">.</span><span class="n">set_objective</span><span class="p">({</span><span class="n">rx</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="n">fmax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corso_fba</span><span class="o">.</span><span class="n">cbmodel</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span><span class="o">.</span><span class="n">objective_value</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">fmin</span><span class="p">,</span> <span class="n">fmax</span></div>
+
+<div class="viewcode-block" id="CORDA.check_if_blocked"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORDA.check_if_blocked">[docs]</a>    <span class="k">def</span> <span class="nf">check_if_blocked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if a reaction is blocked</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rx: int</span>
+<span class="sd">            Reaction index</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            True if the reaction is blocked, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">fl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_reaction_limits</span><span class="p">(</span><span class="n">rx</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fl</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">nan</span> <span class="ow">and</span> <span class="n">fl</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">nan</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">fl</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">fl</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CORDA.find_dependent_reactions"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.corda.CORDA.find_dependent_reactions">[docs]</a>    <span class="k">def</span> <span class="nf">find_dependent_reactions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">constraint</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">constrainby</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">costfx</span><span class="p">,</span> <span class="n">costbase</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                 <span class="n">ntimes</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find dependent reactions for a given reaction</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rx: int</span>
+<span class="sd">            Reaction index</span>
+<span class="sd">        constraint: int</span>
+<span class="sd">            Value of the constraint</span>
+<span class="sd">        constrainby: str</span>
+<span class="sd">            either &#39;val&#39; (constrain fluxes by value) or &#39;perc&#39; (constraint by percentage)</span>
+<span class="sd">        costfx: function</span>
+<span class="sd">            Cost function</span>
+<span class="sd">        costbase: np.ndarray</span>
+<span class="sd">            Cost base</span>
+<span class="sd">        ntimes: int</span>
+<span class="sd">            Number of CORSO FBA simulations performed per dependency assessment</span>
+<span class="sd">        eps: float</span>
+<span class="sd">            Epsilon value</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple</span>
+<span class="sd">            Dependent reactions and reactions to delete</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dependent</span><span class="p">,</span> <span class="n">to_delete</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__find_dependent_reactions</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">constrainby</span><span class="p">,</span> <span class="n">costfx</span><span class="p">,</span> <span class="n">costbase</span><span class="p">,</span> <span class="n">ntimes</span><span class="p">,</span>
+                                                               <span class="kc">True</span><span class="p">,</span>
+                                                               <span class="n">eps</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lb</span><span class="p">[</span><span class="n">rx</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">bkw_dep</span><span class="p">,</span> <span class="n">to_del_bkw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__find_dependent_reactions</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="o">-</span><span class="n">constraint</span><span class="p">,</span> <span class="n">constrainby</span><span class="p">,</span> <span class="n">costfx</span><span class="p">,</span> <span class="n">costbase</span><span class="p">,</span>
+                                                                  <span class="n">ntimes</span><span class="p">,</span>
+                                                                  <span class="kc">False</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
+
+            <span class="n">dependent</span> <span class="o">=</span> <span class="n">dependent</span> <span class="o">|</span> <span class="n">bkw_dep</span>
+            <span class="n">to_delete</span> <span class="o">=</span> <span class="n">to_del_bkw</span> <span class="o">&amp;</span> <span class="n">to_delete</span>
+
+        <span class="k">return</span> <span class="n">dependent</span><span class="p">,</span> <span class="n">to_delete</span></div>
+
+    <span class="k">def</span> <span class="nf">__find_dependent_reactions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">constraint</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">constrainby</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">costfx</span><span class="p">,</span> <span class="n">costbase</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                   <span class="n">n_times</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">forward</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find dependent reactions for a given reaction</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rx: int</span>
+<span class="sd">            Reaction index</span>
+<span class="sd">        constraint: int</span>
+<span class="sd">            Value of the constraint</span>
+<span class="sd">        constrainby: str</span>
+<span class="sd">            either &#39;val&#39; (constrain fluxes by value) or &#39;perc&#39; (constraint by percentage)</span>
+<span class="sd">        costfx: function</span>
+<span class="sd">            Cost function</span>
+<span class="sd">        costbase: np.ndarray</span>
+<span class="sd">            Cost base</span>
+<span class="sd">        n_times: int</span>
+<span class="sd">            Number of CORSO FBA simulations performed per dependency assessment</span>
+<span class="sd">        forward: bool</span>
+<span class="sd">            True if forward, False if backward</span>
+<span class="sd">        eps: float</span>
+<span class="sd">            Epsilon value</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple</span>
+<span class="sd">            Dependent reactions and reactions to delete</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">of_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">rx</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="n">costbase</span> <span class="o">+</span> <span class="n">costfx</span><span class="p">()</span>
+        <span class="c1"># print(rx, cost)</span>
+        <span class="n">flux</span><span class="p">,</span> <span class="n">corso_sol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corso_fba</span><span class="o">.</span><span class="n">optimize_corso</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">of_dict</span><span class="p">,</span> <span class="ow">not</span> <span class="n">forward</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">constrainby</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">)</span>
+
+        <span class="n">dependent</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">corso_sol</span><span class="o">.</span><span class="n">x</span><span class="p">())</span> <span class="o">&gt;</span> <span class="n">eps</span>
+        <span class="n">to_del</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">dependent</span><span class="o">.</span><span class="n">any</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">to_del</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_times</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">cost</span> <span class="o">=</span> <span class="n">costbase</span> <span class="o">+</span> <span class="n">costfx</span><span class="p">()</span>
+                <span class="n">flux</span><span class="p">,</span> <span class="n">corso_sol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corso_fba</span><span class="o">.</span><span class="n">optimize_corso</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">of_dict</span><span class="p">,</span> <span class="ow">not</span> <span class="n">forward</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">constrainby</span><span class="p">,</span>
+                                                                <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">,</span> <span class="n">flux1</span><span class="o">=</span><span class="n">flux</span><span class="p">)</span>
+                <span class="n">dependent</span> <span class="o">=</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">corso_sol</span><span class="o">.</span><span class="n">x</span><span class="p">())</span> <span class="o">&gt;</span> <span class="n">eps</span><span class="p">)</span> <span class="o">|</span> <span class="n">dependent</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dependent</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">dependent</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dependent</span><span class="p">,</span> <span class="n">to_del</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

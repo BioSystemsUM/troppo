@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>troppo.methods.gapfill.efm &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">Troppo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">troppo.methods.gapfill.efm</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for troppo.methods.gapfill.efm</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span>
+
+<span class="kn">from</span> <span class="nn">cobamp.core.linear_systems</span> <span class="kn">import</span> <span class="n">get_default_solver</span>
+<span class="kn">from</span> <span class="nn">cobamp.algorithms.kshortest</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">troppo.methods.base</span> <span class="kn">import</span> <span class="n">GapfillAlgorithm</span><span class="p">,</span> <span class="n">GapfillProperties</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ndarray</span>
+
+<span class="n">DEFAULT_CONFIG</span> <span class="o">=</span> <span class="n">KShortestProperties</span><span class="p">()</span>
+<span class="n">DEFAULT_CONFIG</span><span class="p">[</span><span class="n">K_SHORTEST_MPROPERTY_METHOD</span><span class="p">]</span> <span class="o">=</span> <span class="n">K_SHORTEST_METHOD_ITERATE</span>
+<span class="n">DEFAULT_CONFIG</span><span class="p">[</span><span class="n">K_SHORTEST_OPROPERTY_BIG_M_CONSTRAINTS</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">DEFAULT_CONFIG</span><span class="p">[</span><span class="n">K_SHORTEST_OPROPERTY_BIG_M_VALUE</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e6</span>
+<span class="n">DEFAULT_CONFIG</span><span class="p">[</span><span class="n">K_SHORTEST_OPROPERTY_FORCE_NON_CANCELLATION</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">DEFAULT_CONFIG</span><span class="p">[</span><span class="n">K_SHORTEST_OPROPERTY_MAXSOLUTIONS</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+
+<div class="viewcode-block" id="EFMGapfillProperties"><a class="viewcode-back" href="../../../../troppo.methods.gapfill.html#troppo.methods.gapfill.efm.EFMGapfillProperties">[docs]</a><span class="k">class</span> <span class="nc">EFMGapfillProperties</span><span class="p">(</span><span class="n">GapfillProperties</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Properties for the EFM Gap-filling algorithm.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    -----------</span>
+<span class="sd">    avbl_fluxes: list</span>
+<span class="sd">        List of available fluxes.</span>
+<span class="sd">    lsystem_args: dict</span>
+<span class="sd">        Dictionary of arguments to be passed to the IrreversibleLinearPatternSystem.</span>
+<span class="sd">    solver: str</span>
+<span class="sd">        Solver to be used by the IrreversibleLinearPatternSystem.</span>
+<span class="sd">    kshproperties: KShortestProperties</span>
+<span class="sd">        Properties for the KShortestEFMAlgorithm.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">avbl_fluxes</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">lsystem_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">solver</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">get_default_solver</span><span class="p">(),</span>
+                 <span class="n">kshproperties</span><span class="p">:</span> <span class="n">KShortestProperties</span> <span class="o">=</span> <span class="n">DEFAULT_CONFIG</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_new_properties</span><span class="p">({</span><span class="s1">&#39;kshproperties&#39;</span><span class="p">:</span> <span class="n">KShortestProperties</span><span class="p">},</span> <span class="p">{})</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;avbl_fluxes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">avbl_fluxes</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;lsystem_args&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lsystem_args</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">solver</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;kshproperties&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kshproperties</span></div>
+
+
+<div class="viewcode-block" id="EFMGapfill"><a class="viewcode-back" href="../../../../troppo.methods.gapfill.html#troppo.methods.gapfill.efm.EFMGapfill">[docs]</a><span class="k">class</span> <span class="nc">EFMGapfill</span><span class="p">(</span><span class="n">GapfillAlgorithm</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gap-filling algorithm based on the KShortestEFMAlgorithm.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    -----------</span>
+<span class="sd">    S: ndarray</span>
+<span class="sd">        Stoichiometric matrix.</span>
+<span class="sd">    lb: ndarray</span>
+<span class="sd">        Lower bounds.</span>
+<span class="sd">    ub: ndarray</span>
+<span class="sd">        Upper bounds.</span>
+<span class="sd">    properties: EFMGapfillProperties</span>
+<span class="sd">        Properties for the algorithm.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">properties_class</span> <span class="o">=</span> <span class="n">EFMGapfillProperties</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">lb</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">ub</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">properties</span><span class="p">:</span> <span class="n">EFMGapfillProperties</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">,</span> <span class="n">properties</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ub</span> <span class="o">=</span> <span class="n">S</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="n">properties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;kshproperties&#39;</span><span class="p">][</span><span class="n">K_SHORTEST_MPROPERTY_TYPE_EFP</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="EFMGapfill.get_enumerator"><a class="viewcode-back" href="../../../../troppo.methods.gapfill.html#troppo.methods.gapfill.efm.EFMGapfill.get_enumerator">[docs]</a>    <span class="k">def</span> <span class="nf">get_enumerator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">lb</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">ub</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">avbl_fluxes</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">solver</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                       <span class="n">lsystem_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the enumerator for the EFM Gap-filling algorithm.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        S: ndarray</span>
+<span class="sd">            Stoichiometric matrix.</span>
+<span class="sd">        lb: ndarray</span>
+<span class="sd">            Lower bounds.</span>
+<span class="sd">        ub: ndarray</span>
+<span class="sd">            Upper bounds.</span>
+<span class="sd">        avbl_fluxes: list</span>
+<span class="sd">            Available fluxes.</span>
+<span class="sd">        solver: str</span>
+<span class="sd">            Solver to be used by the IrreversibleLinearPatternSystem.</span>
+<span class="sd">        lsystem_args: dict</span>
+<span class="sd">            Dictionary of arguments to be passed to the IrreversibleLinearPatternSystem.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        enumerator: Iterable</span>
+<span class="sd">            Enumerator for the EFM Gap-filling algorithm.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ils</span> <span class="o">=</span> <span class="n">IrreversibleLinearPatternSystem</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="n">avbl_fluxes</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span> <span class="o">**</span><span class="n">lsystem_args</span><span class="p">)</span>
+        <span class="n">ksefm</span> <span class="o">=</span> <span class="n">KShortestEFMAlgorithm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;kshproperties&#39;</span><span class="p">])</span>
+        <span class="n">enumerator</span> <span class="o">=</span> <span class="n">ksefm</span><span class="o">.</span><span class="n">get_enumerator</span><span class="p">(</span><span class="n">ils</span><span class="p">,</span> <span class="p">[],</span> <span class="p">[],</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">enumerator</span></div>
+
+<div class="viewcode-block" id="EFMGapfill.gapfill"><a class="viewcode-back" href="../../../../troppo.methods.gapfill.html#troppo.methods.gapfill.efm.EFMGapfill.gapfill">[docs]</a>    <span class="k">def</span> <span class="nf">gapfill</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">avbl_fluxes</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">lsystem_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">solver</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gap-filling algorithm based on the KShortestEFMAlgorithm.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        avbl_fluxes: list</span>
+<span class="sd">            Available fluxes.</span>
+<span class="sd">        lsystem_args: dict</span>
+<span class="sd">            Dictionary of arguments to be passed to the IrreversibleLinearPatternSystem.</span>
+<span class="sd">        solver: str</span>
+<span class="sd">            Solver to be used by the IrreversibleLinearPatternSystem.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        enumerator: Iterable</span>
+<span class="sd">            Enumerator for the EFM Gap-filling algorithm.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_enumerator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ub</span><span class="p">,</span> <span class="n">avbl_fluxes</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">lsystem_args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EFMGapfill.run"><a class="viewcode-back" href="../../../../troppo.methods.gapfill.html#troppo.methods.gapfill.efm.EFMGapfill.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the EFM Gap-filling algorithm.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        result: list</span>
+<span class="sd">            Indices of active indicator variables (maps with variables on the original stoichiometric matrix)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">enm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gapfill</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;avbl_fluxes&#39;</span><span class="p">],</span>
+                           <span class="n">lsystem_args</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;lsystem_args&#39;</span><span class="p">],</span>
+                           <span class="n">solver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;kshproperties&#39;</span><span class="p">][</span><span class="n">K_SHORTEST_MPROPERTY_METHOD</span><span class="p">]</span> <span class="o">==</span> <span class="n">K_SHORTEST_METHOD_ITERATE</span><span class="p">:</span>
+            <span class="n">slist</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">enm</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;kshproperties&#39;</span><span class="p">][</span><span class="n">K_SHORTEST_MPROPERTY_METHOD</span><span class="p">]</span> <span class="o">==</span> <span class="n">K_SHORTEST_METHOD_POPULATE</span><span class="p">:</span>
+            <span class="n">slist</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">enm</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Could not find any solution&#39;</span><span class="p">)</span>
+            <span class="n">slist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">get_active_indicator_varids</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">slist</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">result</span></div></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">urllib.request</span> <span class="kn">import</span> <span class="n">urlretrieve</span>
+    <span class="kn">from</span> <span class="nn">cobra.io</span> <span class="kn">import</span> <span class="n">read_sbml_model</span>
+    <span class="kn">from</span> <span class="nn">cobra.core</span> <span class="kn">import</span> <span class="n">Reaction</span><span class="p">,</span> <span class="n">Metabolite</span>
+    <span class="kn">from</span> <span class="nn">cobamp.wrappers.cobra</span> <span class="kn">import</span> <span class="n">COBRAModelObjectReader</span>
+    <span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">sample</span><span class="p">,</span> <span class="n">randint</span>
+    <span class="kn">from</span> <span class="nn">troppo.methods_wrappers</span> <span class="kn">import</span> <span class="n">GapfillWrapper</span>
+
+    <span class="n">BIOMASS_RX_NAME</span> <span class="o">=</span> <span class="s1">&#39;BIOMASS_Ecoli_core_w_GAM&#39;</span>
+    <span class="n">BIOMASS_TRANS_NAME</span> <span class="o">=</span> <span class="s1">&#39;BIOMASSt&#39;</span>
+    <span class="n">BIOMASS_DRAIN_NAME</span> <span class="o">=</span> <span class="s1">&#39;EX_biomass_e&#39;</span>
+    <span class="n">BIOMASS_CYT_NAME</span> <span class="o">=</span> <span class="s1">&#39;biomass_c&#39;</span>
+    <span class="n">BIOMASS_EXT_NAME</span> <span class="o">=</span> <span class="s1">&#39;biomass_e&#39;</span>
+
+
+    <span class="k">def</span> <span class="nf">random_knockouts</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">biomass_reactions</span><span class="p">,</span> <span class="n">drains</span><span class="p">):</span>
+        <span class="n">exclude</span> <span class="o">=</span> <span class="n">biomass_reactions</span> <span class="o">|</span> <span class="n">drains</span>
+        <span class="n">choices</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">reactions</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">exclude</span><span class="p">)</span>
+        <span class="n">missing_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">sample</span><span class="p">(</span><span class="n">choices</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">randint</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">choices</span><span class="p">)</span> <span class="o">//</span> <span class="mi">4</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">choices</span><span class="p">))</span> <span class="o">//</span> <span class="mi">4</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">missing_set</span>
+
+
+    <span class="k">def</span> <span class="nf">simulate_model_with_kos</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">knockouts</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">model</span> <span class="k">as</span> <span class="n">temp_model</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="n">knockouts</span><span class="p">:</span>
+                <span class="n">temp_model</span><span class="o">.</span><span class="n">reactions</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">rx</span><span class="p">)</span><span class="o">.</span><span class="n">knock_out</span><span class="p">()</span>
+            <span class="n">solution</span> <span class="o">=</span> <span class="n">temp_model</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">solution</span>
+
+
+    <span class="k">def</span> <span class="nf">get_ecoli_core_model</span><span class="p">():</span>
+        <span class="n">model_url</span> <span class="o">=</span> <span class="s1">&#39;http://bigg.ucsd.edu/static/models/e_coli_core.xml&#39;</span>
+        <span class="n">model_path</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">urlretrieve</span><span class="p">(</span><span class="n">model_url</span><span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">read_sbml_model</span><span class="p">(</span><span class="n">model_path</span><span class="p">)</span>
+        <span class="n">b_c</span><span class="p">,</span> <span class="n">b_e</span> <span class="o">=</span> <span class="p">(</span><span class="n">Metabolite</span><span class="p">(</span><span class="n">BIOMASS_CYT_NAME</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;biomass (cytosol)&#39;</span><span class="p">),</span>
+                    <span class="n">Metabolite</span><span class="p">(</span><span class="n">BIOMASS_EXT_NAME</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;biomass (extracellular)&#39;</span><span class="p">))</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">reactions</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">BIOMASS_RX_NAME</span><span class="p">)</span><span class="o">.</span><span class="n">add_metabolites</span><span class="p">({</span><span class="n">b_c</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+
+        <span class="n">b_trans</span> <span class="o">=</span> <span class="n">Reaction</span><span class="p">(</span><span class="n">BIOMASS_TRANS_NAME</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Biomass transport&#39;</span><span class="p">)</span>
+        <span class="n">b_trans</span><span class="o">.</span><span class="n">add_metabolites</span><span class="p">({</span><span class="n">b_c</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">b_e</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+
+        <span class="n">b_drain</span> <span class="o">=</span> <span class="n">Reaction</span><span class="p">(</span><span class="n">BIOMASS_DRAIN_NAME</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Biomass drain&#39;</span><span class="p">)</span>
+        <span class="n">b_drain</span><span class="o">.</span><span class="n">add_metabolites</span><span class="p">({</span><span class="n">b_e</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">})</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">add_reactions</span><span class="p">([</span><span class="n">b_trans</span><span class="p">,</span> <span class="n">b_drain</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">model</span>
+
+
+    <span class="n">ec_model</span> <span class="o">=</span> <span class="n">get_ecoli_core_model</span><span class="p">()</span>
+
+    <span class="n">objreader</span> <span class="o">=</span> <span class="n">COBRAModelObjectReader</span><span class="p">(</span><span class="n">ec_model</span><span class="p">)</span>
+    <span class="n">biomass_rx_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">BIOMASS_RX_NAME</span><span class="p">,</span> <span class="n">BIOMASS_TRANS_NAME</span><span class="p">,</span> <span class="n">BIOMASS_DRAIN_NAME</span><span class="p">}</span>
+    <span class="n">non_consumed</span> <span class="o">=</span> <span class="p">{</span><span class="n">b</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">ec_model</span><span class="o">.</span><span class="n">boundary</span> <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">}</span>
+    <span class="n">drain_rx_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">r</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">ec_model</span><span class="o">.</span><span class="n">boundary</span><span class="p">}</span>
+    <span class="n">consumed</span> <span class="o">=</span> <span class="p">{</span><span class="n">BIOMASS_EXT_NAME</span><span class="p">}</span>
+
+    <span class="n">cobamp_model</span> <span class="o">=</span> <span class="n">objreader</span><span class="o">.</span><span class="n">to_cobamp_cbm</span><span class="p">(</span><span class="s1">&#39;CPLEX&#39;</span><span class="p">)</span>
+    <span class="n">gpfl_wrapper</span> <span class="o">=</span> <span class="n">GapfillWrapper</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">ec_model</span><span class="p">)</span>
+    <span class="n">failed</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+        <span class="n">kos</span> <span class="o">=</span> <span class="n">random_knockouts</span><span class="p">(</span><span class="n">ec_model</span><span class="p">,</span> <span class="n">biomass_rx_ids</span><span class="p">,</span> <span class="n">drain_rx_ids</span><span class="p">)</span>
+        <span class="n">ls_override</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;produced&#39;</span><span class="p">:</span> <span class="n">consumed</span><span class="p">,</span>
+                       <span class="s1">&#39;non_consumed&#39;</span><span class="p">:</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">ec_model</span><span class="o">.</span><span class="n">reactions</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="o">.</span><span class="n">metabolites</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">non_consumed</span><span class="p">]}</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">gpfl_wrapper</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">avbl_fluxes</span><span class="o">=</span><span class="n">kos</span><span class="p">,</span> <span class="n">ls_override</span><span class="o">=</span><span class="n">ls_override</span><span class="p">,</span> <span class="n">algorithm</span><span class="o">=</span><span class="s1">&#39;efm&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">with</span> <span class="n">cobamp_model</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="p">(</span><span class="n">kos</span> <span class="o">-</span> <span class="n">sol</span><span class="p">):</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">set_reaction_bounds</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">sol_after</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">optimize</span><span class="p">({</span><span class="n">BIOMASS_DRAIN_NAME</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">sol</span><span class="p">:</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">set_reaction_bounds</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">sol_before</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">optimize</span><span class="p">({</span><span class="n">BIOMASS_DRAIN_NAME</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">sol_after</span><span class="o">.</span><span class="n">objective_value</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="n">sol_after</span><span class="o">.</span><span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;infeasible&#39;</span><span class="p">:</span>
+            <span class="n">failed</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">kos</span><span class="p">,</span> <span class="n">sol</span><span class="p">,</span> <span class="n">sol_before</span><span class="p">,</span> <span class="n">sol_after</span><span class="p">,</span> <span class="n">sol</span><span class="p">))</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

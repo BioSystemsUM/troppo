@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Troppo &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="installation.html" />
+    <link rel="prev" title="Welcome to Troppo’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Troppo</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.methods.html">Methods module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.omics.html">Omics Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.tasks.html">Tasks Assessment Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.utilities.html">Utilities module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.validation.html">Validation Module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Troppo</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/modules.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="troppo">
+<h1>Troppo<a class="headerlink" href="#troppo" title="Permalink to this heading"></a></h1>
+<p>Troppo (Tissue-specific RecOnstruction and Phenotype Prediction using Omics data) is a Python package containing methods for tissue specific reconstruction to use with constraint-based models. The main purpose of this package is to provide an open-source framework which is both modular and flexible to be integrated with other packages, such as cobrapy, framed or cameo whose already provide generic data structures to interpret metabolic models.</p>
+<p>A (MI)LP solver is required to use most of the present methods. The current methods support optlang, which in turn allow the use of solvers like CPLEX or Gurobi.</p>
+<p>The current methods implemented are:</p>
+<ul class="simple">
+<li><p>FastCORE</p></li>
+<li><p>CORDA</p></li>
+<li><p>GIMME</p></li>
+<li><p>(t)INIT</p></li>
+<li><p>iMAT</p></li>
+</ul>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#instalation-from-pypi-stable-releases">Instalation from PyPI (stable releases)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#instalation-from-github-latest-development-release">Instalation from github (latest development release)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troppo.methods.html">Methods module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troppo.methods.gapfill.html">Gapfilling Methods</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.gapfill.html#module-troppo.methods.gapfill.consensus">Combinatorial Gapfilling Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.gapfill.html#elementary-flux-mode-gapfilling-algorithm">Elementary Flux Mode Gapfilling Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.gapfill.html#module-troppo.methods.gapfill.fastcc">FastCC Gapfilling Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.gapfill.html#module-troppo.methods.gapfill.pathway_analysis">Pathway Analysis Gapfilling Algorithm</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.methods.reconstruction.html">Reconstruction Methods</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.reconstruction.html#module-troppo.methods.reconstruction.corda">Corda Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.reconstruction.html#module-troppo.methods.reconstruction.fastcore">FastCORE Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.reconstruction.html#module-troppo.methods.reconstruction.gimme">GIMME Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.reconstruction.html#module-troppo.methods.reconstruction.imat">iMAT Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.reconstruction.html#module-troppo.methods.reconstruction.swiftcore">SwiftCore Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.reconstruction.html#module-troppo.methods.reconstruction.tINIT">(t)INIT Algorithm</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.methods.html#base-classes-for-gapfilling-and-reconstruction">Base classes for Gapfilling and Reconstruction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.html#troppo.methods.base.ContextSpecificModelReconstructionAlgorithm"><code class="docutils literal notranslate"><span class="pre">ContextSpecificModelReconstructionAlgorithm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.html#troppo.methods.base.GapfillAlgorithm"><code class="docutils literal notranslate"><span class="pre">GapfillAlgorithm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.html#troppo.methods.base.GapfillProperties"><code class="docutils literal notranslate"><span class="pre">GapfillProperties</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.html#troppo.methods.base.PropertiesReconstruction"><code class="docutils literal notranslate"><span class="pre">PropertiesReconstruction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.html#troppo.methods.base.decode_mt_list"><code class="docutils literal notranslate"><span class="pre">decode_mt_list()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.html#troppo.methods.base.decode_rx_list"><code class="docutils literal notranslate"><span class="pre">decode_rx_list()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troppo.omics.html">Omics Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troppo.omics.readers.html">Readers for Omics data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.readers.html#module-troppo.omics.readers.generic">Generic Reader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.readers.html#module-troppo.omics.readers.hpa">HPA Reader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.readers.html#module-troppo.omics.readers.microarray">Microarray Reader</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.omics.html#module-troppo.omics.core">Core module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.core.IdentifierMapping"><code class="docutils literal notranslate"><span class="pre">IdentifierMapping</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.core.OmicsContainer"><code class="docutils literal notranslate"><span class="pre">OmicsContainer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.core.OmicsDataMap"><code class="docutils literal notranslate"><span class="pre">OmicsDataMap</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.core.OmicsMeasurementSet"><code class="docutils literal notranslate"><span class="pre">OmicsMeasurementSet</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.core.TabularContainer"><code class="docutils literal notranslate"><span class="pre">TabularContainer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.core.TypedOmicsMeasurementSet"><code class="docutils literal notranslate"><span class="pre">TypedOmicsMeasurementSet</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.core.has_valid_dims"><code class="docutils literal notranslate"><span class="pre">has_valid_dims()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.omics.html#module-troppo.omics.gene_level_thresholding">Gene-level thresholding</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.gene_level_thresholding.GeneLevelThresholding"><code class="docutils literal notranslate"><span class="pre">GeneLevelThresholding</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.omics.html#module-troppo.omics.id_converter">Gene ID converter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.id_converter.idConverter"><code class="docutils literal notranslate"><span class="pre">idConverter()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.id_converter.searchNomenclature"><code class="docutils literal notranslate"><span class="pre">searchNomenclature()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.omics.html#module-troppo.omics.integration">Reaction-level integration of Omics data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.integration.AdjustedScoreIntegrationStrategy"><code class="docutils literal notranslate"><span class="pre">AdjustedScoreIntegrationStrategy</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.integration.ContinuousScoreIntegrationStrategy"><code class="docutils literal notranslate"><span class="pre">ContinuousScoreIntegrationStrategy</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.integration.CustomSelectionIntegrationStrategy"><code class="docutils literal notranslate"><span class="pre">CustomSelectionIntegrationStrategy</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.integration.DefaultCoreIntegrationStrategy"><code class="docutils literal notranslate"><span class="pre">DefaultCoreIntegrationStrategy</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.integration.ReactionProtectionMixin"><code class="docutils literal notranslate"><span class="pre">ReactionProtectionMixin</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.integration.ScoreIntegrationStrategy"><code class="docutils literal notranslate"><span class="pre">ScoreIntegrationStrategy</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#troppo.omics.integration.ThresholdSelectionIntegrationStrategy"><code class="docutils literal notranslate"><span class="pre">ThresholdSelectionIntegrationStrategy</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troppo.tasks.html">Tasks Assessment Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troppo.tasks.html#module-troppo.tasks.core">Core module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.tasks.html#troppo.tasks.core.Task"><code class="docutils literal notranslate"><span class="pre">Task</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.tasks.html#troppo.tasks.core.TaskEvaluator"><code class="docutils literal notranslate"><span class="pre">TaskEvaluator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.tasks.html#module-troppo.tasks.task_io">Task-io module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.tasks.html#troppo.tasks.task_io.ExcelTaskIO"><code class="docutils literal notranslate"><span class="pre">ExcelTaskIO</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.tasks.html#troppo.tasks.task_io.JSONTaskIO"><code class="docutils literal notranslate"><span class="pre">JSONTaskIO</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.tasks.html#troppo.tasks.task_io.TaskIO"><code class="docutils literal notranslate"><span class="pre">TaskIO</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troppo.utilities.html">Utilities module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troppo.utilities.html#module-troppo.utilities.list">List module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.utilities.html#troppo.utilities.list.if_none_return_list"><code class="docutils literal notranslate"><span class="pre">if_none_return_list()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.utilities.html#troppo.utilities.list.is_list"><code class="docutils literal notranslate"><span class="pre">is_list()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.utilities.html#troppo.utilities.list.is_list_else_empty"><code class="docutils literal notranslate"><span class="pre">is_list_else_empty()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.utilities.html#module-troppo.utilities.statistics">Statistics module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.utilities.html#troppo.utilities.statistics.normalize"><code class="docutils literal notranslate"><span class="pre">normalize()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.utilities.html#troppo.utilities.statistics.z_score"><code class="docutils literal notranslate"><span class="pre">z_score()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troppo.validation.html">Validation Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troppo.validation.html#module-troppo.validation.core">Core module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.validation.html#troppo.validation.core.ContextSpecificModelSimulator"><code class="docutils literal notranslate"><span class="pre">ContextSpecificModelSimulator</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.validation.html#troppo.validation.core.default_post_processing_func"><code class="docutils literal notranslate"><span class="pre">default_post_processing_func()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to Troppo’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

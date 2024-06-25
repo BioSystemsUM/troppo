@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reconstruction Methods &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Omics Module" href="troppo.omics.html" />
+    <link rel="prev" title="Gapfilling Methods" href="troppo.methods.gapfill.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Troppo</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="troppo.methods.html">Methods module</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.gapfill.html">Gapfilling Methods</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Reconstruction Methods</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#module-troppo.methods.reconstruction.corda">Corda Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-troppo.methods.reconstruction.fastcore">FastCORE Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-troppo.methods.reconstruction.gimme">GIMME Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-troppo.methods.reconstruction.imat">iMAT Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-troppo.methods.reconstruction.swiftcore">SwiftCore Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-troppo.methods.reconstruction.tINIT">(t)INIT Algorithm</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.html#base-classes-for-gapfilling-and-reconstruction">Base classes for Gapfilling and Reconstruction</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.omics.html">Omics Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.tasks.html">Tasks Assessment Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.utilities.html">Utilities module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.validation.html">Validation Module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Troppo</a></li>
+          <li class="breadcrumb-item"><a href="troppo.methods.html">Methods module</a></li>
+      <li class="breadcrumb-item active">Reconstruction Methods</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/troppo.methods.reconstruction.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="reconstruction-methods">
+<h1>Reconstruction Methods<a class="headerlink" href="#reconstruction-methods" title="Permalink to this heading"></a></h1>
+<section id="module-troppo.methods.reconstruction.corda">
+<span id="corda-algorithm"></span><h2>Corda Algorithm<a class="headerlink" href="#module-troppo.methods.reconstruction.corda" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDA">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.corda.</span></span><span class="sig-name descname"><span class="pre">CORDA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ub</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORDA"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDA" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.ContextSpecificModelReconstructionAlgorithm" title="troppo.methods.base.ContextSpecificModelReconstructionAlgorithm"><code class="xref py py-class docutils literal notranslate"><span class="pre">ContextSpecificModelReconstructionAlgorithm</span></code></a></p>
+<p>CORDA algorithm</p>
+<section id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>S<span class="classifier">array</span></dt><dd><p>Stoichiometric matrix</p>
+</dd>
+<dt>lb<span class="classifier">array</span></dt><dd><p>Lower bounds</p>
+</dd>
+<dt>ub<span class="classifier">array</span></dt><dd><p>Upper bounds</p>
+</dd>
+<dt>properties<span class="classifier">CORDAProperties</span></dt><dd><p>Properties object</p>
+</dd>
+</dl>
+</section>
+<section id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>corso_fba<span class="classifier">CORSOModel</span></dt><dd><p>CORSO FBA model</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDA.block_reactions_from_idxs">
+<span class="sig-name descname"><span class="pre">block_reactions_from_idxs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rxcat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORDA.block_reactions_from_idxs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDA.block_reactions_from_idxs" title="Permalink to this definition"></a></dt>
+<dd><p>Block reactions from a list of indices</p>
+<section id="id1">
+<h4>Parameters<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>rxcat: np.ndarray</dt><dd><p>Array of reaction indices</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDA.check_if_blocked">
+<span class="sig-name descname"><span class="pre">check_if_blocked</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORDA.check_if_blocked"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDA.check_if_blocked" title="Permalink to this definition"></a></dt>
+<dd><p>Check if a reaction is blocked</p>
+<section id="id2">
+<h4>Parameters<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>rx: int</dt><dd><p>Reaction index</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h4>Returns<a class="headerlink" href="#returns" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>bool</dt><dd><p>True if the reaction is blocked, False otherwise</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDA.costfx_factory">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">costfx_factory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">om</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">costbase</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORDA.costfx_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDA.costfx_factory" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDA.do_function_for_reactions_on_both_models">
+<span class="sig-name descname"><span class="pre">do_function_for_reactions_on_both_models</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mfunction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corsofunction</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORDA.do_function_for_reactions_on_both_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDA.do_function_for_reactions_on_both_models" title="Permalink to this definition"></a></dt>
+<dd><p>Perform a function on both models</p>
+<section id="id3">
+<h4>Parameters<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>reaction: int</dt><dd><p>Reaction index</p>
+</dd>
+<dt>mfunction: function</dt><dd><p>Function to perform on the CBModel</p>
+</dd>
+<dt>corsofunction: function</dt><dd><p>Function to perform on the CORSOModel</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDA.find_dependent_reactions">
+<span class="sig-name descname"><span class="pre">find_dependent_reactions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constrainby</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">costfx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">costbase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ntimes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORDA.find_dependent_reactions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDA.find_dependent_reactions" title="Permalink to this definition"></a></dt>
+<dd><p>Find dependent reactions for a given reaction</p>
+<section id="id4">
+<h4>Parameters<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>rx: int</dt><dd><p>Reaction index</p>
+</dd>
+<dt>constraint: int</dt><dd><p>Value of the constraint</p>
+</dd>
+<dt>constrainby: str</dt><dd><p>either ‘val’ (constrain fluxes by value) or ‘perc’ (constraint by percentage)</p>
+</dd>
+<dt>costfx: function</dt><dd><p>Cost function</p>
+</dd>
+<dt>costbase: np.ndarray</dt><dd><p>Cost base</p>
+</dd>
+<dt>ntimes: int</dt><dd><p>Number of CORSO FBA simulations performed per dependency assessment</p>
+</dd>
+<dt>eps: float</dt><dd><p>Epsilon value</p>
+</dd>
+</dl>
+</section>
+<section id="id5">
+<h4>Returns<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>tuple</dt><dd><p>Dependent reactions and reactions to delete</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDA.find_reaction_limits">
+<span class="sig-name descname"><span class="pre">find_reaction_limits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORDA.find_reaction_limits"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDA.find_reaction_limits" title="Permalink to this definition"></a></dt>
+<dd><p>Find the minimum and maximum flux for a given reaction</p>
+<section id="id6">
+<h4>Parameters<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>rx: int</dt><dd><p>Reaction index</p>
+</dd>
+</dl>
+</section>
+<section id="id7">
+<h4>Returns<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>tuple</dt><dd><p>Minimum and maximum flux</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDA.properties_class">
+<span class="sig-name descname"><span class="pre">properties_class</span></span><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDA.properties_class" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <a class="reference internal" href="#troppo.methods.reconstruction.corda.CORDAProperties" title="troppo.methods.reconstruction.corda.CORDAProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">CORDAProperties</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDA.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORDA.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDA.run" title="Permalink to this definition"></a></dt>
+<dd><p>Set up of the variables to be used and calls the run_corda method.</p>
+<section id="id8">
+<h4>Returns<a class="headerlink" href="#id8" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>array</dt><dd><p>Returns an Array of reaction categories</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDA.run_corda">
+<span class="sig-name descname"><span class="pre">run_corda</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rx_cat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constrainby</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ntimes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">om</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pr_to_np</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">11</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORDA.run_corda"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDA.run_corda" title="Permalink to this definition"></a></dt>
+<dd><p>Run the CORDA algorithm</p>
+<section id="id9">
+<h4>Parameters<a class="headerlink" href="#id9" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>rx_cat: np.ndarray</dt><dd><p>Array of reaction categories</p>
+</dd>
+<dt>constraint: int</dt><dd><p>Value of the constraint</p>
+</dd>
+<dt>constrainby: str</dt><dd><p>either ‘val’ (constrain fluxes by value) or ‘perc’ (constraint by percentage)</p>
+</dd>
+<dt>nl: int</dt><dd><p>Number of loops to perform</p>
+</dd>
+<dt>ntimes: int</dt><dd><p>Number of CORSO FBA simulations performed per dependency assessment</p>
+</dd>
+<dt>om: float</dt><dd><p>Cost assigned to reactions when calculating dependencies</p>
+</dd>
+<dt>pr_to_np: float</dt><dd><p>Threshold to include NP reactions if PR reactions depend on them</p>
+</dd>
+<dt>threads: int</dt><dd><p>Number of threads to use</p>
+</dd>
+</dl>
+</section>
+<section id="id10">
+<h4>Returns<a class="headerlink" href="#id10" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>np.ndarray</dt><dd><p>Returns an Array of reaction categories</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDAProperties">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.corda.</span></span><span class="sig-name descname"><span class="pre">CORDAProperties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">high_conf_rx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">medium_conf_rx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neg_conf_rx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pr_to_np</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constrainby</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">om</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ntimes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORDAProperties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDAProperties" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.PropertiesReconstruction" title="troppo.methods.base.PropertiesReconstruction"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertiesReconstruction</span></code></a></p>
+<p>Properties reconstruction using CORDA</p>
+<section id="id11">
+<h3>Parameters<a class="headerlink" href="#id11" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>high_conf_rx<span class="classifier">list</span></dt><dd><p>High confidence reactions</p>
+</dd>
+<dt>medium_conf_rx<span class="classifier">list</span></dt><dd><p>Medium confidence reactions</p>
+</dd>
+<dt>neg_conf_rx<span class="classifier">list</span></dt><dd><p>Negative confidence reactions</p>
+</dd>
+<dt>pr_to_np<span class="classifier">float</span></dt><dd><p>Threshold to include NP reactions if PR reactions depend on them</p>
+</dd>
+<dt>constraint<span class="classifier">int</span></dt><dd><p>Value of the constraint</p>
+</dd>
+<dt>constrainby<span class="classifier">str</span></dt><dd><p>either ‘val’ (constrain fluxes by value) or ‘perc’ (constraint by percentage)</p>
+</dd>
+<dt>om<span class="classifier">float</span></dt><dd><p>cost assigned to reactions when calculating dependencies</p>
+</dd>
+<dt>ntimes<span class="classifier">int</span></dt><dd><p>Number of CORSO FBA simulations performed per dependency assessment</p>
+</dd>
+<dt>nl<span class="classifier">int or float</span></dt><dd><p>Number of loops to perform</p>
+</dd>
+<dt>solver<span class="classifier">str</span></dt><dd><p>Solver to use for optimization</p>
+</dd>
+<dt>threads<span class="classifier">int</span></dt><dd><p>Number of threads to use</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDAProperties.CONSTRAINBY_PERC">
+<span class="sig-name descname"><span class="pre">CONSTRAINBY_PERC</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'perc'</span></em><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDAProperties.CONSTRAINBY_PERC" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDAProperties.CONSTRAINBY_VAL">
+<span class="sig-name descname"><span class="pre">CONSTRAINBY_VAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'val'</span></em><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDAProperties.CONSTRAINBY_VAL" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORDAProperties.from_integrated_scores">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_integrated_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#troppo.methods.reconstruction.corda.CORDAProperties" title="troppo.methods.reconstruction.corda.CORDAProperties"><span class="pre">CORDAProperties</span></a></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORDAProperties.from_integrated_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORDAProperties.from_integrated_scores" title="Permalink to this definition"></a></dt>
+<dd><p>Create a CORDAProperties object from integrated scores</p>
+<section id="id12">
+<h4>Parameters<a class="headerlink" href="#id12" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>scores: tuple</dt><dd><p>Tuple of high, medium and negative confidence scores</p>
+</dd>
+<dt>kwargs: dict</dt><dd><p>Additional arguments to pass to the constructor</p>
+</dd>
+</dl>
+</section>
+<section id="id13">
+<h4>Returns<a class="headerlink" href="#id13" title="Permalink to this heading"></a></h4>
+<p>CORDAProperties</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORSOModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.corda.</span></span><span class="sig-name descname"><span class="pre">CORSOModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cbmodel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corso_element_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('R_PSEUDO_CORSO',</span> <span class="pre">'M_PSEUDO_CORSO')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORSOModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORSOModel" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ConstraintBasedModel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORSOModel.optimize_corso">
+<span class="sig-name descname"><span class="pre">optimize_corso</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cost</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">of_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraintby</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'val'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORSOModel.optimize_corso"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORSOModel.optimize_corso" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORSOModel.set_corso_objective">
+<span class="sig-name descname"><span class="pre">set_corso_objective</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORSOModel.set_corso_objective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORSOModel.set_corso_objective" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORSOModel.set_costs">
+<span class="sig-name descname"><span class="pre">set_costs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cost</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORSOModel.set_costs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORSOModel.set_costs" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORSOModel.solve_original_model">
+<span class="sig-name descname"><span class="pre">solve_original_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">of_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORSOModel.solve_original_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORSOModel.solve_original_model" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.corda.CORSOSolution">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.corda.</span></span><span class="sig-name descname"><span class="pre">CORSOSolution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sol_max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sol_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index_map</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/corda.html#CORSOSolution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.corda.CORSOSolution" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Solution</span></code></p>
+<p>A solution to a COBRA FBA problem.</p>
+</dd></dl>
+
+</section>
+<section id="module-troppo.methods.reconstruction.fastcore">
+<span id="fastcore-algorithm"></span><h2>FastCORE Algorithm<a class="headerlink" href="#module-troppo.methods.reconstruction.fastcore" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.fastcore.FASTcore">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.fastcore.</span></span><span class="sig-name descname"><span class="pre">FASTcore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ub</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.methods.reconstruction.fastcore.FastcoreProperties" title="troppo.methods.reconstruction.fastcore.FastcoreProperties"><span class="pre">FastcoreProperties</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/fastcore.html#FASTcore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.fastcore.FASTcore" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.ContextSpecificModelReconstructionAlgorithm" title="troppo.methods.base.ContextSpecificModelReconstructionAlgorithm"><code class="xref py py-class docutils literal notranslate"><span class="pre">ContextSpecificModelReconstructionAlgorithm</span></code></a></p>
+<p>FASTcore algorithm for context-specific model reconstruction.</p>
+<section id="id14">
+<h3>Parameters<a class="headerlink" href="#id14" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>S: numpy.ndarray</dt><dd><p>Stoichiometric matrix</p>
+</dd>
+<dt>lb: numpy.ndarray</dt><dd><p>Lower bounds</p>
+</dd>
+<dt>ub: numpy.ndarray</dt><dd><p>Upper bounds</p>
+</dd>
+<dt>properties: FastcoreProperties</dt><dd><p>Properties for the algorithm</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.fastcore.FASTcore.LP3">
+<span class="sig-name descname"><span class="pre">LP3</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">J</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/fastcore.html#FASTcore.LP3"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.fastcore.FASTcore.LP3" title="Permalink to this definition"></a></dt>
+<dd><p>LP3 problem.</p>
+<section id="id15">
+<h4>Parameters<a class="headerlink" href="#id15" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>J: numpy.ndarray</dt><dd><p>Indices of the reactions to be considered</p>
+</dd>
+<dt>basis: None</dt><dd><p>Not used</p>
+</dd>
+</dl>
+</section>
+<section id="id16">
+<h4>Returns<a class="headerlink" href="#id16" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>dict</dt><dd><p>Dictionary with the solution of the LP3 problem</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.fastcore.FASTcore.LP7">
+<span class="sig-name descname"><span class="pre">LP7</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">J</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/fastcore.html#FASTcore.LP7"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.fastcore.FASTcore.LP7" title="Permalink to this definition"></a></dt>
+<dd><p>LP7 problem.</p>
+<section id="id17">
+<h4>Parameters<a class="headerlink" href="#id17" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>J: numpy.ndarray</dt><dd><p>Indices of the reactions to be considered</p>
+</dd>
+<dt>basis: None</dt><dd><p>Not used</p>
+</dd>
+</dl>
+</section>
+<section id="id18">
+<h4>Returns<a class="headerlink" href="#id18" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>dict</dt><dd><p>Dictionary with the solution of the LP3 problem</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.fastcore.FASTcore.LP9">
+<span class="sig-name descname"><span class="pre">LP9</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">K</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/fastcore.html#FASTcore.LP9"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.fastcore.FASTcore.LP9" title="Permalink to this definition"></a></dt>
+<dd><p>LP9 problem.</p>
+<section id="id19">
+<h4>Parameters<a class="headerlink" href="#id19" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>K: numpy.ndarray</dt><dd><p>Indices of the reactions to be considered</p>
+</dd>
+<dt>P: numpy.ndarray</dt><dd><p>Indices of the reactions to be considered</p>
+</dd>
+</dl>
+</section>
+<section id="id20">
+<h4>Returns<a class="headerlink" href="#id20" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>dict</dt><dd><p>Dictionary with the solution of the LP3 problem</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.fastcore.FASTcore.fastcore">
+<span class="sig-name descname"><span class="pre">fastcore</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/fastcore.html#FASTcore.fastcore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.fastcore.FASTcore.fastcore" title="Permalink to this definition"></a></dt>
+<dd><p>Fastcore algorithm.</p>
+<section id="id21">
+<h4>Returns<a class="headerlink" href="#id21" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>list</dt><dd><p>List with the reaction IDs of the reactions in the resulting model</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.fastcore.FASTcore.findSparseMode">
+<span class="sig-name descname"><span class="pre">findSparseMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">J</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">singleton</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/fastcore.html#FASTcore.findSparseMode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.fastcore.FASTcore.findSparseMode" title="Permalink to this definition"></a></dt>
+<dd><p>Find sparse mode.</p>
+<section id="id22">
+<h4>Parameters<a class="headerlink" href="#id22" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>J: numpy.ndarray or tuple</dt><dd><p>Indices of the reactions to be considered</p>
+</dd>
+<dt>P: numpy.ndarray</dt><dd><p>Indices of the reactions to be considered</p>
+</dd>
+<dt>singleton: bool</dt><dd><p>If True, the algorithm will consider only one reaction at a time</p>
+</dd>
+<dt>basis</dt><dd><p>List of basis vectors</p>
+</dd>
+</dl>
+</section>
+<section id="id23">
+<h4>Returns<a class="headerlink" href="#id23" title="Permalink to this heading"></a></h4>
+<p>numpy.ndarray</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.fastcore.FASTcore.generate_LP3_problem">
+<span class="sig-name descname"><span class="pre">generate_LP3_problem</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/fastcore.html#FASTcore.generate_LP3_problem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.fastcore.FASTcore.generate_LP3_problem" title="Permalink to this definition"></a></dt>
+<dd><p>Generates the LP3 problem.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.fastcore.FASTcore.preprocessing">
+<span class="sig-name descname"><span class="pre">preprocessing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">)</span> <span class="pre">-&gt;</span> <span class="pre">(&lt;class</span> <span class="pre">'numpy.ndarray'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;class</span> <span class="pre">'numpy.ndarray'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;class</span> <span class="pre">'numpy.ndarray'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;class</span> <span class="pre">'numpy.ndarray'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/fastcore.html#FASTcore.preprocessing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.fastcore.FASTcore.preprocessing" title="Permalink to this definition"></a></dt>
+<dd><p>Preprocessing of the model.</p>
+<section id="id24">
+<h4>Returns<a class="headerlink" href="#id24" title="Permalink to this heading"></a></h4>
+<p>np.ndarray, np.ndarray, np.ndarray, np.ndarray</p>
+</section>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.fastcore.FASTcore.properties_class">
+<span class="sig-name descname"><span class="pre">properties_class</span></span><a class="headerlink" href="#troppo.methods.reconstruction.fastcore.FASTcore.properties_class" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <a class="reference internal" href="#troppo.methods.reconstruction.fastcore.FastcoreProperties" title="troppo.methods.reconstruction.fastcore.FastcoreProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">FastcoreProperties</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.fastcore.FASTcore.reverse_irreversible_reactions_in_reverse_direction">
+<span class="sig-name descname"><span class="pre">reverse_irreversible_reactions_in_reverse_direction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">irrev_reverse_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/fastcore.html#FASTcore.reverse_irreversible_reactions_in_reverse_direction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.fastcore.FASTcore.reverse_irreversible_reactions_in_reverse_direction" title="Permalink to this definition"></a></dt>
+<dd><p>Identifies the irreversible reactions in the reverse direction and returns the S matrix with the signals for the
+metabolites reversed, a vector with the upper bounds as reversed form the lower bounds and a vector with the
+lower bounds as the reverse of the upper ones.</p>
+<section id="id25">
+<h4>Parameters<a class="headerlink" href="#id25" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>irrev_reverse_idx: numpy.ndarray</dt><dd><p>Indices of the irreversible reactions in the reverse direction</p>
+</dd>
+</dl>
+</section>
+<section id="id26">
+<h4>Returns<a class="headerlink" href="#id26" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>S: numpy.ndarray</dt><dd><p>Modified stoichiometric matrix</p>
+</dd>
+<dt>ub: numpy.ndarray</dt><dd><p>Modified upper bounds</p>
+</dd>
+<dt>lb: numpy.ndarray</dt><dd><p>Modified lower bounds</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.fastcore.FASTcore.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/fastcore.html#FASTcore.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.fastcore.FASTcore.run" title="Permalink to this definition"></a></dt>
+<dd><p>Run Fastcore algorithm.</p>
+<section id="id27">
+<h4>Returns<a class="headerlink" href="#id27" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>list</dt><dd><p>List with the reaction IDs of the reactions in the resulting model</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.fastcore.FastcoreProperties">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.fastcore.</span></span><span class="sig-name descname"><span class="pre">FastcoreProperties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux_threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/fastcore.html#FastcoreProperties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.fastcore.FastcoreProperties" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.PropertiesReconstruction" title="troppo.methods.base.PropertiesReconstruction"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertiesReconstruction</span></code></a></p>
+<p>Properties for FASTcore algorithm.</p>
+<section id="id28">
+<h3>Parameters<a class="headerlink" href="#id28" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>core: list</dt><dd><p>List of reactions that are considered core, as determined by the integrated scores</p>
+</dd>
+<dt>flux_threshold: float</dt><dd><p>Flux threshold for the algorithm</p>
+</dd>
+<dt>solver: str</dt><dd><p>Solver to be used</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.fastcore.FastcoreProperties.from_integrated_scores">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_integrated_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#troppo.methods.reconstruction.fastcore.FastcoreProperties" title="troppo.methods.reconstruction.fastcore.FastcoreProperties"><span class="pre">FastcoreProperties</span></a></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/fastcore.html#FastcoreProperties.from_integrated_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.fastcore.FastcoreProperties.from_integrated_scores" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a FastcoreProperties object from integrated scores.</p>
+<section id="id29">
+<h4>Parameters<a class="headerlink" href="#id29" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>scores: list</dt><dd><p>Integrated scores</p>
+</dd>
+<dt>kwargs: dict</dt><dd><p>Additional arguments</p>
+</dd>
+</dl>
+</section>
+<section id="id30">
+<h4>Returns<a class="headerlink" href="#id30" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>FastcoreProperties</dt><dd><p>FastcoreProperties object</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+<section id="module-troppo.methods.reconstruction.gimme">
+<span id="gimme-algorithm"></span><h2>GIMME Algorithm<a class="headerlink" href="#module-troppo.methods.reconstruction.gimme" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.gimme.GIMME">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.gimme.</span></span><span class="sig-name descname"><span class="pre">GIMME</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ub</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.methods.reconstruction.gimme.GIMMEProperties" title="troppo.methods.reconstruction.gimme.GIMMEProperties"><span class="pre">GIMMEProperties</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/gimme.html#GIMME"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.gimme.GIMME" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.ContextSpecificModelReconstructionAlgorithm" title="troppo.methods.base.ContextSpecificModelReconstructionAlgorithm"><code class="xref py py-class docutils literal notranslate"><span class="pre">ContextSpecificModelReconstructionAlgorithm</span></code></a></p>
+<p>GIMME algorithm</p>
+<section id="id31">
+<h3>Parameters<a class="headerlink" href="#id31" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>S: list or ndarray</dt><dd><p>Stoichiometric matrix</p>
+</dd>
+<dt>lb: list or ndarray</dt><dd><p>Lower bounds</p>
+</dd>
+<dt>ub: list or ndarray</dt><dd><p>Upper bounds</p>
+</dd>
+<dt>properties: GIMMEProperties</dt><dd><p>GIMME properties</p>
+</dd>
+</dl>
+</section>
+<section id="id32">
+<h3>Attributes<a class="headerlink" href="#id32" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>S: ndarray</dt><dd><p>Stoichiometric matrix</p>
+</dd>
+<dt>lb: ndarray</dt><dd><p>Lower bounds</p>
+</dd>
+<dt>ub: ndarray</dt><dd><p>Upper bounds</p>
+</dd>
+<dt>properties: GIMMEProperties</dt><dd><p>GIMME properties</p>
+</dd>
+<dt>sol: GIMMESolution</dt><dd><p>GIMME solution</p>
+</dd>
+<dt>gm: GIMMEModel</dt><dd><p>GIMME model</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.gimme.GIMME.properties_class">
+<span class="sig-name descname"><span class="pre">properties_class</span></span><a class="headerlink" href="#troppo.methods.reconstruction.gimme.GIMME.properties_class" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <a class="reference internal" href="#troppo.methods.reconstruction.gimme.GIMMEProperties" title="troppo.methods.reconstruction.gimme.GIMMEProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">GIMMEProperties</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.gimme.GIMME.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/gimme.html#GIMME.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.gimme.GIMME.run" title="Permalink to this definition"></a></dt>
+<dd><p>Run GIMME algorithm</p>
+<section id="id33">
+<h4>Returns<a class="headerlink" href="#id33" title="Permalink to this heading"></a></h4>
+<p>list: List with index of active reactions.</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.gimme.GIMMEModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.gimme.</span></span><span class="sig-name descname"><span class="pre">GIMMEModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cbmodel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ConstraintBasedModel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/gimme.html#GIMMEModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.gimme.GIMMEModel" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ConstraintBasedModel</span></code></p>
+<p>A GIMME model is a model that is used to reconstruct a context-specific model using the GIMME algorithm.</p>
+<section id="id34">
+<h3>Parameters:<a class="headerlink" href="#id34" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>cbmodel: ConstraintBasedModel</dt><dd><p>The template model that is used to reconstruct the context-specific model.</p>
+</dd>
+<dt>solver: str or None</dt><dd><p>The solver that is used to solve the optimization problem.</p>
+</dd>
+</dl>
+</section>
+<section id="id35">
+<h3>Attributes:<a class="headerlink" href="#id35" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>cbmodel: ConstraintBasedModel</dt><dd><p>The template model that is used to reconstruct the context-specific model.</p>
+</dd>
+<dt>mapping: dict</dt><dd><p>A dictionary that maps the reactions of the template model to the reactions of the GIMME model.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.gimme.GIMMEModel.optimize_gimme">
+<span class="sig-name descname"><span class="pre">optimize_gimme</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exp_vector</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objectives</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj_frac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux_thres</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/gimme.html#GIMMEModel.optimize_gimme"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.gimme.GIMMEModel.optimize_gimme" title="Permalink to this definition"></a></dt>
+<dd><p>Optimize the GIMME model.</p>
+<section id="id36">
+<h4>Parameters<a class="headerlink" href="#id36" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>exp_vector: list</dt><dd><p>A list of expression values for each reaction in the GIMME model.</p>
+</dd>
+<dt>objectives: list or tuple</dt><dd><p>A list of dictionaries that define the objectives of the GIMME model.</p>
+</dd>
+<dt>obj_frac: list or tuple or float</dt><dd><p>A list of fractions that define the lower bounds of the objectives. If a float is given, the same fraction
+is used for all objectives.</p>
+</dd>
+<dt>flux_thres: float</dt><dd><p>A threshold that defines the minimum flux that is allowed for each reaction in the GIMME model.</p>
+</dd>
+</dl>
+</section>
+<section id="id37">
+<h4>Returns<a class="headerlink" href="#id37" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>GIMMESolution:</dt><dd><p>The solution of the GIMME model.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.gimme.GIMMEProperties">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.gimme.</span></span><span class="sig-name descname"><span class="pre">GIMMEProperties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exp_vector</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objectives</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj_frac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocess</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux_threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reaction_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metabolite_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/gimme.html#GIMMEProperties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.gimme.GIMMEProperties" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.PropertiesReconstruction" title="troppo.methods.base.PropertiesReconstruction"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertiesReconstruction</span></code></a></p>
+<p>Properties for GIMME</p>
+<section id="id38">
+<h3>Parameters:<a class="headerlink" href="#id38" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>exp_vector: list or ndarray</dt><dd><p>Expression vector</p>
+</dd>
+<dt>objectives: list or tuple</dt><dd><p>List of objective vectors</p>
+</dd>
+<dt>obj_frac: list or tuple or float</dt><dd><p>Fraction of the objective vector to be used</p>
+</dd>
+<dt>preprocess: bool</dt><dd><p>Preprocess the model</p>
+</dd>
+<dt>flux_threshold: float</dt><dd><p>Flux threshold</p>
+</dd>
+<dt>solver: str</dt><dd><p>Solver to be used</p>
+</dd>
+<dt>reaction_ids: list</dt><dd><p>List of reaction ids</p>
+</dd>
+<dt>metabolite_ids: list</dt><dd><p>List of metabolite ids</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.gimme.GIMMEProperties.from_integrated_scores">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_integrated_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/gimme.html#GIMMEProperties.from_integrated_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.gimme.GIMMEProperties.from_integrated_scores" title="Permalink to this definition"></a></dt>
+<dd><p>Create GIMMEProperties from integrated scores</p>
+<section id="id39">
+<h4>Parameters<a class="headerlink" href="#id39" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>scores: list or ndarray</dt><dd><p>Integrated scores</p>
+</dd>
+<dt>kwargs: dict</dt><dd><p>Additional arguments</p>
+</dd>
+</dl>
+</section>
+<section id="id40">
+<h4>Returns<a class="headerlink" href="#id40" title="Permalink to this heading"></a></h4>
+<p>GIMMEProperties</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.gimme.GIMMESolution">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.gimme.</span></span><span class="sig-name descname"><span class="pre">GIMMESolution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exp_vector</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mapping</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/gimme.html#GIMMESolution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.gimme.GIMMESolution" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Solution</span></code></p>
+<p>A GIMME solution is a solution of a GIMME model.</p>
+<section id="id41">
+<h3>Parameters:<a class="headerlink" href="#id41" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>sol: Solution</dt><dd><p>The solution of the GIMME model.</p>
+</dd>
+<dt>exp_vector: list or ndarray</dt><dd><p>Expression vector</p>
+</dd>
+<dt>var_names: list</dt><dd><p>List of variable names</p>
+</dd>
+<dt>mapping: dict</dt><dd><p>A dictionary that maps the reactions of the template model to the reactions of the GIMME model.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.gimme.GIMMESolution.get_reaction_activity">
+<span class="sig-name descname"><span class="pre">get_reaction_activity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flux_threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/gimme.html#GIMMESolution.get_reaction_activity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.gimme.GIMMESolution.get_reaction_activity" title="Permalink to this definition"></a></dt>
+<dd><p>Get the reaction activity of the GIMME solution.</p>
+<section id="id42">
+<h4>Parameters<a class="headerlink" href="#id42" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>flux_threshold: float</dt><dd><p>The flux threshold that is used to determine the reaction activity.</p>
+</dd>
+</dl>
+</section>
+<section id="id43">
+<h4>Returns<a class="headerlink" href="#id43" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>reaction_index: list</dt><dd><p>List of reaction indices from active reactions.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+<section id="module-troppo.methods.reconstruction.imat">
+<span id="imat-algorithm"></span><h2>iMAT Algorithm<a class="headerlink" href="#module-troppo.methods.reconstruction.imat" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.imat.IMAT">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.imat.</span></span><span class="sig-name descname"><span class="pre">IMAT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ub</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.methods.reconstruction.imat.IMATProperties" title="troppo.methods.reconstruction.imat.IMATProperties"><span class="pre">IMATProperties</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/imat.html#IMAT"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.imat.IMAT" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.ContextSpecificModelReconstructionAlgorithm" title="troppo.methods.base.ContextSpecificModelReconstructionAlgorithm"><code class="xref py py-class docutils literal notranslate"><span class="pre">ContextSpecificModelReconstructionAlgorithm</span></code></a></p>
+<p>IMAT algorithm</p>
+<section id="id44">
+<h3>Parameters<a class="headerlink" href="#id44" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>S<span class="classifier">ndarray</span></dt><dd><p>The stoichiometric matrix</p>
+</dd>
+<dt>lb<span class="classifier">ndarray</span></dt><dd><p>The lower bounds</p>
+</dd>
+<dt>ub<span class="classifier">ndarray</span></dt><dd><p>The upper bounds</p>
+</dd>
+<dt>properties<span class="classifier">IMATProperties</span></dt><dd><p>The IMAT properties</p>
+</dd>
+</dl>
+</section>
+<section id="id45">
+<h3>Attributes<a class="headerlink" href="#id45" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>sol<span class="classifier">LinearSystemOptimizer</span></dt><dd><p>The solution</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.imat.IMAT.empty_matrix">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">empty_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/imat.html#IMAT.empty_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.imat.IMAT.empty_matrix" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.imat.IMAT.generate_imat_problem">
+<span class="sig-name descname"><span class="pre">generate_imat_problem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ub</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/imat.html#IMAT.generate_imat_problem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.imat.IMAT.generate_imat_problem" title="Permalink to this definition"></a></dt>
+<dd><p>Generate the IMAT problem</p>
+<section id="id46">
+<h4>Parameters<a class="headerlink" href="#id46" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>S: ndarray</dt><dd><p>The stoichiometric matrix</p>
+</dd>
+<dt>lb: ndarray</dt><dd><p>The lower bounds</p>
+</dd>
+<dt>ub: ndarray</dt><dd><p>The upper bounds</p>
+</dd>
+<dt>high_idx: ndarray</dt><dd><p>The high index</p>
+</dd>
+<dt>low_idx: ndarray</dt><dd><p>The low index</p>
+</dd>
+<dt>epsilon: float or int</dt><dd><p>The epsilon value</p>
+</dd>
+</dl>
+</section>
+<section id="id47">
+<h4>Returns<a class="headerlink" href="#id47" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>lso: LinearSystemOptimizer</dt><dd><p>The linear system optimizer</p>
+</dd>
+<dt>lsystem: GenericLinearSystem</dt><dd><p>The linear system</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.imat.IMAT.properties_class">
+<span class="sig-name descname"><span class="pre">properties_class</span></span><a class="headerlink" href="#troppo.methods.reconstruction.imat.IMAT.properties_class" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <a class="reference internal" href="#troppo.methods.reconstruction.imat.IMATProperties" title="troppo.methods.reconstruction.imat.IMATProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">IMATProperties</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.imat.IMAT.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/imat.html#IMAT.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.imat.IMAT.run" title="Permalink to this definition"></a></dt>
+<dd><p>Run the algorithm and return a list of reactions to keep in the final model.</p>
+<section id="id48">
+<h4>Returns<a class="headerlink" href="#id48" title="Permalink to this heading"></a></h4>
+<p>list: The list of reactions to keep in the final model</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.imat.IMAT.run_imat">
+<span class="sig-name descname"><span class="pre">run_imat</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/imat.html#IMAT.run_imat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.imat.IMAT.run_imat" title="Permalink to this definition"></a></dt>
+<dd><p>Run the IMAT algorithm</p>
+<section id="id49">
+<h4>Returns<a class="headerlink" href="#id49" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>solution: Solution</dt><dd><p>Instance with the solution to the IMAT problem</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.imat.IMATProperties">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.imat.</span></span><span class="sig-name descname"><span class="pre">IMATProperties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exp_vector</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exp_thresholds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/imat.html#IMATProperties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.imat.IMATProperties" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.PropertiesReconstruction" title="troppo.methods.base.PropertiesReconstruction"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertiesReconstruction</span></code></a></p>
+<p>Properties for IMAT algorithm</p>
+<section id="id50">
+<h3>Parameters<a class="headerlink" href="#id50" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>exp_vector<span class="classifier">np.ndarray or list</span></dt><dd><p>The vector of expression values</p>
+</dd>
+<dt>objectives<span class="classifier">list</span></dt><dd><p>The list of objectives</p>
+</dd>
+<dt>exp_thresholds<span class="classifier">tuple</span></dt><dd><p>The thresholds for the expression values</p>
+</dd>
+<dt>core<span class="classifier">list, optional</span></dt><dd><p>The core reactions, by default None</p>
+</dd>
+<dt>tolerance<span class="classifier">float, optional</span></dt><dd><p>The tolerance, by default 1e-8</p>
+</dd>
+<dt>epsilon<span class="classifier">float, optional</span></dt><dd><p>The epsilon, by default 1</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.imat.IMATProperties.from_integrated_scores">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_integrated_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#troppo.methods.reconstruction.imat.IMATProperties" title="troppo.methods.reconstruction.imat.IMATProperties"><span class="pre">IMATProperties</span></a></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/imat.html#IMATProperties.from_integrated_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.imat.IMATProperties.from_integrated_scores" title="Permalink to this definition"></a></dt>
+<dd><p>Create IMAT properties from integrated scores</p>
+<section id="id51">
+<h4>Parameters<a class="headerlink" href="#id51" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>scores: list</dt><dd><p>The list of integrated scores</p>
+</dd>
+<dt>kwargs: dict</dt><dd><p>Additional arguments</p>
+</dd>
+</dl>
+</section>
+<section id="id52">
+<h4>Returns<a class="headerlink" href="#id52" title="Permalink to this heading"></a></h4>
+<p>IMATProperties: The IMAT properties</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+<section id="module-troppo.methods.reconstruction.swiftcore">
+<span id="swiftcore-algorithm"></span><h2>SwiftCore Algorithm<a class="headerlink" href="#module-troppo.methods.reconstruction.swiftcore" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.swiftcore.SWIFTCORE">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.swiftcore.</span></span><span class="sig-name descname"><span class="pre">SWIFTCORE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ub</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.methods.reconstruction.swiftcore.SwiftcoreProperties" title="troppo.methods.reconstruction.swiftcore.SwiftcoreProperties"><span class="pre">SwiftcoreProperties</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/swiftcore.html#SWIFTCORE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.swiftcore.SWIFTCORE" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.ContextSpecificModelReconstructionAlgorithm" title="troppo.methods.base.ContextSpecificModelReconstructionAlgorithm"><code class="xref py py-class docutils literal notranslate"><span class="pre">ContextSpecificModelReconstructionAlgorithm</span></code></a></p>
+<p>SWIFTCORE algorithm</p>
+<section id="id53">
+<h3>Parameters<a class="headerlink" href="#id53" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>S: np.ndarray</dt><dd><p>Stoichiometric matrix</p>
+</dd>
+<dt>lb: np.ndarray</dt><dd><p>Lower bounds</p>
+</dd>
+<dt>ub: np.ndarray</dt><dd><p>Upper bounds</p>
+</dd>
+<dt>properties: SwiftcoreProperties</dt><dd><p>The properties of the algorithm</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.swiftcore.SWIFTCORE.properties_class">
+<span class="sig-name descname"><span class="pre">properties_class</span></span><a class="headerlink" href="#troppo.methods.reconstruction.swiftcore.SWIFTCORE.properties_class" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <a class="reference internal" href="#troppo.methods.reconstruction.swiftcore.SwiftcoreProperties" title="troppo.methods.reconstruction.swiftcore.SwiftcoreProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">SwiftcoreProperties</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.swiftcore.SWIFTCORE.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/swiftcore.html#SWIFTCORE.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.swiftcore.SWIFTCORE.run" title="Permalink to this definition"></a></dt>
+<dd><p>Run the algorithm</p>
+<section id="id54">
+<h4>Returns<a class="headerlink" href="#id54" title="Permalink to this heading"></a></h4>
+<p>np.ndarray : The core of the model</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.swiftcore.SwiftcoreProperties">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.swiftcore.</span></span><span class="sig-name descname"><span class="pre">SwiftcoreProperties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux_threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/swiftcore.html#SwiftcoreProperties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.swiftcore.SwiftcoreProperties" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.PropertiesReconstruction" title="troppo.methods.base.PropertiesReconstruction"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertiesReconstruction</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.swiftcore.SwiftcoreProperties.from_integrated_scores">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_integrated_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/swiftcore.html#SwiftcoreProperties.from_integrated_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.swiftcore.SwiftcoreProperties.from_integrated_scores" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.swiftcore.find_core">
+<span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.swiftcore.</span></span><span class="sig-name descname"><span class="pre">find_core</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ub</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blocked</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Solution</span></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/swiftcore.html#find_core"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.swiftcore.find_core" title="Permalink to this definition"></a></dt>
+<dd><p>Find the core of the given model</p>
+<section id="id55">
+<h3>Parameters<a class="headerlink" href="#id55" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>S: np.ndarray</dt><dd><p>Stoichiometric matrix</p>
+</dd>
+<dt>lb: np.ndarray</dt><dd><p>Lower bounds</p>
+</dd>
+<dt>ub: np.ndarray</dt><dd><p>Upper bounds</p>
+</dd>
+<dt>blocked: np.ndarray</dt><dd><p>Blocked reactions</p>
+</dd>
+<dt>weights: np.ndarray</dt><dd><p>Weights</p>
+</dd>
+<dt>solver: str</dt><dd><p>The solver to use</p>
+</dd>
+</dl>
+</section>
+<section id="id56">
+<h3>Returns<a class="headerlink" href="#id56" title="Permalink to this heading"></a></h3>
+<p>Solution : The solution of the optimization problem</p>
+</section>
+</dd></dl>
+
+</section>
+<section id="module-troppo.methods.reconstruction.tINIT">
+<span id="t-init-algorithm"></span><h2>(t)INIT Algorithm<a class="headerlink" href="#module-troppo.methods.reconstruction.tINIT" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.tINIT.tINIT">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.tINIT.</span></span><span class="sig-name descname"><span class="pre">tINIT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ub</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.methods.reconstruction.tINIT.tINITProperties" title="troppo.methods.reconstruction.tINIT.tINITProperties"><span class="pre">tINITProperties</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/tINIT.html#tINIT"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.tINIT.tINIT" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.ContextSpecificModelReconstructionAlgorithm" title="troppo.methods.base.ContextSpecificModelReconstructionAlgorithm"><code class="xref py py-class docutils literal notranslate"><span class="pre">ContextSpecificModelReconstructionAlgorithm</span></code></a></p>
+<p>The tINIT algorithm.</p>
+<section id="id57">
+<h3>Parameters<a class="headerlink" href="#id57" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>S<span class="classifier">np.ndarray</span></dt><dd><p>The stoichiometric matrix.</p>
+</dd>
+<dt>lb<span class="classifier">np.ndarray</span></dt><dd><p>The lower bounds for the reactions.</p>
+</dd>
+<dt>ub<span class="classifier">np.ndarray</span></dt><dd><p>The upper bounds for the reactions.</p>
+</dd>
+<dt>properties<span class="classifier">tINITProperties</span></dt><dd><p>The properties for the algorithm.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.tINIT.tINIT.build_problem">
+<span class="sig-name descname"><span class="pre">build_problem</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/tINIT.html#tINIT.build_problem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.tINIT.tINIT.build_problem" title="Permalink to this definition"></a></dt>
+<dd><p>Builds the problem to be optimized</p>
+<section id="id58">
+<h4>Returns<a class="headerlink" href="#id58" title="Permalink to this heading"></a></h4>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.tINIT.tINIT.preprocessing">
+<span class="sig-name descname"><span class="pre">preprocessing</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/tINIT.html#tINIT.preprocessing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.tINIT.tINIT.preprocessing" title="Permalink to this definition"></a></dt>
+<dd><p>Preprocessing of the algorithm.</p>
+<section id="id59">
+<h4>Returns<a class="headerlink" href="#id59" title="Permalink to this heading"></a></h4>
+</section>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.tINIT.tINIT.properties_class">
+<span class="sig-name descname"><span class="pre">properties_class</span></span><a class="headerlink" href="#troppo.methods.reconstruction.tINIT.tINIT.properties_class" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <a class="reference internal" href="#troppo.methods.reconstruction.tINIT.tINITProperties" title="troppo.methods.reconstruction.tINIT.tINITProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">tINITProperties</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.tINIT.tINIT.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">array</span></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/tINIT.html#tINIT.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.tINIT.tINIT.run" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.tINIT.tINIT.run_tINIT">
+<span class="sig-name descname"><span class="pre">run_tINIT</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">array</span></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/tINIT.html#tINIT.run_tINIT"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.tINIT.tINIT.run_tINIT" title="Permalink to this definition"></a></dt>
+<dd><p>Runs the tINIT algorithm</p>
+<section id="id60">
+<h4>Returns<a class="headerlink" href="#id60" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>np.array</dt><dd><p>An array of the reactions that are used in the model</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.tINIT.tINIT.solve_problem">
+<span class="sig-name descname"><span class="pre">solve_problem</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/tINIT.html#tINIT.solve_problem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.tINIT.tINIT.solve_problem" title="Permalink to this definition"></a></dt>
+<dd><p>Solves the problem</p>
+<section id="id61">
+<h4>Returns<a class="headerlink" href="#id61" title="Permalink to this heading"></a></h4>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.tINIT.tINITProperties">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.reconstruction.tINIT.</span></span><span class="sig-name descname"><span class="pre">tINITProperties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reactions_scores</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">present_metabolites</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">essential_reactions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">production_weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_excretion</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_reverse_loops</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/reconstruction/tINIT.html#tINITProperties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.tINIT.tINITProperties" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.PropertiesReconstruction" title="troppo.methods.base.PropertiesReconstruction"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertiesReconstruction</span></code></a></p>
+<p>Properties for the tINIT algorithm.</p>
+<section id="id62">
+<h3>Parameters<a class="headerlink" href="#id62" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>reactions_scores<span class="classifier">list</span></dt><dd><p>The scores for each reaction.</p>
+</dd>
+<dt>present_metabolites<span class="classifier">list, default=[]</span></dt><dd><p>The metabolites that are present in the model.</p>
+</dd>
+<dt>essential_reactions<span class="classifier">list, default=[]</span></dt><dd><p>The reactions that are essential in the model.</p>
+</dd>
+<dt>production_weight<span class="classifier">float, default=0.5</span></dt><dd><p>The weight of the production reactions.</p>
+</dd>
+<dt>allow_excretion<span class="classifier">bool, default=False</span></dt><dd><p>Whether to allow excretion.</p>
+</dd>
+<dt>no_reverse_loops<span class="classifier">bool, default=False</span></dt><dd><p>Whether to allow reverse loops.</p>
+</dd>
+<dt>solver<span class="classifier">str, default=None</span></dt><dd><p>The solver to be used.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.reconstruction.tINIT.tINITProperties.from_integrated_scores">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_integrated_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#troppo.methods.reconstruction.tINIT.tINITProperties" title="troppo.methods.reconstruction.tINIT.tINITProperties"><span class="pre">tINITProperties</span></a></span></span><a class="reference internal" href="_modules/troppo/methods/reconstruction/tINIT.html#tINITProperties.from_integrated_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.reconstruction.tINIT.tINITProperties.from_integrated_scores" title="Permalink to this definition"></a></dt>
+<dd><p>Creates the properties object from integrated scores.</p>
+<section id="id63">
+<h4>Parameters<a class="headerlink" href="#id63" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>scores: list</dt><dd><p>The integrated scores for each reaction.</p>
+</dd>
+<dt>kwargs: dict</dt><dd><p>The other properties.</p>
+</dd>
+</dl>
+</section>
+<section id="id64">
+<h4>Returns<a class="headerlink" href="#id64" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>tINITProperties</dt><dd><p>The properties object.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="troppo.methods.gapfill.html" class="btn btn-neutral float-left" title="Gapfilling Methods" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="troppo.omics.html" class="btn btn-neutral float-right" title="Omics Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

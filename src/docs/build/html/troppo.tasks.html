@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tasks Assessment Module &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Utilities module" href="troppo.utilities.html" />
+    <link rel="prev" title="Readers for Omics data" href="troppo.omics.readers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Troppo</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.methods.html">Methods module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.omics.html">Omics Module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Tasks Assessment Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-troppo.tasks.core">Core module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.tasks.core.Task"><code class="docutils literal notranslate"><span class="pre">Task</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.tasks.core.TaskEvaluator"><code class="docutils literal notranslate"><span class="pre">TaskEvaluator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-troppo.tasks.task_io">Task-io module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.tasks.task_io.ExcelTaskIO"><code class="docutils literal notranslate"><span class="pre">ExcelTaskIO</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.tasks.task_io.JSONTaskIO"><code class="docutils literal notranslate"><span class="pre">JSONTaskIO</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.tasks.task_io.TaskIO"><code class="docutils literal notranslate"><span class="pre">TaskIO</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.utilities.html">Utilities module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.validation.html">Validation Module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Troppo</a></li>
+      <li class="breadcrumb-item active">Tasks Assessment Module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/troppo.tasks.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="tasks-assessment-module">
+<h1>Tasks Assessment Module<a class="headerlink" href="#tasks-assessment-module" title="Permalink to this heading"></a></h1>
+<section id="module-troppo.tasks.core">
+<span id="core-module"></span><h2>Core module<a class="headerlink" href="#module-troppo.tasks.core" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.tasks.core.</span></span><span class="sig-name descname"><span class="pre">Task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/tasks/core.html#Task"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.core.Task" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A task is a set of constraints that can be applied to a model. It is defined by a set of reactions, a set of
+constraints on the fluxes of these reactions, a set of constraints on the inflow and outflow of metabolites, and
+a set of mandatory activities that must be present in the solution. A task can be evaluated on a model to determine
+if the model satisfies the task.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.annotations">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">annotations</span></span><a class="headerlink" href="#troppo.tasks.core.Task.annotations" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.apply_evaluate">
+<span class="sig-name descname"><span class="pre">apply_evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model:</span> <span class="pre">~cobamp.core.models.ConstraintBasedModel)</span> <span class="pre">-&gt;</span> <span class="pre">(&lt;class</span> <span class="pre">'bool'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;class</span> <span class="pre">'dict'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/tasks/core.html#Task.apply_evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.core.Task.apply_evaluate" title="Permalink to this definition"></a></dt>
+<dd><p>Apply the task to the model and evaluate the solution</p>
+<section id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>model:  ConstraintBasedModel</dt><dd><p>The model to apply the task to</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h3>Returns<a class="headerlink" href="#returns" title="Permalink to this heading"></a></h3>
+<p>bool, dict: Whether the task was satisfied, and the expected activity of the mandatory reactions</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.combine">
+<span class="sig-name descname"><span class="pre">combine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/tasks/core.html#Task.combine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.core.Task.combine" title="Permalink to this definition"></a></dt>
+<dd><p>Combine two tasks into a single task. The resulting task will have the same failure criteria as the original</p>
+<section id="id1">
+<h3>Parameters<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>other: Task</dt><dd><p>The task to combine with</p>
+</dd>
+<dt>add: bool</dt><dd><p>If True, the resulting task will be the sum of the two tasks. If False, the resulting task will be the</p>
+</dd>
+</dl>
+</section>
+<section id="id2">
+<h3>Returns<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h3>
+<p>Task: The combined task</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.combine_inplace">
+<span class="sig-name descname"><span class="pre">combine_inplace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/tasks/core.html#Task.combine_inplace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.core.Task.combine_inplace" title="Permalink to this definition"></a></dt>
+<dd><p>Combine two tasks into a single task. The resulting task will have the same failure criteria as the original</p>
+<section id="id3">
+<h3>Parameters<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>other: Task</dt><dd><p>The task to combine with</p>
+</dd>
+<dt>add: bool</dt><dd><p>If True, the resulting task will be the sum of the two tasks. If False, the resulting task will be the</p>
+</dd>
+</dl>
+</section>
+<section id="id4">
+<h3>Returns<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h3>
+<p>Task: The combined task</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.evaluate_solution">
+<span class="sig-name descname"><span class="pre">evaluate_solution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sol:</span> <span class="pre">~cobamp.core.optimization.Solution</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ftol:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-06)</span> <span class="pre">-&gt;</span> <span class="pre">(&lt;class</span> <span class="pre">'bool'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;class</span> <span class="pre">'dict'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/tasks/core.html#Task.evaluate_solution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.core.Task.evaluate_solution" title="Permalink to this definition"></a></dt>
+<dd><p>Evaluate the solution to the task</p>
+<section id="id5">
+<h3>Parameters<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>sol: Solution</dt><dd><p>The solution to evaluate</p>
+</dd>
+<dt>ftol: float</dt><dd><p>The tolerance for the fluxes</p>
+</dd>
+</dl>
+</section>
+<section id="id6">
+<h3>Returns<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h3>
+<p>bool, dict: Whether the task was satisfied, and the expected activity of the mandatory reactions</p>
+</section>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.flux_constraints">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">flux_constraints</span></span><a class="headerlink" href="#troppo.tasks.core.Task.flux_constraints" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.get_add_reaction_args">
+<span class="sig-name descname"><span class="pre">get_add_reaction_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model:</span> <span class="pre">~cobamp.core.models.ConstraintBasedModel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">closed:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False)</span> <span class="pre">-&gt;</span> <span class="pre">(&lt;class</span> <span class="pre">'dict'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;class</span> <span class="pre">'set'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/tasks/core.html#Task.get_add_reaction_args"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.core.Task.get_add_reaction_args" title="Permalink to this definition"></a></dt>
+<dd><p>Get the arguments to add the reactions to the model</p>
+<section id="id7">
+<h3>Parameters<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>model: ConstraintBasedModel</dt><dd><p>The model to add the reactions to</p>
+</dd>
+<dt>closed: bool</dt><dd><p>Whether to add the reactions as closed or open</p>
+</dd>
+</dl>
+</section>
+<section id="id8">
+<h3>Returns<a class="headerlink" href="#id8" title="Permalink to this heading"></a></h3>
+<p>dict, set: The arguments to add the reactions to the model, and the set of reactions that were added</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.get_add_reaction_cmds">
+<span class="sig-name descname"><span class="pre">get_add_reaction_cmds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model:</span> <span class="pre">~cobamp.core.models.ConstraintBasedModel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">closed:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False)</span> <span class="pre">-&gt;</span> <span class="pre">(&lt;class</span> <span class="pre">'cobamp.utilities.context.CommandHistory'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;class</span> <span class="pre">'set'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/tasks/core.html#Task.get_add_reaction_cmds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.core.Task.get_add_reaction_cmds" title="Permalink to this definition"></a></dt>
+<dd><p>Get the commands to add the reactions to the model</p>
+<section id="id9">
+<h3>Parameters<a class="headerlink" href="#id9" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>model: ConstraintBasedModel</dt><dd><p>The model to add the reactions to</p>
+</dd>
+<dt>closed: bool</dt><dd><p>Whether to add the reactions as closed or open</p>
+</dd>
+</dl>
+</section>
+<section id="id10">
+<h3>Returns<a class="headerlink" href="#id10" title="Permalink to this heading"></a></h3>
+<p>CommandHistory, set: The commands to add the reactions to the model, and the set of reactions that were added</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.get_task_bounds">
+<span class="sig-name descname"><span class="pre">get_task_bounds</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/troppo/tasks/core.html#Task.get_task_bounds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.core.Task.get_task_bounds" title="Permalink to this definition"></a></dt>
+<dd><p>Get the bounds for the task</p>
+<section id="id11">
+<h3>Returns<a class="headerlink" href="#id11" title="Permalink to this heading"></a></h3>
+<p>dict: The bounds for the task</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.id_replace">
+<span class="sig-name descname"><span class="pre">id_replace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/tasks/core.html#Task.id_replace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.core.Task.id_replace" title="Permalink to this definition"></a></dt>
+<dd><p>Replace the identifiers in the task with the result of a function applied to the identifiers</p>
+<section id="id12">
+<h3>Parameters<a class="headerlink" href="#id12" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>func: function</dt><dd><p>The function to apply to the identifiers</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.inflow_dict">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inflow_dict</span></span><a class="headerlink" href="#troppo.tasks.core.Task.inflow_dict" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.involved_reactions">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">involved_reactions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">set</span></em><a class="headerlink" href="#troppo.tasks.core.Task.involved_reactions" title="Permalink to this definition"></a></dt>
+<dd><p>Get the set of reactions involved in the task</p>
+<section id="id13">
+<h3>Returns<a class="headerlink" href="#id13" title="Permalink to this heading"></a></h3>
+<p>set: The set of reactions involved in the task</p>
+</section>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.mandatory_activity">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mandatory_activity</span></span><a class="headerlink" href="#troppo.tasks.core.Task.mandatory_activity" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#troppo.tasks.core.Task.name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.outflow_dict">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">outflow_dict</span></span><a class="headerlink" href="#troppo.tasks.core.Task.outflow_dict" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.reaction_dict">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">reaction_dict</span></span><a class="headerlink" href="#troppo.tasks.core.Task.reaction_dict" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.tasks.core.Task.should_fail">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">should_fail</span></span><a class="headerlink" href="#troppo.tasks.core.Task.should_fail" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.tasks.core.TaskEvaluator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.tasks.core.</span></span><span class="sig-name descname"><span class="pre">TaskEvaluator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/tasks/core.html#TaskEvaluator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.core.TaskEvaluator" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A task evaluator is a wrapper around a model that allows the evaluation of tasks on the model. It can be used to
+evaluate a single task, or to evaluate a batch of tasks on a batch of models.</p>
+<section id="id14">
+<h3>Parameters<a class="headerlink" href="#id14" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>model: ConstraintBasedModel</dt><dd><p>The model to evaluate tasks on</p>
+</dd>
+<dt>tasks: Iterable[Task]</dt><dd><p>The tasks to evaluate on the model</p>
+</dd>
+<dt>solver: str</dt><dd><p>The solver to use for the model</p>
+</dd>
+<dt>S: np.ndarray</dt><dd><p>The stoichiometric matrix</p>
+</dd>
+<dt>lb: np.ndarray</dt><dd><p>The lower bounds for the reactions</p>
+</dd>
+<dt>ub: np.ndarray</dt><dd><p>The upper bounds for the reactions</p>
+</dd>
+<dt>rxn: np.ndarray</dt><dd><p>The reaction names</p>
+</dd>
+<dt>mtn: np.ndarray</dt><dd><p>The metabolite names</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.core.TaskEvaluator.batch_evaluate">
+<span class="sig-name descname"><span class="pre">batch_evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bound_changes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_sol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mp_batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/troppo/tasks/core.html#TaskEvaluator.batch_evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.core.TaskEvaluator.batch_evaluate" title="Permalink to this definition"></a></dt>
+<dd><p>Evaluate a batch of tasks on the model</p>
+<section id="id15">
+<h4>Parameters<a class="headerlink" href="#id15" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>bound_changes: dict</dt><dd><p>The changes to apply to the model</p>
+</dd>
+<dt>threads: int</dt><dd><p>The number of threads to use</p>
+</dd>
+<dt>output_sol: bool</dt><dd><p>Whether to output the solution</p>
+</dd>
+<dt>mp_batch_size: int</dt><dd><p>The batch size for multiprocessing</p>
+</dd>
+</dl>
+</section>
+<section id="id16">
+<h4>Returns<a class="headerlink" href="#id16" title="Permalink to this heading"></a></h4>
+<p>dict: The results of the evaluation</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.core.TaskEvaluator.batch_function">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">batch_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task:</span> <span class="pre">~troppo.tasks.core.Task</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params:</span> <span class="pre">dict)</span> <span class="pre">-&gt;</span> <span class="pre">(&lt;class</span> <span class="pre">'bool'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;class</span> <span class="pre">'cobamp.core.optimization.Solution'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/tasks/core.html#TaskEvaluator.batch_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.core.TaskEvaluator.batch_function" title="Permalink to this definition"></a></dt>
+<dd><p>Evaluate a task on a model</p>
+<section id="id17">
+<h4>Parameters<a class="headerlink" href="#id17" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>task: Task</dt><dd><p>The task to evaluate</p>
+</dd>
+<dt>params: dict</dt><dd><p>The parameters to use for evaluation</p>
+</dd>
+</dl>
+</section>
+<section id="id18">
+<h4>Returns<a class="headerlink" href="#id18" title="Permalink to this heading"></a></h4>
+<p>bool, Solution: Whether the task was satisfied, and the solution to the model</p>
+</section>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.tasks.core.TaskEvaluator.current_task">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">current_task</span></span><a class="headerlink" href="#troppo.tasks.core.TaskEvaluator.current_task" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.core.TaskEvaluator.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context_function=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux_distribution_func=None)</span> <span class="pre">-&gt;</span> <span class="pre">(&lt;class</span> <span class="pre">'bool'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;class</span> <span class="pre">'cobamp.core.optimization.Solution'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/tasks/core.html#TaskEvaluator.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.core.TaskEvaluator.evaluate" title="Permalink to this definition"></a></dt>
+<dd><p>Evaluate the current task on the model</p>
+<section id="id19">
+<h4>Parameters<a class="headerlink" href="#id19" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>context_function: function</dt><dd><p>A function to apply to the model prior to evaluation</p>
+</dd>
+<dt>flux_distribution_func: function</dt><dd><p>A function to apply to the model to get the flux distribution</p>
+</dd>
+</dl>
+</section>
+<section id="id20">
+<h4>Returns<a class="headerlink" href="#id20" title="Permalink to this heading"></a></h4>
+<p>bool, Solution: Whether the task was satisfied, and the solution to the model</p>
+</section>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.tasks.core.TaskEvaluator.tasks">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">tasks</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#troppo.tasks.core.Task" title="troppo.tasks.core.Task"><span class="pre">Task</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#troppo.tasks.core.TaskEvaluator.tasks" title="Permalink to this definition"></a></dt>
+<dd><p>Get the tasks</p>
+<section id="id21">
+<h4>Returns<a class="headerlink" href="#id21" title="Permalink to this heading"></a></h4>
+<p>list: The tasks</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+<section id="module-troppo.tasks.task_io">
+<span id="task-io-module"></span><h2>Task-io module<a class="headerlink" href="#module-troppo.tasks.task_io" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.tasks.task_io.ExcelTaskIO">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.tasks.task_io.</span></span><span class="sig-name descname"><span class="pre">ExcelTaskIO</span></span><a class="reference internal" href="_modules/troppo/tasks/task_io.html#ExcelTaskIO"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.task_io.ExcelTaskIO" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#troppo.tasks.task_io.TaskIO" title="troppo.tasks.task_io.TaskIO"><code class="xref py py-class docutils literal notranslate"><span class="pre">TaskIO</span></code></a></p>
+<p>ExcelTaskIO is a TaskIO subclass that reads and writes tasks to and from Excel files.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.task_io.ExcelTaskIO.read_from_string">
+<span class="sig-name descname"><span class="pre">read_from_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/troppo/tasks/task_io.html#ExcelTaskIO.read_from_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.task_io.ExcelTaskIO.read_from_string" title="Permalink to this definition"></a></dt>
+<dd><p>Reads a task from an Excel string. The string must be in the format specified by the subclass.</p>
+<section id="id22">
+<h3>Parameters<a class="headerlink" href="#id22" title="Permalink to this heading"></a></h3>
+<p>string: str</p>
+</section>
+<section id="id23">
+<h3>Returns<a class="headerlink" href="#id23" title="Permalink to this heading"></a></h3>
+<p>list of Task objects</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.task_io.ExcelTaskIO.read_task">
+<span class="sig-name descname"><span class="pre">read_task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">buffer_or_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">binary_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/troppo/tasks/task_io.html#ExcelTaskIO.read_task"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.task_io.ExcelTaskIO.read_task" title="Permalink to this definition"></a></dt>
+<dd><p>Reads a task from an Excel file or buffer. The file or buffer must be in the format specified by the subclass.</p>
+<section id="id24">
+<h3>Parameters<a class="headerlink" href="#id24" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>buffer_or_path: str or TextIOBase</dt><dd><p>The path to the file or a buffer containing the task</p>
+</dd>
+<dt>binary_mode: bool</dt><dd><p>Whether to open the file in binary mode. Only relevant for file paths.</p>
+</dd>
+</dl>
+</section>
+<section id="id25">
+<h3>Returns<a class="headerlink" href="#id25" title="Permalink to this heading"></a></h3>
+<p>list of Task objects</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.task_io.ExcelTaskIO.write_to_string">
+<span class="sig-name descname"><span class="pre">write_to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.tasks.core.Task" title="troppo.tasks.core.Task"><span class="pre">Task</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/troppo/tasks/task_io.html#ExcelTaskIO.write_to_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.task_io.ExcelTaskIO.write_to_string" title="Permalink to this definition"></a></dt>
+<dd><p>Writes a task to an Excel string. The string will be in the format specified by the subclass.</p>
+<section id="id26">
+<h3>Parameters<a class="headerlink" href="#id26" title="Permalink to this heading"></a></h3>
+<p>task: Task or list of Task</p>
+</section>
+<section id="id27">
+<h3>Returns<a class="headerlink" href="#id27" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>str</dt><dd><p>The Excel string</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.tasks.task_io.JSONTaskIO">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.tasks.task_io.</span></span><span class="sig-name descname"><span class="pre">JSONTaskIO</span></span><a class="reference internal" href="_modules/troppo/tasks/task_io.html#JSONTaskIO"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.task_io.JSONTaskIO" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#troppo.tasks.task_io.TaskIO" title="troppo.tasks.task_io.TaskIO"><code class="xref py py-class docutils literal notranslate"><span class="pre">TaskIO</span></code></a></p>
+<p>JSONTaskIO is a TaskIO subclass that reads and writes tasks to and from JSON files.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.task_io.JSONTaskIO.read_from_string">
+<span class="sig-name descname"><span class="pre">read_from_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/troppo/tasks/task_io.html#JSONTaskIO.read_from_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.task_io.JSONTaskIO.read_from_string" title="Permalink to this definition"></a></dt>
+<dd><p>Reads a task from a JSON string. The string must be in the format specified by the subclass.</p>
+<section id="id28">
+<h3>Parameters<a class="headerlink" href="#id28" title="Permalink to this heading"></a></h3>
+<p>string: str</p>
+</section>
+<section id="id29">
+<h3>Returns<a class="headerlink" href="#id29" title="Permalink to this heading"></a></h3>
+<p>list of Task objects</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.task_io.JSONTaskIO.write_to_string">
+<span class="sig-name descname"><span class="pre">write_to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_arg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.tasks.core.Task" title="troppo.tasks.core.Task"><span class="pre">Task</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/troppo/tasks/task_io.html#JSONTaskIO.write_to_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.task_io.JSONTaskIO.write_to_string" title="Permalink to this definition"></a></dt>
+<dd><p>Writes a task to a JSON string. The string will be in the format specified by the subclass.</p>
+<section id="id30">
+<h3>Parameters<a class="headerlink" href="#id30" title="Permalink to this heading"></a></h3>
+<p>task_arg: Task or list of Task</p>
+</section>
+<section id="id31">
+<h3>Returns<a class="headerlink" href="#id31" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>str</dt><dd><p>The JSON string</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.tasks.task_io.TaskIO">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.tasks.task_io.</span></span><span class="sig-name descname"><span class="pre">TaskIO</span></span><a class="reference internal" href="_modules/troppo/tasks/task_io.html#TaskIO"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.task_io.TaskIO" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Abstract class for reading and writing tasks to and from files.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.task_io.TaskIO.read_from_string">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_from_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/tasks/task_io.html#TaskIO.read_from_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.task_io.TaskIO.read_from_string" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.task_io.TaskIO.read_task">
+<span class="sig-name descname"><span class="pre">read_task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">buffer_or_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">binary_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/troppo/tasks/task_io.html#TaskIO.read_task"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.task_io.TaskIO.read_task" title="Permalink to this definition"></a></dt>
+<dd><p>Reads a task from a file or buffer. The file or buffer must be in the format specified by the subclass.</p>
+<section id="id32">
+<h3>Parameters<a class="headerlink" href="#id32" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>buffer_or_path: str or TextIOBase</dt><dd><p>The path to the file or a buffer containing the task</p>
+</dd>
+<dt>binary_mode: bool</dt><dd><p>Whether to open the file in binary mode. Only relevant for file paths.</p>
+</dd>
+</dl>
+</section>
+<section id="id33">
+<h3>Returns<a class="headerlink" href="#id33" title="Permalink to this heading"></a></h3>
+<p>list of Task objects</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.task_io.TaskIO.write_task">
+<span class="sig-name descname"><span class="pre">write_task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">buffer_or_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_arg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.tasks.core.Task" title="troppo.tasks.core.Task"><span class="pre">Task</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">binary_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/troppo/tasks/task_io.html#TaskIO.write_task"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.task_io.TaskIO.write_task" title="Permalink to this definition"></a></dt>
+<dd><p>Writes a task to a file or buffer. The file or buffer will be in the format specified by the subclass.</p>
+<section id="id34">
+<h3>Parameters<a class="headerlink" href="#id34" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>buffer_or_path: str or TextIOBase</dt><dd><p>The path to the file or a buffer containing the task</p>
+</dd>
+<dt>task_arg: Task or list of Task</dt><dd><p>The task or tasks to write</p>
+</dd>
+<dt>binary_mode: bool</dt><dd><p>Whether to open the file in binary mode. Only relevant for file paths.</p>
+</dd>
+</dl>
+</section>
+<section id="id35">
+<h3>Returns<a class="headerlink" href="#id35" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>int or None</dt><dd><p>The number of bytes written to the file or buffer. Only relevant for file paths.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.tasks.task_io.TaskIO.write_to_string">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">write_to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/tasks/task_io.html#TaskIO.write_to_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.tasks.task_io.TaskIO.write_to_string" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="troppo.omics.readers.html" class="btn btn-neutral float-left" title="Readers for Omics data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="troppo.utilities.html" class="btn btn-neutral float-right" title="Utilities module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Batch integration of Omics Data &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Task performance evaluation" href="tutorial_task_eval.html" />
+    <link rel="prev" title="iMAT tutorial" href="tutorial_imat.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Troppo</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="tutorial.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="tutorial_gene_level_thresholding.html">Gene-level thresholding tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial_gimme.html">GIMME tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial_fastcore.html">FastCORE tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial_tinit.html">tINIT tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial_imat.html">iMAT tutorial</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Batch integration of Omics Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#initial-setup">Initial setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#define-the-function-to-be-parallelized">Define the function to be parallelized</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#run-the-batch-integration">Run the batch integration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial_task_eval.html">Task performance evaluation</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="tutorial.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Batch integration of Omics Data</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/tutorial_batch_run.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="batch-integration-of-omics-data">
+<h1>Batch integration of Omics Data<a class="headerlink" href="#batch-integration-of-omics-data" title="Permalink to this heading"></a></h1>
+<p>Several integration algorithms were introduced in the previous tutorials.
+However, the demonstrated approach was limited to a single sample.
+In some cases, multiple samples are available and the context-specific models are required for each.
+Hence, making the integration of multiple samples a necessity.</p>
+<p><cite>batch_run</cite> is a function from <em>Cobamp</em> that allows multiprocessing and is fully compatible with the <em>Troppo</em> framework.
+Thus allowing the integration of multiple samples in a single run.
+This function requires four parameters:</p>
+<ul class="simple">
+<li><p><cite>function</cite>: the function that will run the reconstruction that needs to be parallelized.</p></li>
+<li><p><cite>sequence</cite>: a list with the containers for each sample.</p></li>
+<li><p><cite>paramargs</cite>: a dictionary with the parameters for the function.</p></li>
+<li><p><cite>threads</cite>: the number of parallel processes to run.</p></li>
+</ul>
+<section id="initial-setup">
+<h2>Initial setup<a class="headerlink" href="#initial-setup" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">cobra</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">troppo.omics.readers.generic</span> <span class="kn">import</span> <span class="n">TabularReader</span>
+<span class="kn">from</span> <span class="nn">troppo.methods_wrappers</span> <span class="kn">import</span> <span class="n">ReconstructionWrapper</span>
+<span class="kn">from</span> <span class="nn">cobamp.utilities.parallel</span> <span class="kn">import</span> <span class="n">batch_run</span>
+
+<span class="n">patt</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s1">&#39;__COBAMPGPRDOT__[0-9]</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="n">replace_alt_transcripts</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">patt</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+
+<span class="c1"># load the model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">cobra</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">read_sbml_model</span><span class="p">(</span><span class="s1">&#39;data\HumanGEM_Consistent_COVID19_HAM.xml&#39;</span><span class="p">)</span>
+
+<span class="c1"># Create the reconstruction wrapper</span>
+<span class="n">model_wrapper</span> <span class="o">=</span> <span class="n">ReconstructionWrapper</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">ttg_ratio</span><span class="o">=</span><span class="mi">9999</span><span class="p">,</span>
+                                      <span class="n">gpr_gene_parse_function</span><span class="o">=</span><span class="n">replace_alt_transcripts</span><span class="p">)</span>
+
+<span class="c1"># load the data</span>
+<span class="n">omics_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filepath_or_buffer</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;data\Desai-GTEx_ensembl.csv&#39;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">omics_data</span> <span class="o">=</span> <span class="n">omics_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[[</span><span class="s1">&#39;Lung_Healthy&#39;</span><span class="p">,</span><span class="s1">&#39;Lung_COVID19&#39;</span><span class="p">]]</span>
+
+<span class="c1"># creat omics container</span>
+<span class="n">omics_container</span> <span class="o">=</span> <span class="n">TabularReader</span><span class="p">(</span><span class="n">path_or_df</span><span class="o">=</span><span class="n">omics_data</span><span class="p">,</span> <span class="n">nomenclature</span><span class="o">=</span><span class="s1">&#39;entrez_id&#39;</span><span class="p">,</span>
+                                <span class="n">omics_type</span><span class="o">=</span><span class="s1">&#39;transcriptomics&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">to_containers</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="define-the-function-to-be-parallelized">
+<h2>Define the function to be parallelized<a class="headerlink" href="#define-the-function-to-be-parallelized" title="Permalink to this heading"></a></h2>
+<p>This function uses the <cite>run_from_omics</cite> method from the <cite>ReconstructionWrapper</cite> class. This requires the following parameters:</p>
+<ul class="simple">
+<li><p><cite>omics_data</cite>: the omics data container for the sample.</p></li>
+<li><p><cite>algorithm</cite>: a string containing the algorithm to use for the reconstruction.</p></li>
+<li><p><cite>and_or_funcs</cite>: a tuple with the functions to use for the AND and OR operations of the GPR.</p></li>
+<li><p><cite>integration_strategy</cite>: a tuple with the integration strategy and the function to apply to the scores.</p></li>
+<li><p><cite>solver</cite>: the solver to use for the optimization.</p></li>
+<li><p><cite>**kwargs</cite>: additional parameters for the reconstruction that are specific to used algorithm.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">reconstruction_function_gimme</span><span class="p">(</span><span class="n">omics_container</span><span class="p">,</span> <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">score_apply</span><span class="p">(</span><span class="n">reaction_map_scores</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="mi">0</span>  <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">reaction_map_scores</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+    <span class="n">flux_threshold</span><span class="p">,</span> <span class="n">obj_frac</span><span class="p">,</span> <span class="n">rec_wrapper</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="p">[</span><span class="n">parameters</span><span class="p">[</span><span class="n">parameter</span><span class="p">]</span> <span class="k">for</span> <span class="n">parameter</span> <span class="ow">in</span>
+                                      <span class="p">[</span><span class="s1">&#39;flux_threshold&#39;</span><span class="p">,</span> <span class="s1">&#39;obj_frac&#39;</span><span class="p">,</span> <span class="s1">&#39;reconstruction_wrapper&#39;</span><span class="p">,</span>
+                                       <span class="s1">&#39;algorithm&#39;</span><span class="p">]]</span>
+
+    <span class="n">reac_ids</span> <span class="o">=</span> <span class="n">rec_wrapper</span><span class="o">.</span><span class="n">model_reader</span><span class="o">.</span><span class="n">r_ids</span>
+    <span class="n">metab_ids</span> <span class="o">=</span> <span class="n">rec_wrapper</span><span class="o">.</span><span class="n">model_reader</span><span class="o">.</span><span class="n">m_ids</span>
+    <span class="n">AND_OR_FUNCS</span> <span class="o">=</span> <span class="p">(</span><span class="nb">min</span><span class="p">,</span> <span class="nb">sum</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">rec_wrapper</span><span class="o">.</span><span class="n">run_from_omics</span><span class="p">(</span><span class="n">omics_data</span><span class="o">=</span><span class="n">omics_container</span><span class="p">,</span> <span class="n">algorithm</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+                                      <span class="n">and_or_funcs</span><span class="o">=</span><span class="n">AND_OR_FUNCS</span><span class="p">,</span>
+                                      <span class="n">integration_strategy</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;continuous&#39;</span><span class="p">,</span> <span class="n">score_apply</span><span class="p">),</span>
+                                      <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;CPLEX&#39;</span><span class="p">,</span> <span class="n">obj_frac</span><span class="o">=</span><span class="n">obj_frac</span><span class="p">,</span>
+                                      <span class="n">objectives</span><span class="o">=</span><span class="p">[{</span><span class="s1">&#39;biomass_human&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}],</span> <span class="n">preprocess</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                      <span class="n">flux_threshold</span><span class="o">=</span><span class="n">flux_threshold</span><span class="p">,</span> <span class="n">reaction_ids</span><span class="o">=</span><span class="n">reac_ids</span><span class="p">,</span>
+                                      <span class="n">metabolite_ids</span><span class="o">=</span><span class="n">metab_ids</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Considering the function above, the parameters for the reconstruction are defined in a dictionary as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;flux_threshold&#39;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s1">&#39;obj_frac&#39;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s1">&#39;reconstruction_wrapper&#39;</span><span class="p">:</span> <span class="n">model_wrapper</span><span class="p">,</span>
+              <span class="s1">&#39;algorithm&#39;</span><span class="p">:</span> <span class="s1">&#39;gimme&#39;</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="run-the-batch-integration">
+<h2>Run the batch integration<a class="headerlink" href="#run-the-batch-integration" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">batch_gimme_res</span> <span class="o">=</span> <span class="n">batch_run</span><span class="p">(</span><span class="n">reconstruction_function_gimme</span><span class="p">,</span> <span class="n">omics_container</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">threads</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="tutorial_imat.html" class="btn btn-neutral float-left" title="iMAT tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tutorial_task_eval.html" class="btn btn-neutral float-right" title="Task performance evaluation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

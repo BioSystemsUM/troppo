@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>troppo.omics.gene_level_thresholding &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">Troppo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">troppo.omics.gene_level_thresholding</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for troppo.omics.gene_level_thresholding</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">log</span>
+
+
+<div class="viewcode-block" id="GeneLevelThresholding"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.gene_level_thresholding.GeneLevelThresholding">[docs]</a><span class="k">class</span> <span class="nc">GeneLevelThresholding</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class is used to transform the dataframe containing the omics data and perform gene-level thresholding on omics</span>
+<span class="sd">    data. It currently supports Global and Local thresholding approaches described by Richelle, Joshi and Lewis (2019)</span>
+<span class="sd">    (https://doi.org/10.1371/journal.pcbi.1007185). These include:</span>
+<span class="sd">    - global: genes with a value lower than the upper global threshold (GTU) are considered inactive; genes with a value</span>
+<span class="sd">    greater than the lower global threshold (GTL) are considered active.</span>
+<span class="sd">    - local t1: genes with a value lower than the upper global threshold (GTU) are considered inactive; for genes</span>
+<span class="sd">    with a value greater than the GTU, if the value is lower than the local threshold (LT), the gene is considered</span>
+<span class="sd">    inactive, otherwise it is considered active.</span>
+<span class="sd">    - local t2: genes with a value lower than the upper global threshold (GTU) are considered inactive; genes with</span>
+<span class="sd">    a value greater than the lower global threshold (GTU) are considered active; for genes with a value between the GTU</span>
+<span class="sd">    and the lower global threshold (GTL), they are only considered active if their value is greater than the local</span>
+<span class="sd">    threshold (LT).</span>
+<span class="sd">    Thresholds are selected in accordance with the distribution of the data. The numbers in the thresholding options</span>
+<span class="sd">    represent the position of the value to use. Currently, the options are: [0.1, 0.25, 0.5, 0.75, 0.9];</span>
+<span class="sd">    the threshold value will then be value of the dataset at that corresponding quantile.&#39;</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    omics_dataframe: pandas.DataFrame</span>
+<span class="sd">        Omics data to be thresholded.</span>
+<span class="sd">    thresholding_strat: str</span>
+<span class="sd">        Thresholding strategy to be used. Must be one of: global, local t1, local t2.</span>
+<span class="sd">    global_threshold_lower: int or None, default = None</span>
+<span class="sd">        Position of the Global Lower threshold value on the quantile list.</span>
+<span class="sd">    global_threshold_upper: int or None, default = None</span>
+<span class="sd">        Position of the Global Upper threshold value on the quantile list.</span>
+<span class="sd">    local_threshold: int or None, default = None</span>
+<span class="sd">        Position of the Local threshold value on the quantile list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">omics_dataframe</span><span class="p">:</span> <span class="n">pandas</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">thresholding_strat</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;global&#39;</span><span class="p">,</span>
+                 <span class="n">global_threshold_lower</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">global_threshold_upper</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">local_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">omics_dataframe</span> <span class="o">=</span> <span class="n">omics_dataframe</span>
+
+        <span class="k">if</span> <span class="n">thresholding_strat</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;global&#39;</span><span class="p">,</span> <span class="s1">&#39;local t1&#39;</span><span class="p">,</span> <span class="s1">&#39;local t2&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid thresholding strategy. Must be one of: global, local t1, local t2&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thresholding_strat</span> <span class="o">=</span> <span class="n">thresholding_strat</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_expression</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">omics_dataframe</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+
+        <span class="n">qvalues</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span> <span class="o">=</span> <span class="n">omics_dataframe</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">qvalues</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">global_quantiles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">thresholding_strat</span> <span class="o">==</span> <span class="s1">&#39;global&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">global_threshold_lower</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_quantiles</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">global_threshold_lower</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">global_threshold_upper</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">local_threshold</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="n">thresholding_strat</span> <span class="o">==</span> <span class="s1">&#39;local t1&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">global_threshold_lower</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_quantiles</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">global_threshold_lower</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">global_threshold_upper</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">local_threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">local_threshold</span><span class="p">,]</span>
+        <span class="k">elif</span> <span class="n">thresholding_strat</span> <span class="o">==</span> <span class="s1">&#39;local t2&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">global_threshold_lower</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_quantiles</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">global_threshold_lower</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">global_threshold_upper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_quantiles</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">global_threshold_upper</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">local_threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">local_threshold</span><span class="p">,]</span>
+
+<div class="viewcode-block" id="GeneLevelThresholding.global_thresholding"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.gene_level_thresholding.GeneLevelThresholding.global_thresholding">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">global_thresholding</span><span class="p">(</span><span class="n">sample_series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">gtlow</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">maxexp</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Global thresholding strategy for the omics data. Processes a single sample at the time.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sample_series: pandas.Series</span>
+<span class="sd">            Omics data from a specific sample.</span>
+<span class="sd">        gtlow: float</span>
+<span class="sd">            Global threshold lower value.</span>
+<span class="sd">        maxexp: float</span>
+<span class="sd">            Maximum expression value of the dataset.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        filtered_sample: dict</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">sample_series</span> <span class="o">/</span> <span class="n">gtlow</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">log</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="o">-</span><span class="n">maxexp</span><span class="p">,</span> <span class="n">maxexp</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="GeneLevelThresholding.local_t1_thresholding"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.gene_level_thresholding.GeneLevelThresholding.local_t1_thresholding">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">local_t1_thresholding</span><span class="p">(</span><span class="n">sample_series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">gtlow</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">lt</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">maxexp</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Local T1 thresholding strategy for the omics data. Processes a single sample at the time.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sample_series: pandas.Series</span>
+<span class="sd">            Omics data from a specific sample.</span>
+<span class="sd">        gtlow: float</span>
+<span class="sd">            Global threshold lower value.</span>
+<span class="sd">        lt: pd.Series</span>
+<span class="sd">            Local threshold value for each sample.</span>
+<span class="sd">        maxexp: float</span>
+<span class="sd">            Maximum expression value of the dataset.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        filtered_sample: dict</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">activity</span> <span class="o">=</span> <span class="p">(</span><span class="n">sample_series</span> <span class="o">/</span> <span class="n">gtlow</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">log</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="o">-</span><span class="n">maxexp</span><span class="p">,</span> <span class="n">maxexp</span><span class="p">)</span>
+        <span class="n">gt_active</span> <span class="o">=</span> <span class="n">activity</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+        <span class="n">activity</span><span class="p">[</span><span class="n">gt_active</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">log</span><span class="p">(</span><span class="n">sample_series</span><span class="p">[</span><span class="n">gt_active</span><span class="p">]</span> <span class="o">/</span> <span class="n">lt</span><span class="p">[</span><span class="n">gt_active</span><span class="p">])</span> <span class="o">*</span> <span class="n">maxexp</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="o">-</span><span class="n">maxexp</span><span class="p">,</span> <span class="n">maxexp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">activity</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="GeneLevelThresholding.local_t2_thresholding"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.gene_level_thresholding.GeneLevelThresholding.local_t2_thresholding">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">local_t2_thresholding</span><span class="p">(</span><span class="n">sample_series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">gtlow</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">gtup</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">lt</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">maxexp</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Local T2 thresholding strategy for the omics data. Processes a single sample at the time.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sample_series: pandas.Series</span>
+<span class="sd">            Omics data from a specific sample.</span>
+<span class="sd">        gtlow: float</span>
+<span class="sd">            Global threshold lower value.</span>
+<span class="sd">        gtup: float</span>
+<span class="sd">            Global threshold upper value.</span>
+<span class="sd">        lt: pandas.Series</span>
+<span class="sd">            Local threshold value for each gene.</span>
+<span class="sd">        maxexp: float</span>
+<span class="sd">            Maximum expression value of the dataset.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        filtered_sample: dict</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">upp_activity</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">sample_series</span> <span class="o">/</span> <span class="n">gtlow</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">log</span><span class="p">))</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="o">-</span><span class="n">maxexp</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">maxexp</span><span class="p">)</span>
+        <span class="n">gtu_inactive</span> <span class="o">=</span> <span class="n">upp_activity</span> <span class="o">&lt;</span> <span class="mi">1</span>
+        <span class="n">low_activity</span> <span class="o">=</span> <span class="p">(</span><span class="n">sample_series</span> <span class="o">/</span> <span class="n">gtup</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">log</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="o">-</span><span class="n">maxexp</span><span class="p">,</span> <span class="n">maxexp</span><span class="p">)</span>
+        <span class="n">gtl_maybes</span><span class="p">,</span> <span class="n">gtl_lows</span> <span class="o">=</span> <span class="p">(</span><span class="n">low_activity</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">gtu_inactive</span><span class="p">,</span> <span class="n">low_activity</span> <span class="o">&lt;</span> <span class="mi">0</span>
+        <span class="n">upp_activity</span><span class="p">[</span><span class="n">gtl_lows</span><span class="p">]</span> <span class="o">=</span> <span class="n">low_activity</span><span class="p">[</span><span class="n">gtl_lows</span><span class="p">]</span>
+        <span class="n">activity_maybe</span> <span class="o">=</span> <span class="p">(</span><span class="n">sample_series</span><span class="p">[</span><span class="n">gtl_maybes</span><span class="p">]</span> <span class="o">/</span> <span class="n">lt</span><span class="p">[</span><span class="n">gtl_maybes</span><span class="p">])</span><span class="o">.</span> \
+            <span class="n">apply</span><span class="p">(</span><span class="n">log</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="o">-</span><span class="n">maxexp</span><span class="p">,</span> <span class="n">maxexp</span><span class="p">)</span>
+        <span class="n">upp_activity</span><span class="p">[</span><span class="n">gtl_maybes</span><span class="p">]</span> <span class="o">=</span> <span class="n">activity_maybe</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">upp_activity</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="GeneLevelThresholding.threshold_strategy"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.gene_level_thresholding.GeneLevelThresholding.threshold_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">threshold_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample_series</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Thresholding strategy for the omics data. Processes a single sample at the time.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sample_series: pandas.Series</span>
+<span class="sd">            Omics data from a specific sample.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        filtered_sample: dict</span>
+
+<span class="sd">            Filtered omics data from a specific sample.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresholding_strat</span> <span class="o">==</span> <span class="s1">&#39;global&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_thresholding</span><span class="p">(</span><span class="n">sample_series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_threshold_lower</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_expression</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresholding_strat</span> <span class="o">==</span> <span class="s1">&#39;local t1&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_t1_thresholding</span><span class="p">(</span><span class="n">sample_series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_threshold_lower</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_threshold</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">max_expression</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresholding_strat</span> <span class="o">==</span> <span class="s1">&#39;local t2&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_t2_thresholding</span><span class="p">(</span><span class="n">sample_series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_threshold_lower</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_threshold_lower</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">local_threshold</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_expression</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GeneLevelThresholding.apply_thresholding_filter"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.gene_level_thresholding.GeneLevelThresholding.apply_thresholding_filter">[docs]</a>    <span class="k">def</span> <span class="nf">apply_thresholding_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pandas</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Thresholding filter for the omics data.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        filtered_dataset: pandas.DataFrame</span>
+<span class="sd">            Filtered omics dataframe.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filter_results</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">sample_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">omics_dataframe</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+            <span class="n">sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">omics_dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">sample_id</span><span class="p">,</span> <span class="p">:]</span>
+
+            <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">thresholding_strat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_threshold_lower</span><span class="p">,</span>
+                                      <span class="bp">self</span><span class="o">.</span><span class="n">global_threshold_upper</span><span class="p">,</span> <span class="bp">self</span><span class="p">]))</span>
+
+            <span class="n">filter_results</span><span class="p">[</span><span class="n">sample</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold_strategy</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+
+        <span class="n">filtered_dataset</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">filter_results</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="k">return</span> <span class="n">filtered_dataset</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

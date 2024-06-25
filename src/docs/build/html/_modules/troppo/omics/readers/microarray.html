@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>troppo.omics.readers.microarray &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">Troppo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">troppo.omics.readers.microarray</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for troppo.omics.readers.microarray</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd"> Created by Jorge Gomes on 19/03/2018</span>
+<span class="sd"> source</span>
+<span class="sd"> probe_reader</span>
+<span class="sd"> </span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">read_csv</span>
+
+
+<div class="viewcode-block" id="ProbeReader"><a class="viewcode-back" href="../../../../troppo.omics.readers.html#troppo.omics.readers.microarray.ProbeReader">[docs]</a><span class="k">class</span> <span class="nc">ProbeReader</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reads expression files sourced from microarrays DBs such as Gene Expression Barcode or Gene Expression OmniBus.</span>
+<span class="sd">    Considers each value is identified by a probeID on the first column of the file. An annotation file supplied by</span>
+<span class="sd">    the microarray chip vendor must be supplied for appropriate probe to gene Id conversion.</span>
+<span class="sd">    Cases where a probe has no match with convTarget nomenclature will be ignored.</span>
+<span class="sd">    Handles cases where more than one probe translate to the same gene, and where a probe translates to more</span>
+<span class="sd">    than a gene.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    fPath: str</span>
+<span class="sd">        complete path to the file from which expresion data is read.</span>
+<span class="sd">    expCol: int</span>
+<span class="sd">        index of the column where expression values are retrieved from.</span>
+<span class="sd">    annotFile: str</span>
+<span class="sd">        complete path to the annotation file.</span>
+<span class="sd">    convTarget: str</span>
+<span class="sd">        exact match to the column name of the nomenclature used for probeID to geneID conversion</span>
+<span class="sd">        recommended: Either Gene Symbol or Entrez Gene or equivalent.</span>
+<span class="sd">    expSep: str</span>
+<span class="sd">        field separator used in the probe intesity/expression file. Default is &quot;,&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fPath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">expCol</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">annotFile</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">convTarget</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">convSep</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="n">expSep</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fpath</span> <span class="o">=</span> <span class="n">fPath</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expCol</span> <span class="o">=</span> <span class="n">expCol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cPath</span> <span class="o">=</span> <span class="n">annotFile</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_convTarget</span> <span class="o">=</span> <span class="n">convTarget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_convSep</span> <span class="o">=</span> <span class="n">convSep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expSep</span> <span class="o">=</span> <span class="n">expSep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_IdMapping</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__createMapping</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ProbeReader.load"><a class="viewcode-back" href="../../../../troppo.omics.readers.html#troppo.omics.readers.microarray.ProbeReader.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the loading of supplied omics file.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict: a dictionary of geneID: expressionValue</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># avoid loading when mapping does not exist</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_IdMapping</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">tup_list</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># auxiliary structure</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># {ID: Exp_val}</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fpath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">header</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_expSep</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expCol</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expCol</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">header</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Column </span><span class="se">\&#39;</span><span class="si">{0}</span><span class="se">\&#39;</span><span class="s1"> exceeds number of columns in file, or is the probe Id column </span><span class="se">\n</span><span class="s1"> &#39;</span>
+                                <span class="s1">&#39;Please input a valid column. File header: </span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_expCol</span><span class="p">,</span> <span class="n">header</span><span class="p">))</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">fields</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\&quot;</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+                    <span class="c1"># don&#39;t add genes to tuplist that don&#39;t have an id mapping</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_IdMapping</span><span class="p">[</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="n">genes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_IdMapping</span><span class="p">[</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;///&#39;</span><span class="p">)</span>  <span class="c1"># 1 probe : many genes</span>
+                        <span class="k">for</span> <span class="n">geneID</span> <span class="ow">in</span> <span class="n">genes</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">geneID</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;---&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>  <span class="c1"># filters cases where one probe does not match an id</span>
+                                <span class="n">tup_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">geneID</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_expCol</span><span class="p">])))</span>
+        <span class="k">for</span> <span class="n">gene</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">tup_list</span><span class="p">:</span>  <span class="c1"># 2 probes translated to same gene</span>
+            <span class="k">if</span> <span class="n">gene</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">gene</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span><span class="p">]</span>  <span class="c1"># simple entries</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">gene</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># multiple entries -&gt; mean will occur after</span>
+        <span class="n">new_values</span> <span class="o">=</span> <span class="p">{</span><span class="n">g</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">return</span> <span class="n">new_values</span></div>
+
+    <span class="c1"># handles annotation file</span>
+    <span class="k">def</span> <span class="nf">__createMapping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a dictionary of probeID: geneID from the annotation file supplied.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict: a dictionary of probeID: geneID</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">field_sep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convSep</span>
+        <span class="n">mapping</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># handling more of one probe for the same gene</span>
+
+        <span class="c1"># find header of annot file</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cPath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">header_start</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">field_sep</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
+                    <span class="n">header_start</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+        <span class="c1"># actually read the file</span>
+        <span class="n">annot</span> <span class="o">=</span> <span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cPath</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">header_start</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="n">field_sep</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convTarget</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">annot</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;convTarget is not present in the annotation file please input one of the following:&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span>
+                  <span class="nb">list</span><span class="p">(</span><span class="n">annot</span><span class="p">))</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">annot</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">annot</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_convTarget</span><span class="p">]))</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;C:/Users/Tese_Avoid_Namespaces/Tese/TsmRec/files/abc-tis-gpl570-formatted_v3.csv&quot;</span>
+    <span class="n">tissue</span> <span class="o">=</span> <span class="s1">&#39;brain&#39;</span>
+    <span class="n">convFile</span> <span class="o">=</span> <span class="s2">&quot;C:/Users/Tese_Avoid_Namespaces/Tese/TsmRec/files/rembrandt_study/HG-U133_Plus_2.na35.annot.csv&quot;</span>
+    <span class="n">convS</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Probe Set ID&#39;</span><span class="p">,</span> <span class="s1">&#39;Gene Symbol&#39;</span><span class="p">,</span> <span class="s1">&#39;,&#39;</span><span class="p">)</span>
+    <span class="n">help</span><span class="p">(</span><span class="n">ProbeReader</span><span class="p">)</span>
+    <span class="n">gr</span> <span class="o">=</span> <span class="n">ProbeReader</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">convFile</span><span class="p">,</span> <span class="n">convTarget</span><span class="o">=</span><span class="s2">&quot;Gene Symbol&quot;</span><span class="p">)</span>
+    <span class="n">gr</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
