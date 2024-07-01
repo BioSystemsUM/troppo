@@ -121,8 +121,8 @@ class IMAT(ContextSpecificModelReconstructionAlgorithm):
         core = self.properties['core']
         epsilon = self.properties['epsilon']
 
-        high_idx = (np.where(exp_vector >= exp_ub)[0]).astype(int)
-        low_idx = (np.where((exp_vector >= 0) & (exp_vector < exp_lb))[0]).astype(int)
+        high_idx = (np.where(np.array(exp_vector) >= exp_ub)[0]).astype(int)
+        low_idx = (np.where((np.array(exp_vector) >= 0) & (np.array(exp_vector) < exp_lb))[0]).astype(int)
 
         if core:
             high_idx = np.union1d(high_idx, np.array(core))

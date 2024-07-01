@@ -1,6 +1,6 @@
 import abc
 
-from troppo.omics.core import OmicsDataMap
+from . import OmicsDataMap
 
 MINSUM = (min, sum)
 MINMAX = (min, max)
