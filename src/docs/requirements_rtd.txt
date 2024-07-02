@@ -1,0 +1,6 @@
+sphinx
+rst-to-myst
+sphinx-rtd-theme
+sphinx-autobuild
+myst-parser
+cobamp==0.2.1
