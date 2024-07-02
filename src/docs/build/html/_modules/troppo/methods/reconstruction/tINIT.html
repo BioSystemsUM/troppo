@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>troppo.methods.reconstruction.tINIT &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">Troppo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">troppo.methods.reconstruction.tINIT</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for troppo.methods.reconstruction.tINIT</h1><div class="highlight"><pre>
+<span></span>
+<span class="kn">import</span> <span class="nn">scipy.sparse</span> <span class="k">as</span> <span class="nn">sprs</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">int_</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
+
+<span class="kn">from</span> <span class="nn">cobamp.core.linear_systems</span> <span class="kn">import</span> <span class="n">GenericLinearSystem</span><span class="p">,</span> <span class="n">VAR_CONTINUOUS</span><span class="p">,</span> <span class="n">VAR_BINARY</span>
+<span class="kn">from</span> <span class="nn">cobamp.core.optimization</span> <span class="kn">import</span> <span class="n">LinearSystemOptimizer</span>
+
+<span class="kn">from</span> <span class="nn">cobamp.core.models</span> <span class="kn">import</span> <span class="n">make_irreversible_model_raven</span>
+<span class="kn">from</span> <span class="nn">troppo.methods.base</span> <span class="kn">import</span> <span class="n">ContextSpecificModelReconstructionAlgorithm</span><span class="p">,</span> <span class="n">PropertiesReconstruction</span>
+<span class="kn">from</span> <span class="nn">troppo.utilities.list</span> <span class="kn">import</span> <span class="n">is_list_else_empty</span><span class="p">,</span> <span class="n">if_none_return_list</span>
+
+
+<div class="viewcode-block" id="tINITProperties"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.tINIT.tINITProperties">[docs]</a><span class="k">class</span> <span class="nc">tINITProperties</span><span class="p">(</span><span class="n">PropertiesReconstruction</span><span class="p">):</span>
+<span class="w">	</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Properties for the tINIT algorithm.</span>
+
+<span class="sd">	Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	reactions_scores : list</span>
+<span class="sd">		The scores for each reaction.</span>
+<span class="sd">	present_metabolites : list, default=[]</span>
+<span class="sd">		The metabolites that are present in the model.</span>
+<span class="sd">	essential_reactions : list, default=[]</span>
+<span class="sd">		The reactions that are essential in the model.</span>
+<span class="sd">	production_weight : float, default=0.5</span>
+<span class="sd">		The weight of the production reactions.</span>
+<span class="sd">	allow_excretion : bool, default=False</span>
+<span class="sd">		Whether to allow excretion.</span>
+<span class="sd">	no_reverse_loops : bool, default=False</span>
+<span class="sd">		Whether to allow reverse loops.</span>
+<span class="sd">	solver : str, default=None</span>
+<span class="sd">		The solver to be used.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reactions_scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">present_metabolites</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">essential_reactions</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+				 <span class="n">production_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">allow_excretion</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+				 <span class="n">no_reverse_loops</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">solver</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+		<span class="k">if</span> <span class="n">present_metabolites</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="n">present_metabolites</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">if</span> <span class="n">essential_reactions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="n">essential_reactions</span> <span class="o">=</span> <span class="p">[]</span>
+
+		<span class="c1"># TODO: check later if the params input might be necessary to include for the troppo</span>
+		<span class="n">new_mandatory</span> <span class="o">=</span> <span class="p">{</span>
+			<span class="s1">&#39;solver&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="n">new_optional</span> <span class="o">=</span> <span class="p">{</span>
+			<span class="s1">&#39;reactions_scores&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="n">is_list_else_empty</span><span class="p">(</span><span class="n">y</span><span class="p">),</span>
+			<span class="s1">&#39;present_metabolites&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="n">is_list_else_empty</span><span class="p">(</span><span class="n">y</span><span class="p">),</span>
+			<span class="s1">&#39;essential_reactions&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="n">is_list_else_empty</span><span class="p">(</span><span class="n">y</span><span class="p">),</span>
+			<span class="s1">&#39;production_weight&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span>
+			<span class="s1">&#39;allow_excretion&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="nb">bool</span><span class="p">),</span>
+			<span class="s1">&#39;no_reverse_loops&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="nb">bool</span><span class="p">),</span>
+		<span class="p">}</span>
+
+		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">add_new_properties</span><span class="p">(</span><span class="n">new_mandatory</span><span class="p">,</span> <span class="n">new_optional</span><span class="p">)</span>
+
+		<span class="n">properties_dict_list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;reactions_scores&quot;</span><span class="p">,</span> <span class="s2">&quot;present_metabolites&quot;</span><span class="p">,</span> <span class="s2">&quot;essential_reactions&quot;</span><span class="p">,</span> <span class="s2">&quot;production_weight&quot;</span><span class="p">,</span>
+								<span class="s2">&quot;allow_excretion&quot;</span><span class="p">,</span> <span class="s2">&quot;no_reverse_loops&quot;</span><span class="p">,</span> <span class="s2">&quot;solver&quot;</span><span class="p">]</span>
+		<span class="n">properties_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">reactions_scores</span><span class="p">,</span> <span class="n">if_none_return_list</span><span class="p">(</span><span class="n">present_metabolites</span><span class="p">),</span>
+						   <span class="n">if_none_return_list</span><span class="p">(</span><span class="n">essential_reactions</span><span class="p">),</span> <span class="n">if_none_return_list</span><span class="p">(</span><span class="n">production_weight</span><span class="p">),</span>
+						   <span class="n">allow_excretion</span><span class="p">,</span> <span class="n">no_reverse_loops</span><span class="p">,</span> <span class="n">solver</span><span class="p">]</span>
+		<span class="n">prop_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">properties_dict_list</span><span class="p">,</span> <span class="n">properties_list</span><span class="p">))</span>
+
+		<span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">add_if_not_none</span><span class="p">(</span><span class="o">*</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">prop_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+
+<div class="viewcode-block" id="tINITProperties.from_integrated_scores"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.tINIT.tINITProperties.from_integrated_scores">[docs]</a>	<span class="nd">@staticmethod</span>
+	<span class="k">def</span> <span class="nf">from_integrated_scores</span><span class="p">(</span><span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tINITProperties&#39;</span><span class="p">:</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Creates the properties object from integrated scores.</span>
+
+<span class="sd">		Parameters</span>
+<span class="sd">		----------</span>
+<span class="sd">		scores: list</span>
+<span class="sd">			The integrated scores for each reaction.</span>
+<span class="sd">		kwargs: dict</span>
+<span class="sd">			The other properties.</span>
+
+<span class="sd">		Returns</span>
+<span class="sd">		-------</span>
+<span class="sd">		tINITProperties</span>
+<span class="sd">			The properties object.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="n">tINITProperties</span><span class="p">(</span><span class="n">reactions_scores</span><span class="o">=</span><span class="n">scores</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="tINIT"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.tINIT.tINIT">[docs]</a><span class="k">class</span> <span class="nc">tINIT</span><span class="p">(</span><span class="n">ContextSpecificModelReconstructionAlgorithm</span><span class="p">):</span>
+<span class="w">	</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	The tINIT algorithm.</span>
+
+<span class="sd">	Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	S : np.ndarray</span>
+<span class="sd">		The stoichiometric matrix.</span>
+<span class="sd">	lb : np.ndarray</span>
+<span class="sd">		The lower bounds for the reactions.</span>
+<span class="sd">	ub : np.ndarray</span>
+<span class="sd">		The upper bounds for the reactions.</span>
+<span class="sd">	properties : tINITProperties</span>
+<span class="sd">		The properties for the algorithm.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">properties_class</span> <span class="o">=</span> <span class="n">tINITProperties</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">lb</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">ub</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">properties</span><span class="p">:</span> <span class="n">tINITProperties</span><span class="p">):</span>
+		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">,</span> <span class="n">properties</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">S</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">lb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">lb</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ub</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="n">properties</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">shape</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">no_reverse_loops</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">allow_excretion</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">production_weight</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">metabolites_production</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reaction_scores</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">bwd_idx</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">fwd_idx</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">rev_map</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_ub</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_lb</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">essential_reversible_reactions</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reversible_reactions</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">problem_a</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">problem_c</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">problem_buc</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">met_ub</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">rev_ub</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">problem_blc</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_b</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">problem_bux</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">problem_blx</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">n_net_production</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">net_production</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">non_essential</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">v_vector_reactions</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">n_non_essential_reactions</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">n_essential_reactions</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">n_reactions_irrev</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites_irrev</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="tINIT.preprocessing"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.tINIT.tINIT.preprocessing">[docs]</a>	<span class="k">def</span> <span class="nf">preprocessing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Preprocessing of the algorithm.</span>
+
+<span class="sd">		Returns</span>
+<span class="sd">		-------</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reaction_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;reactions_scores&#39;</span><span class="p">])</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;present_metabolites&#39;</span><span class="p">])</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;essential_reactions&#39;</span><span class="p">])</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">production_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;production_weight&#39;</span><span class="p">]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">allow_excretion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;allow_excretion&#39;</span><span class="p">]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">no_reverse_loops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;no_reverse_loops&#39;</span><span class="p">]</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>  <span class="c1"># in theory, this should not even happen once, only if by mistake</span>
+			<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;There are repeated metabolites in the list. We</span><span class="se">\&#39;</span><span class="s1"> apply a unique method and will be used &#39;</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+			<span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites</span><span class="p">))))</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">metabolites_production</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span>
+		<span class="c1"># self.metabolites_production[self.present_metabolites] = -1</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">metabolites_production</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+		<span class="c1"># TODO: have a function to check if the model is unconstrained</span>
+		<span class="c1"># TODO: change the reversible stuff later to the new to be implemented functions</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reversible_reactions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lb</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># change this TODO: should this also have self.ub &gt; 0?</span>
+		<span class="c1"># self.reversible_reactions = np.where((np.logical_and(self.lb &lt; 0, self.ub&gt;0)))[0]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">essential_reversible_reactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="p">[</span>
+			<span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reversible_reactions</span><span class="p">)]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">essential_reversible_reactions</span><span class="p">)</span>
+
+		<span class="c1"># convert the model to irreversible</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">irreversible_lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">irreversible_ub</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rev_map</span> <span class="o">=</span> <span class="n">make_irreversible_model_raven</span><span class="p">(</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">lb</span><span class="p">,</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">ub</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">reaction_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">reaction_scores</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reaction_scores</span><span class="p">[</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">reversible_reactions</span><span class="p">]])</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_reverse_loops</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">fwd_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reversible_reactions</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">bwd_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+				<span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">rev_map</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reversible_reactions</span><span class="p">])</span>  <span class="c1"># TODO: check this part of no reverse loops</span>
+
+		<span class="k">else</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">fwd_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">essential_reversible_reactions</span>
+			<span class="c1"># self.bwd_idx = np.array([i + (self.n_reactions) for i in self.essential_reversible_reactions])</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">bwd_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">rev_map</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">essential_reversible_reactions</span><span class="p">])</span>
+
+		<span class="c1"># remove the essential reactions from the self.reactions_scores</span>
+		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">reaction_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reaction_scores</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="p">)</span>
+
+		<span class="c1"># this part will create fake metabolites for the self.present_metabolites to insert on the self.irreversible_S</span>
+		<span class="c1"># TODO: this should also be a function in a superclass</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="n">metabolites_to_add</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span>
+								  <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span><span class="o">.</span><span class="n">size</span><span class="p">)]</span>
+
+		<span class="n">pre_shape_irreversible_iterable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span>
+			<span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]])])</span>
+
+		<span class="c1"># change the values for the new added metabolites</span>
+		<span class="c1"># TODO: check this for to make sure that the unlisted present metabolites have</span>
+		<span class="c1">#  the same location as the listed present metabolites</span>
+
+		<span class="k">for</span> <span class="n">metabolites</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites</span><span class="p">:</span>
+			<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">metabolites</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">]:</span>
+				<span class="c1"># check the reactions for all the metabolites in the list/tuple</span>
+				<span class="n">temp_S</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">[</span><span class="n">metabolites</span><span class="p">,</span> <span class="p">]</span>
+				<span class="n">temp_idx</span><span class="p">,</span> <span class="n">temp_stoi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">temp_S</span><span class="p">),</span> <span class="n">temp_S</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">temp_S</span><span class="p">)]</span>
+				<span class="n">unique_reactions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">temp_idx</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+				<span class="n">unique_stoi</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">temp_S</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">unique_reactions</span><span class="o">.</span><span class="n">size</span><span class="p">)]</span>
+
+				<span class="k">for</span> <span class="n">metabolite</span> <span class="ow">in</span> <span class="n">metabolites</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="p">[</span><span class="n">pre_shape_irreversible_iterable</span><span class="p">,</span> <span class="n">temp_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">unique_stoi</span>
+					<span class="n">pre_shape_irreversible_iterable</span> <span class="o">=</span> <span class="n">pre_shape_irreversible_iterable</span> <span class="o">+</span> <span class="mi">1</span>
+			<span class="c1"># temp_values = self.S[metabolite,]</span>
+			<span class="c1"># temp_idx, temp_stoi = np.nonzero(temp_values), temp_values[np.nonzero(temp_values)]</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">temp_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">[</span><span class="n">metabolites</span><span class="p">,</span> <span class="p">]</span>
+				<span class="n">temp_idx</span><span class="p">,</span> <span class="n">temp_stoi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">temp_values</span><span class="p">),</span> <span class="n">temp_values</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">temp_values</span><span class="p">)]</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="p">[</span><span class="n">pre_shape_irreversible_iterable</span><span class="p">,</span> <span class="n">temp_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_stoi</span>
+				<span class="n">pre_shape_irreversible_iterable</span> <span class="o">=</span> <span class="n">pre_shape_irreversible_iterable</span> <span class="o">+</span> <span class="mi">1</span>
+
+		<span class="c1"># TODO: CHECK THIS LATER TO SEE IF THIS DOESN&#39;T FUCKING MESS UP</span>
+
+		<span class="c1"># TODO: for this block, check if the values are updated throughout the modifications,</span>
+		<span class="c1">#  but I do not think so and its the way it should be</span>
+		<span class="c1"># useful numbers</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites_irrev</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions_irrev</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="o">.</span><span class="n">shape</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">n_essential_reactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="o">.</span><span class="n">size</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">n_non_essential_reactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions_irrev</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_essential_reactions</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">non_essential</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">v_vector_reactions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rev_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+		<span class="k">for</span> <span class="n">rev_r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reversible_reactions</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">v_vector_reactions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">rev_r</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;_r&#39;</span><span class="p">)</span>
+
+		<span class="n">revs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">non_essential</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rev_map</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+
+		<span class="c1"># revs_names = []</span>
+		<span class="c1"># for r in range(revs.size):</span>
+		<span class="c1"># 	for k, v in self.rev_map.items():</span>
+		<span class="c1"># 		if isinstance(v, (tuple, list)):</span>
+		<span class="c1"># 			if revs[r] in v:</span>
+		<span class="c1"># 				revs_names.append(str(k) + &#39;_r&#39;)</span>
+
+		<span class="n">revs_names</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;_r&#39;</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rev_map</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="ow">and</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">revs</span><span class="p">]</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">non_essential</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">non_essential</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+		<span class="n">revs</span> <span class="o">=</span> <span class="n">revs</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+
+		<span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">revs</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+			<span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">non_essential</span> <span class="o">==</span> <span class="n">revs</span><span class="p">[</span><span class="n">r</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">non_essential</span><span class="p">[</span><span class="n">temp</span><span class="p">]</span> <span class="o">=</span> <span class="n">revs_names</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
+
+		<span class="c1"># TODO: The blocks below this will need a rework as larger models will use too much memory</span>
+		<span class="c1"># non-essential reactions to produce a fake metabolite</span>
+
+		<span class="n">ids_to_keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_reactions_irrev</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="p">)</span>
+		<span class="n">matrix_to_add</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_reactions_irrev</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csc&#39;</span><span class="p">)[</span><span class="n">ids_to_keep</span><span class="p">,</span> <span class="p">:]</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span>
+			<span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="p">,</span> <span class="n">matrix_to_add</span><span class="p">])</span>
+
+		<span class="c1"># for non-essential, but with a stoichiometry of 1000</span>
+		<span class="n">temp</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_non_essential_reactions</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csc&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+		<span class="n">new_temp</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites_irrev</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_non_essential_reactions</span><span class="p">]),</span> <span class="n">temp</span><span class="p">])</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
+			<span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="p">,</span> <span class="n">new_temp</span><span class="p">])</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">production_weight</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="n">zmat</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">csc_matrix</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">n_non_essential_reactions</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+											 <span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites_irrev</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span><span class="o">.</span><span class="n">size</span><span class="p">]))</span>
+			<span class="n">temp2</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span>
+				<span class="p">[</span><span class="n">sprs</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites_irrev</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csc&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+				 <span class="n">zmat</span><span class="p">])</span>
+
+			<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="p">,</span> <span class="n">temp2</span><span class="p">])</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">n_net_production</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites_irrev</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span><span class="o">.</span><span class="n">size</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">net_production</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites_irrev</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span><span class="p">)</span>
+
+		<span class="k">else</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">net_production</span> <span class="o">=</span> <span class="p">[]</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">n_net_production</span> <span class="o">=</span> <span class="mi">0</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fwd_idx</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fwd_idx</span><span class="o">.</span><span class="n">size</span>
+			<span class="n">I</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">csc_matrix</span><span class="p">(</span><span class="n">sprs</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_reactions_irrev</span><span class="p">)</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+			<span class="n">temp</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">I</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fwd_idx</span><span class="p">,</span> <span class="p">],</span> <span class="n">I</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bwd_idx</span><span class="p">,</span> <span class="p">]])</span>
+			<span class="c1"># padding</span>
+			<span class="n">temp</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">temp</span><span class="p">,</span> <span class="n">sprs</span><span class="o">.</span><span class="n">csc_matrix</span><span class="p">(</span>
+				<span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">temp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions_irrev</span><span class="p">]))])</span>
+			<span class="n">temp</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">temp</span><span class="p">,</span> <span class="n">sprs</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csc&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">])</span>
+			<span class="n">temp</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">temp</span><span class="p">,</span> <span class="n">sprs</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
+				<span class="p">[</span><span class="n">sprs</span><span class="o">.</span><span class="n">csc_matrix</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]])),</span>
+				 <span class="n">sprs</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csc&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+				 <span class="n">sprs</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csc&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span><span class="p">])])</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
+				<span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="p">,</span> <span class="n">sprs</span><span class="o">.</span><span class="n">csc_matrix</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span> <span class="o">*</span> <span class="mi">2</span><span class="p">]))])</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span> <span class="o">=</span> <span class="n">sprs</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="p">,</span> <span class="n">temp</span><span class="p">])</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="tINIT.build_problem"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.tINIT.tINIT.build_problem">[docs]</a>	<span class="k">def</span> <span class="nf">build_problem</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Builds the problem to be optimized</span>
+
+<span class="sd">		Returns</span>
+<span class="sd">		-------</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="c1"># Preparation of the problem to be optimized</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">problem_blx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">irreversible_lb</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">n_non_essential_reactions</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_net_production</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span> <span class="o">*</span> <span class="mi">2</span><span class="p">))])</span>
+		<span class="c1"># TODO: check if this in float; if not, we have to change the dtype of problem_blx,</span>
+		<span class="c1">#  otherwise 0.1 will no exist (will be 0)</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">problem_blx</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+				<span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="n">y</span> <span class="k">if</span> <span class="n">y</span> <span class="o">&gt;</span> <span class="mf">0.1</span> <span class="k">else</span> <span class="mf">0.1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem_blx</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="p">])))</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">problem_bux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">irreversible_ub</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">n_non_essential_reactions</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_net_production</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)])</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">irreversible_b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites_irrev</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">problem_blc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
+			<span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">irreversible_b</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_non_essential_reactions</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span> <span class="o">*</span> <span class="mi">2</span><span class="p">),</span>
+			 <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span><span class="p">)</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+		<span class="c1"># this part of the code will take care of excretion and reverse loops, if they are true on the parameters</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_reverse_loops</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">rev_ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span><span class="p">)</span>
+			<span class="c1"># TODO this is just a fix; REALLY FIX THIS LATER</span>
+			<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">essential_reversible_reactions</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">rev_ub</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">rev_ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span><span class="p">)</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_excretion</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">met_ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites_irrev</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">met_ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites_irrev</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">problem_buc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
+			<span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">met_ub</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_non_essential_reactions</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mf">999.9</span><span class="p">,</span>
+			 <span class="bp">self</span><span class="o">.</span><span class="n">rev_ub</span><span class="p">])</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">problem_c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_reactions_irrev</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">reaction_scores</span><span class="p">,</span>
+									<span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_net_production</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">production_weight</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+									<span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)])</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">problem_a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">problem_a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem_a</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="tINIT.solve_problem"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.tINIT.tINIT.solve_problem">[docs]</a>	<span class="k">def</span> <span class="nf">solve_problem</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Solves the problem</span>
+
+<span class="sd">		Returns</span>
+<span class="sd">		-------</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="c1"># len_reactions = [len(self.irreversible_lb), self.n_non_essential_reactions, self.n_net_production,</span>
+		<span class="c1"># 				 self.n_rev_bounds, self.n_rev_bounds]</span>
+		<span class="c1"># prefix = [&#39;v_&#39;, &#39;ne_&#39;, &#39;net_prod_&#39;, &#39;revF_&#39;, &#39;revB_&#39;]</span>
+		<span class="c1">#</span>
+		<span class="c1"># rx_names_problem2 = list(chain(*[[k + str(i) for i in range(v)] for k, v in zip(prefix, len_reactions)]))</span>
+
+		<span class="n">len_reactions</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v_vector_reactions</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">non_essential</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">net_production</span><span class="p">,</span>
+						 <span class="bp">self</span><span class="o">.</span><span class="n">fwd_idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fwd_idx</span><span class="p">]</span>
+		<span class="n">prefix</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;v_&#39;</span><span class="p">,</span> <span class="s1">&#39;ne_&#39;</span><span class="p">,</span> <span class="s1">&#39;net_prod_&#39;</span><span class="p">,</span> <span class="s1">&#39;revF_&#39;</span><span class="p">,</span> <span class="s1">&#39;revB_&#39;</span><span class="p">]</span>
+
+		<span class="n">rx_names_problem</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="p">[[</span><span class="n">k</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">len_reactions</span><span class="p">)]))</span>
+
+		<span class="n">start_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_metabolites_irrev</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span><span class="o">.</span><span class="n">size</span>
+		<span class="n">problem</span> <span class="o">=</span> <span class="n">GenericLinearSystem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem_a</span><span class="o">.</span><span class="n">toarray</span><span class="p">(),</span> <span class="n">VAR_CONTINUOUS</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem_blx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem_bux</span><span class="p">,</span>
+									  <span class="bp">self</span><span class="o">.</span><span class="n">problem_blc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem_buc</span><span class="p">,</span>
+									  <span class="n">rx_names_problem</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">])</span>
+
+		<span class="c1">## TODO: Remove this later</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;CPLEX&#39;</span><span class="p">:</span>
+			<span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">mip</span><span class="o">.</span><span class="n">tolerances</span><span class="o">.</span><span class="n">mipgap</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="mf">1e-3</span><span class="p">)</span>
+		<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;GUROBI&#39;</span><span class="p">:</span>
+			<span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">Params</span><span class="o">.</span><span class="n">MIPGap</span> <span class="o">=</span> <span class="mf">1e-3</span>
+
+		<span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">tolerances</span><span class="o">.</span><span class="n">feasibility</span> <span class="o">=</span> <span class="mf">1e-8</span>
+		<span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">tolerances</span><span class="o">.</span><span class="n">optimality</span> <span class="o">=</span> <span class="mf">1e-8</span>
+		<span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="mi">3</span>
+
+		<span class="n">lso</span> <span class="o">=</span> <span class="n">LinearSystemOptimizer</span><span class="p">(</span><span class="n">problem</span><span class="p">)</span>
+		<span class="n">problem</span><span class="o">.</span><span class="n">write_to_lp</span><span class="p">(</span><span class="s1">&#39;tINIT_test.lp&#39;</span><span class="p">)</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">present_metabolites_unlisted</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">problem_buc</span><span class="p">[</span><span class="n">start_index</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+				<span class="n">problem</span><span class="o">.</span><span class="n">set_constraint_bounds</span><span class="p">(</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">constraints</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem_blc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem_buc</span><span class="p">)</span>
+				<span class="n">problem</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem_c</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+				<span class="n">solution</span> <span class="o">=</span> <span class="n">lso</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+
+				<span class="k">if</span> <span class="n">solution</span><span class="o">.</span><span class="n">status</span><span class="p">()</span> <span class="o">!=</span> <span class="s1">&#39;optimal&#39;</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">problem_buc</span><span class="p">[</span><span class="n">start_index</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">metabolites_production</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+		<span class="n">allInt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
+			<span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_reactions_irrev</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions_irrev</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_non_essential_reactions</span><span class="p">)),</span> <span class="nb">list</span><span class="p">(</span>
+				<span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rev_bounds</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">irreversible_S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))])</span>
+
+		<span class="c1"># return lso.optimize()</span>
+
+		<span class="n">problem</span><span class="o">.</span><span class="n">set_variable_types</span><span class="p">([</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">int_</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">allInt</span><span class="p">],</span> <span class="n">VAR_BINARY</span><span class="p">)</span>
+		<span class="n">problem</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem_c</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+		<span class="n">problem</span><span class="o">.</span><span class="n">write_to_lp</span><span class="p">(</span><span class="s1">&#39;tINIT_test.lp&#39;</span><span class="p">)</span>
+		<span class="c1"># print(problem.model.to_lp())</span>
+		<span class="n">solution</span> <span class="o">=</span> <span class="n">lso</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">objective_value</span><span class="p">())</span>
+
+		<span class="k">if</span> <span class="n">solution</span><span class="o">.</span><span class="n">status</span><span class="p">()</span> <span class="o">!=</span> <span class="s1">&#39;optimal&#39;</span><span class="p">:</span>
+			<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The problem is infeasible&#39;</span><span class="p">)</span>
+			<span class="c1"># return solution  # TODO improve</span>
+			<span class="k">return</span>
+		<span class="c1"># return solution</span>
+
+		<span class="c1"># used_reactions = np.array([])</span>
+
+		<span class="c1"># for k, v in solution.var_values().items(): print(k, v)</span>
+
+		<span class="n">used_reactions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">int_</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">var_values</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="k">if</span>
+								   <span class="s1">&#39;ne_&#39;</span> <span class="ow">in</span> <span class="n">k</span> <span class="ow">and</span> <span class="n">solution</span><span class="o">.</span><span class="n">var_values</span><span class="p">()[</span><span class="n">k</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">])</span>
+
+		<span class="c1"># for k, v in solution.var_values().items():</span>
+		<span class="c1"># 	if &#39;ne_&#39; in k:</span>
+		<span class="c1"># 		# if &#39;_r&#39; in k:</span>
+		<span class="c1"># 		# if v &lt; 1 - 1e-6:</span>
+		<span class="c1"># 		if v &lt; 0.1:</span>
+		<span class="c1"># 			used_reactions = np.append(used_reactions, int_(k.split(&#39;_&#39;)[1]))</span>
+
+		<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">used_reactions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">essential_reactions_idx</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="tINIT.run_tINIT"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.tINIT.tINIT.run_tINIT">[docs]</a>	<span class="k">def</span> <span class="nf">run_tINIT</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Runs the tINIT algorithm</span>
+
+<span class="sd">		Returns</span>
+<span class="sd">		-------</span>
+<span class="sd">		np.array</span>
+<span class="sd">			An array of the reactions that are used in the model</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">preprocessing</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">build_problem</span><span class="p">()</span>
+		<span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solve_problem</span><span class="p">()</span>
+		<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int_</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">res</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="tINIT.run"><a class="viewcode-back" href="../../../../troppo.methods.reconstruction.html#troppo.methods.reconstruction.tINIT.tINIT.run">[docs]</a>	<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_tINIT</span><span class="p">()</span></div></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+	<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+	<span class="n">s_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+						 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+						 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+						 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+						 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+						 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+
+	<span class="n">a</span> <span class="o">=</span> <span class="n">s_matrix</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="p">]</span>
+	<span class="n">n_a_idx</span><span class="p">,</span> <span class="n">n_a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">a</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">a</span><span class="p">)]</span>
+	<span class="n">x</span> <span class="o">=</span> <span class="n">s_matrix</span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="p">]</span>
+	<span class="n">n_x_idx</span><span class="p">,</span> <span class="n">n_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">x</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span>
+	<span class="n">unique_reac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">n_x_idx</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+	<span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">unique_reac</span><span class="o">.</span><span class="n">size</span><span class="p">)],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+	<span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">z</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">z</span><span class="p">])</span>
+	<span class="n">z</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="p">[</span><span class="n">i</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mf">0.1</span> <span class="k">else</span> <span class="mf">0.1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">y</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="p">])</span>
+	<span class="n">l</span> <span class="o">=</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="p">[</span><span class="n">i</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mf">0.1</span> <span class="k">else</span> <span class="mf">0.1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">y</span><span class="p">])</span>
+	<span class="n">l</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

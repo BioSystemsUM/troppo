@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>troppo.tasks.core &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">Troppo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">troppo.tasks.core</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for troppo.tasks.core</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span>
+
+<span class="kn">from</span> <span class="nn">cobamp.core.models</span> <span class="kn">import</span> <span class="n">ConstraintBasedModel</span>
+<span class="kn">from</span> <span class="nn">cobamp.core.optimization</span> <span class="kn">import</span> <span class="n">Solution</span><span class="p">,</span> <span class="n">BatchOptimizer</span>
+<span class="kn">from</span> <span class="nn">cobamp.utilities.context</span> <span class="kn">import</span> <span class="n">CommandHistory</span>
+<span class="kn">from</span> <span class="nn">cobamp.wrappers.external_wrappers</span> <span class="kn">import</span> <span class="n">get_model_reader</span><span class="p">,</span> <span class="n">AbstractObjectReader</span>
+<span class="kn">from</span> <span class="nn">pathos.multiprocessing</span> <span class="kn">import</span> <span class="n">cpu_count</span>
+
+<span class="n">MP_THREADS</span> <span class="o">=</span> <span class="n">cpu_count</span><span class="p">()</span>
+<span class="n">INF</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+<span class="n">DEFAULT_EPS</span> <span class="o">=</span> <span class="mf">1e-6</span>
+
+
+<div class="viewcode-block" id="Task"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.core.Task">[docs]</a><span class="k">class</span> <span class="nc">Task</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A task is a set of constraints that can be applied to a model. It is defined by a set of reactions, a set of</span>
+<span class="sd">    constraints on the fluxes of these reactions, a set of constraints on the inflow and outflow of metabolites, and</span>
+<span class="sd">    a set of mandatory activities that must be present in the solution. A task can be evaluated on a model to determine</span>
+<span class="sd">    if the model satisfies the task.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="vm">__defaults__</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;should_fail&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;reaction_dict&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="s1">&#39;inflow_dict&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="s1">&#39;outflow_dict&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="s1">&#39;flux_constraints&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="s1">&#39;mandatory_activity&#39;</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;default_task&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;annotations&#39;</span><span class="p">:</span> <span class="p">{}</span>
+    <span class="p">}</span>
+
+    <span class="n">__types__</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;reaction_dict&#39;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="s1">&#39;inflow_dict&#39;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="s1">&#39;outflow_dict&#39;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="s1">&#39;should_fail&#39;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="s1">&#39;flux_constraints&#39;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="s1">&#39;annotations&#39;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="s1">&#39;mandatory_activity&#39;</span><span class="p">:</span> <span class="nb">list</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        reaction_dict: rxd = {&#39;r1&#39;:({&#39;m1&#39;:-1, &#39;m2&#39;:2}, (lb, ub)), ... }</span>
+<span class="sd">        inflow_dict: ifd = {&#39;m3&#39;:(1,1), ... }</span>
+<span class="sd">        outflow_dict: ofd = {&#39;m5&#39;:(5,5), ... }</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__defaults__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">itype</span><span class="p">,</span> <span class="n">dval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__types__</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__defaults__</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">dval</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">else</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+<div class="viewcode-block" id="Task.combine"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.core.Task.combine">[docs]</a>    <span class="k">def</span> <span class="nf">combine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">add</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Combine two tasks into a single task. The resulting task will have the same failure criteria as the original</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other: Task</span>
+<span class="sd">            The task to combine with</span>
+<span class="sd">        add: bool</span>
+<span class="sd">            If True, the resulting task will be the sum of the two tasks. If False, the resulting task will be the</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Task: The combined task</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Task</span><span class="p">),</span> <span class="s1">&#39;Could not apply + operator between types Task and &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">should_fail</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">should_fail</span><span class="p">,</span> <span class="s1">&#39;Tasks with different failure criteria cannot be added&#39;</span>
+
+        <span class="k">def</span> <span class="nf">bound_dict_add</span><span class="p">(</span><span class="n">lst</span><span class="p">):</span>
+            <span class="n">ndict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">dct</span> <span class="ow">in</span> <span class="n">lst</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dct</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ndict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="n">ndict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">ndict</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">max</span><span class="p">((</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">add</span> <span class="k">else</span> <span class="o">-</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">0</span><span class="p">)</span>
+                        <span class="n">ndict</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">max</span><span class="p">((</span><span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">add</span> <span class="k">else</span> <span class="o">-</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ndict</span>
+
+        <span class="n">shfail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">should_fail</span>
+        <span class="n">rx_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reaction_dict</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">reaction_dict</span><span class="o">.</span><span class="n">items</span><span class="p">())}</span>
+        <span class="n">flx_dict</span> <span class="o">=</span> <span class="n">bound_dict_add</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_constraints</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">flux_constraints</span><span class="p">])</span>
+        <span class="n">in_dict</span> <span class="o">=</span> <span class="n">bound_dict_add</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">inflow_dict</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">inflow_dict</span><span class="p">])</span>
+        <span class="n">out_dict</span> <span class="o">=</span> <span class="n">bound_dict_add</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">outflow_dict</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">outflow_dict</span><span class="p">])</span>
+        <span class="n">mnd_act</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mandatory_activity</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">mandatory_activity</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39; minus &#39;</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">add</span> <span class="k">else</span> <span class="s1">&#39; plus &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+        <span class="n">annotations</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span><span class="p">:</span>
+            <span class="n">annotations</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span>
+        <span class="n">annotations</span><span class="p">[</span><span class="n">other</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">annotations</span>
+
+        <span class="k">return</span> <span class="n">shfail</span><span class="p">,</span> <span class="n">rx_dict</span><span class="p">,</span> <span class="n">flx_dict</span><span class="p">,</span> <span class="n">in_dict</span><span class="p">,</span> <span class="n">out_dict</span><span class="p">,</span> <span class="n">mnd_act</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">annotations</span></div>
+
+<div class="viewcode-block" id="Task.combine_inplace"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.core.Task.combine_inplace">[docs]</a>    <span class="k">def</span> <span class="nf">combine_inplace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">add</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Combine two tasks into a single task. The resulting task will have the same failure criteria as the original</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other: Task</span>
+<span class="sd">            The task to combine with</span>
+<span class="sd">        add: bool</span>
+<span class="sd">            If True, the resulting task will be the sum of the two tasks. If False, the resulting task will be the</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Task: The combined task</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">shfail</span><span class="p">,</span> <span class="n">rx_dict</span><span class="p">,</span> <span class="n">flx_dict</span><span class="p">,</span> <span class="n">in_dict</span><span class="p">,</span> <span class="n">out_dict</span><span class="p">,</span> <span class="n">mnd_act</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">annotations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">add</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">should_fail</span> <span class="o">=</span> <span class="n">shfail</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reaction_dict</span> <span class="o">=</span> <span class="n">rx_dict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flux_constraints</span> <span class="o">=</span> <span class="n">flx_dict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outflow_dict</span> <span class="o">=</span> <span class="n">out_dict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inflow_dict</span> <span class="o">=</span> <span class="n">in_dict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mandatory_activity</span> <span class="o">=</span> <span class="n">mnd_act</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span> <span class="o">=</span> <span class="n">annotations</span></div>
+
+    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="n">shfail</span><span class="p">,</span> <span class="n">rx_dict</span><span class="p">,</span> <span class="n">flx_dict</span><span class="p">,</span> <span class="n">in_dict</span><span class="p">,</span> <span class="n">out_dict</span><span class="p">,</span> <span class="n">mnd_act</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">annotations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Task</span><span class="p">(</span><span class="n">should_fail</span><span class="o">=</span><span class="n">shfail</span><span class="p">,</span> <span class="n">reaction_dict</span><span class="o">=</span><span class="n">rx_dict</span><span class="p">,</span> <span class="n">flux_constraints</span><span class="o">=</span><span class="n">flx_dict</span><span class="p">,</span> <span class="n">inflow_dict</span><span class="o">=</span><span class="n">in_dict</span><span class="p">,</span>
+                    <span class="n">outflow_dict</span><span class="o">=</span><span class="n">out_dict</span><span class="p">,</span> <span class="n">mandatory_activity</span><span class="o">=</span><span class="n">mnd_act</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="n">shfail</span><span class="p">,</span> <span class="n">rx_dict</span><span class="p">,</span> <span class="n">flx_dict</span><span class="p">,</span> <span class="n">in_dict</span><span class="p">,</span> <span class="n">out_dict</span><span class="p">,</span> <span class="n">mnd_act</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">annotations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Task</span><span class="p">(</span><span class="n">should_fail</span><span class="o">=</span><span class="n">shfail</span><span class="p">,</span> <span class="n">reaction_dict</span><span class="o">=</span><span class="n">rx_dict</span><span class="p">,</span> <span class="n">flux_constraints</span><span class="o">=</span><span class="n">flx_dict</span><span class="p">,</span> <span class="n">inflow_dict</span><span class="o">=</span><span class="n">in_dict</span><span class="p">,</span>
+                    <span class="n">outflow_dict</span><span class="o">=</span><span class="n">out_dict</span><span class="p">,</span> <span class="n">mandatory_activity</span><span class="o">=</span><span class="n">mnd_act</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combine_inplace</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="fm">__isub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combine_inplace</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">should_fail</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__should_fail</span>
+
+    <span class="nd">@should_fail</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">should_fail</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__should_fail</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">reaction_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__reaction_dict</span>
+
+    <span class="nd">@reaction_dict</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">reaction_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__reaction_dict</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">flux_constraints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__flux_constraints</span>
+
+    <span class="nd">@flux_constraints</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">flux_constraints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__flux_constraints</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">outflow_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__outflow_dict</span>
+
+    <span class="nd">@outflow_dict</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">outflow_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__outflow_dict</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">inflow_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__inflow_dict</span>
+
+    <span class="nd">@inflow_dict</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">inflow_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__inflow_dict</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__name</span>
+
+    <span class="nd">@name</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__name</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__annotations</span>
+
+    <span class="nd">@annotations</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__annotations</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mandatory_activity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__mandatory_activity</span>
+
+    <span class="nd">@mandatory_activity</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">mandatory_activity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__mandatory_activity</span> <span class="o">=</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="Task.id_replace"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.core.Task.id_replace">[docs]</a>    <span class="k">def</span> <span class="nf">id_replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Replace the identifiers in the task with the result of a function applied to the identifiers</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        func: function</span>
+<span class="sd">            The function to apply to the identifiers</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">prop</span><span class="p">,</span> <span class="n">typ</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__types__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">prop_data</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">typ</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="p">[</span><span class="n">func</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">prop_data</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">typ</span> <span class="o">==</span> <span class="nb">dict</span> <span class="ow">and</span> <span class="n">prop</span> <span class="o">!=</span> <span class="s1">&#39;annotations&#39;</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="p">{</span><span class="n">func</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">prop_data</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Task.get_add_reaction_args"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.core.Task.get_add_reaction_args">[docs]</a>    <span class="k">def</span> <span class="nf">get_add_reaction_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">ConstraintBasedModel</span><span class="p">,</span> <span class="n">closed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">set</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the arguments to add the reactions to the model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model: ConstraintBasedModel</span>
+<span class="sd">            The model to add the reactions to</span>
+<span class="sd">        closed: bool</span>
+<span class="sd">            Whether to add the reactions as closed or open</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict, set: The arguments to add the reactions to the model, and the set of reactions that were added</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1">## assume list order is arg, bounds. keys contain the name</span>
+        <span class="c1">## reaction_dict - add reactions to the model</span>
+
+        <span class="n">reactions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reaction_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">reaction_name</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="s1">&#39;task_reaction&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">reaction_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">reaction_names</span><span class="p">:</span>
+                <span class="n">reactions</span><span class="p">[</span><span class="n">reaction_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">closed</span> <span class="k">else</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reaction_name</span><span class="p">]</span>
+
+        <span class="c1">## flow_dict - add drains to the model</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflow_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">sink_name</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">k</span><span class="p">,</span> <span class="s1">&#39;inflow&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">sink_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">reaction_names</span><span class="p">:</span>
+                <span class="n">reactions</span><span class="p">[</span><span class="n">sink_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span><span class="n">k</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">closed</span> <span class="k">else</span> <span class="n">v</span><span class="p">,</span> <span class="n">sink_name</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outflow_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">sink_name</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">k</span><span class="p">,</span> <span class="s1">&#39;outflow&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">sink_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">reaction_names</span><span class="p">:</span>
+                <span class="n">reactions</span><span class="p">[</span><span class="n">sink_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span><span class="n">k</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">},</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">closed</span> <span class="k">else</span> <span class="n">v</span><span class="p">,</span> <span class="n">sink_name</span><span class="p">]</span>
+
+        <span class="c1"># reaction_names = list(reactions.keys())</span>
+        <span class="c1"># arg, bounds = zip(*[reactions[k] for k in reaction_names])</span>
+        <span class="c1">#</span>
+        <span class="c1"># call_args = {&#39;arg&#39;:arg, &#39;bounds&#39;:bounds, &#39;names&#39;: reaction_names}</span>
+        <span class="n">added_rxs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">reactions</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="n">reactions</span><span class="p">,</span> <span class="n">added_rxs</span></div>
+
+<div class="viewcode-block" id="Task.get_add_reaction_cmds"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.core.Task.get_add_reaction_cmds">[docs]</a>    <span class="k">def</span> <span class="nf">get_add_reaction_cmds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">ConstraintBasedModel</span><span class="p">,</span> <span class="n">closed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">CommandHistory</span><span class="p">,</span> <span class="nb">set</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the commands to add the reactions to the model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model: ConstraintBasedModel</span>
+<span class="sd">            The model to add the reactions to</span>
+<span class="sd">        closed: bool</span>
+<span class="sd">            Whether to add the reactions as closed or open</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        CommandHistory, set: The commands to add the reactions to the model, and the set of reactions that were added</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">## reaction_dict - add reactions to the model</span>
+
+        <span class="n">command_history</span> <span class="o">=</span> <span class="n">CommandHistory</span><span class="p">()</span>
+        <span class="n">args</span><span class="p">,</span> <span class="n">added_rx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_add_reaction_args</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">closed</span><span class="p">)</span>
+        <span class="n">ordered_rx_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">added_rx</span><span class="p">)</span>
+        <span class="n">arg</span><span class="p">,</span> <span class="n">bnd</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">args</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">ordered_rx_names</span><span class="p">]))</span>
+        <span class="n">command_history</span><span class="o">.</span><span class="n">queue_command</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">add_reactions</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;args&#39;</span><span class="p">:</span> <span class="n">arg</span><span class="p">,</span> <span class="s1">&#39;bounds&#39;</span><span class="p">:</span> <span class="n">bnd</span><span class="p">,</span> <span class="s1">&#39;names&#39;</span><span class="p">:</span> <span class="n">ordered_rx_names</span><span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">command_history</span><span class="p">,</span> <span class="n">added_rx</span></div>
+
+<div class="viewcode-block" id="Task.get_task_bounds"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.core.Task.get_task_bounds">[docs]</a>    <span class="k">def</span> <span class="nf">get_task_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the bounds for the task</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict: The bounds for the task</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">master_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">reac_bounds</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="s1">&#39;task_reaction&#39;</span><span class="p">]):</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reaction_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">inflow_bounds</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">k</span><span class="p">,</span> <span class="s1">&#39;inflow&#39;</span><span class="p">]):</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflow_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">outflow_bounds</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">k</span><span class="p">,</span> <span class="s1">&#39;outflow&#39;</span><span class="p">]):</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outflow_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">aflx_bounds</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_constraints</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="p">[</span><span class="n">reac_bounds</span><span class="p">,</span> <span class="n">inflow_bounds</span><span class="p">,</span> <span class="n">outflow_bounds</span><span class="p">,</span> <span class="n">aflx_bounds</span><span class="p">]:</span>
+            <span class="n">master_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">master_dict</span></div>
+
+    <span class="c1">## constraint_dict - impose additional bounds</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">involved_reactions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the set of reactions involved in the task</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        set: The set of reactions involved in the task</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_constraints</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mandatory_activity</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Task.apply_evaluate"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.core.Task.apply_evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">apply_evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">ConstraintBasedModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Apply the task to the model and evaluate the solution</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model:  ConstraintBasedModel</span>
+<span class="sd">            The model to apply the task to</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool, dict: Whether the task was satisfied, and the expected activity of the mandatory reactions</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">involved_reactions_in_model</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">involved_reactions</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">reaction_names</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="n">task_evaluation</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">involved_reactions_in_model</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">model</span> <span class="k">as</span> <span class="n">task_model</span><span class="p">:</span>
+                <span class="n">commands</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_add_reaction_cmds</span><span class="p">(</span><span class="n">task_model</span><span class="p">)</span>
+                <span class="n">commands</span><span class="o">.</span><span class="n">execute_all</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_task_bounds</span><span class="p">():</span>
+                    <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span> <span class="o">=</span> <span class="n">v</span>
+                    <span class="n">task_model</span><span class="o">.</span><span class="n">set_reaction_bounds</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">lb</span><span class="o">=</span><span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="n">ub</span><span class="p">)</span>
+                <span class="n">task_evaluation</span><span class="p">,</span> <span class="n">expected</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate_solution</span><span class="p">(</span><span class="n">task_model</span><span class="o">.</span><span class="n">optimize</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">task_evaluation</span> <span class="o">&amp;</span> <span class="n">involved_reactions_in_model</span><span class="p">,</span> <span class="n">expected</span></div>
+
+<div class="viewcode-block" id="Task.evaluate_solution"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.core.Task.evaluate_solution">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_solution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sol</span><span class="p">:</span> <span class="n">Solution</span><span class="p">,</span> <span class="n">ftol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate the solution to the task</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sol: Solution</span>
+<span class="sd">            The solution to evaluate</span>
+<span class="sd">        ftol: float</span>
+<span class="sd">            The tolerance for the fluxes</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool, dict: Whether the task was satisfied, and the expected activity of the mandatory reactions</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">is_optimal</span> <span class="o">=</span> <span class="n">sol</span><span class="o">.</span><span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;optimal&#39;</span>
+        <span class="n">expected_activity</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">ftol</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mandatory_activity</span><span class="p">}</span>
+        <span class="c1"># mandatory_are_valid = len([k for k,v in expected_activity.items() if v]) == len(self.mandatory_activity)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">should_fail</span><span class="p">:</span>
+            <span class="n">task_eval</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">is_optimal</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">task_eval</span> <span class="o">=</span> <span class="n">is_optimal</span>
+
+        <span class="k">return</span> <span class="n">task_eval</span><span class="p">,</span> <span class="n">expected_activity</span></div>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Task &#39;&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">desc</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="s1">&#39; ; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">k</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">)))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__types__</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span>
+                           <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">fail</span> <span class="o">=</span> <span class="s2">&quot;&#39;&quot;</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39; expecting failure&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">should_fail</span> <span class="k">else</span> <span class="s1">&#39; expecting success&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;:&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;annotations&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="s1">&#39;description&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span><span class="p">:</span>
+            <span class="n">desc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">name</span> <span class="o">+</span> <span class="n">fail</span> <span class="o">+</span> <span class="n">info</span> <span class="o">+</span> <span class="s1">&#39; -- &#39;</span> <span class="o">+</span> <span class="n">desc</span></div>
+
+
+<div class="viewcode-block" id="TaskEvaluator"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.core.TaskEvaluator">[docs]</a><span class="k">class</span> <span class="nc">TaskEvaluator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A task evaluator is a wrapper around a model that allows the evaluation of tasks on the model. It can be used to</span>
+<span class="sd">    evaluate a single task, or to evaluate a batch of tasks on a batch of models.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model: ConstraintBasedModel</span>
+<span class="sd">        The model to evaluate tasks on</span>
+<span class="sd">    tasks: Iterable[Task]</span>
+<span class="sd">        The tasks to evaluate on the model</span>
+<span class="sd">    solver: str</span>
+<span class="sd">        The solver to use for the model</span>
+<span class="sd">    S: np.ndarray</span>
+<span class="sd">        The stoichiometric matrix</span>
+<span class="sd">    lb: np.ndarray</span>
+<span class="sd">        The lower bounds for the reactions</span>
+<span class="sd">    ub: np.ndarray</span>
+<span class="sd">        The upper bounds for the reactions</span>
+<span class="sd">    rxn: np.ndarray</span>
+<span class="sd">        The reaction names</span>
+<span class="sd">    mtn: np.ndarray</span>
+<span class="sd">        The metabolite names</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s1">&#39;solver&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">solver</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">solver</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="s1">&#39;model&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">model_obj</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_obj</span><span class="p">,</span> <span class="n">ConstraintBasedModel</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model_obj</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_obj</span><span class="p">,</span> <span class="n">AbstractObjectReader</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model_obj</span><span class="o">.</span><span class="n">to_cobamp_cbm</span><span class="p">(</span><span class="n">solver</span> <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">get_model_reader</span><span class="p">(</span><span class="n">model_obj</span><span class="p">)</span><span class="o">.</span><span class="n">to_cobamp_cbm</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;lb&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">S</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">,</span> <span class="n">rxn</span><span class="p">,</span> <span class="n">mtn</span> <span class="o">=</span> <span class="p">[</span><span class="n">kwargs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">,</span> <span class="s1">&#39;lb&#39;</span><span class="p">,</span> <span class="s1">&#39;ub&#39;</span><span class="p">,</span> <span class="s1">&#39;reaction_names&#39;</span><span class="p">,</span> <span class="s1">&#39;metabolite_names&#39;</span><span class="p">]]</span>
+                <span class="n">bounds</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">))</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">ConstraintBasedModel</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">rxn</span><span class="p">,</span> <span class="n">mtn</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">solver</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__tasks</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__original_bounds</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">reaction_names</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bounds</span><span class="p">)}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__task_rxs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__activated_task</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="s1">&#39;tasks&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;tasks&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">current_task</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__activated_task</span>
+
+    <span class="nd">@current_task</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">current_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__disable_tasks</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__enable_task</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__enable_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">ConstraintBasedModel</span><span class="p">):</span>
+        <span class="n">bounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__tasks</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">get_task_bounds</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">bounds</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span> <span class="o">=</span> <span class="n">v</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">set_reaction_bounds</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">lb</span><span class="o">=</span><span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="n">ub</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__activated_task</span> <span class="o">=</span> <span class="n">name</span>
+
+    <span class="k">def</span> <span class="nf">__disable_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">ConstraintBasedModel</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__original_bounds</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span> <span class="o">=</span> <span class="n">v</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">set_reaction_bounds</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">lb</span><span class="o">=</span><span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="n">ub</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__task_rxs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">set_reaction_bounds</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__activated_task</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="k">as</span> <span class="n">amodel</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="n">amodel</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TaskEvaluator.evaluate"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.core.TaskEvaluator.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context_function</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flux_distribution_func</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Solution</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate the current task on the model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        context_function: function</span>
+<span class="sd">            A function to apply to the model prior to evaluation</span>
+<span class="sd">        flux_distribution_func: function</span>
+<span class="sd">            A function to apply to the model to get the flux distribution</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool, Solution: Whether the task was satisfied, and the solution to the model</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">apply_eval</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__inner_evaluate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">context_function</span><span class="p">,</span> <span class="n">flux_distribution_func</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">context_function</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">apply_eval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__apply</span><span class="p">(</span><span class="n">apply_eval</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TaskEvaluator.batch_evaluate"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.core.TaskEvaluator.batch_evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">batch_evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bound_changes</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">threads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">MP_THREADS</span><span class="p">,</span> <span class="n">output_sol</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                       <span class="n">mp_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate a batch of tasks on the model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        bound_changes: dict</span>
+<span class="sd">            The changes to apply to the model</span>
+<span class="sd">        threads: int</span>
+<span class="sd">            The number of threads to use</span>
+<span class="sd">        output_sol: bool</span>
+<span class="sd">            Whether to output the solution</span>
+<span class="sd">        mp_batch_size: int</span>
+<span class="sd">            The batch size for multiprocessing</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict: The results of the evaluation</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_task</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">cobamp_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
+        <span class="n">task_bounds</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">get_task_bounds</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__tasks</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+        <span class="n">bound_change_runs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">tb</span> <span class="ow">in</span> <span class="n">task_bounds</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">bc</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bound_changes</span><span class="p">):</span>
+                <span class="n">fd</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">fd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">tb</span><span class="p">)</span>
+                <span class="n">fd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">bc</span><span class="p">)</span>
+                <span class="n">bound_change_runs</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">)]</span> <span class="o">=</span> <span class="p">{</span><span class="n">cobamp_model</span><span class="o">.</span><span class="n">map_labels</span><span class="p">[</span><span class="s1">&#39;reaction&#39;</span><span class="p">][</span><span class="n">x</span><span class="p">]:</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">fd</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+        <span class="n">objective_sense</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">bound_change_runs</span><span class="p">)</span>
+        <span class="n">objective_coef</span> <span class="o">=</span> <span class="p">[{</span><span class="mi">0</span><span class="p">:</span> <span class="mi">1</span><span class="p">}]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">bound_change_runs</span><span class="p">)</span>
+        <span class="n">bc_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">bound_change_runs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">bc_runs</span> <span class="o">=</span> <span class="p">[</span><span class="n">bound_change_runs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">bc_names</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">bound_change_runs</span>
+        <span class="n">cobamp_model</span><span class="o">.</span><span class="n">initialize_optimizer</span><span class="p">()</span>
+        <span class="n">bopt</span> <span class="o">=</span> <span class="n">BatchOptimizer</span><span class="p">(</span><span class="n">linear_system</span><span class="o">=</span><span class="n">cobamp_model</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">threads</span><span class="o">=</span><span class="n">threads</span><span class="p">)</span>
+        <span class="n">res_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="p">{}</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bound_changes</span><span class="p">))}</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">ind</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">bc_runs</span><span class="p">):</span>
+            <span class="n">sols</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">bc_names</span><span class="p">[</span><span class="n">ind</span><span class="p">:</span><span class="n">ind</span> <span class="o">+</span> <span class="n">mp_batch_size</span><span class="p">],</span>
+                            <span class="n">bopt</span><span class="o">.</span><span class="n">batch_optimize</span><span class="p">(</span><span class="n">bc_runs</span><span class="p">[</span><span class="n">ind</span><span class="p">:</span><span class="n">ind</span> <span class="o">+</span> <span class="n">mp_batch_size</span><span class="p">],</span>
+                                                <span class="n">objective_coef</span><span class="p">[</span><span class="n">ind</span><span class="p">:</span><span class="n">ind</span> <span class="o">+</span> <span class="n">mp_batch_size</span><span class="p">],</span>
+                                                <span class="n">objective_sense</span><span class="p">[</span><span class="n">ind</span><span class="p">:</span><span class="n">ind</span> <span class="o">+</span> <span class="n">mp_batch_size</span><span class="p">])))</span>
+            <span class="n">ind</span> <span class="o">+=</span> <span class="n">mp_batch_size</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">sol</span> <span class="ow">in</span> <span class="n">sols</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">i</span><span class="p">,</span> <span class="n">tn</span> <span class="o">=</span> <span class="n">k</span>
+                <span class="n">truth</span><span class="p">,</span> <span class="n">expected</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__tasks</span><span class="p">[</span><span class="n">tn</span><span class="p">]</span><span class="o">.</span><span class="n">evaluate_solution</span><span class="p">(</span><span class="n">sol</span><span class="p">)</span>
+                <span class="n">res_dict</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">tn</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">truth</span><span class="p">,</span> <span class="n">expected</span><span class="p">,</span> <span class="n">sol</span> <span class="k">if</span> <span class="n">output_sol</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">res_dict</span></div>
+
+<div class="viewcode-block" id="TaskEvaluator.batch_function"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.core.TaskEvaluator.batch_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">batch_function</span><span class="p">(</span><span class="n">task</span><span class="p">:</span> <span class="n">Task</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Solution</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate a task on a model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        task: Task</span>
+<span class="sd">            The task to evaluate</span>
+<span class="sd">        params: dict</span>
+<span class="sd">            The parameters to use for evaluation</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool, Solution: Whether the task was satisfied, and the solution to the model</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span><span class="p">[</span><span class="s1">&#39;tev&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">current_task</span> <span class="o">=</span> <span class="n">task</span>
+        <span class="n">cfunc</span><span class="p">,</span> <span class="n">fdfunc</span> <span class="o">=</span> <span class="p">[</span><span class="n">params</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">params</span> <span class="k">else</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;context_func&#39;</span><span class="p">,</span> <span class="s1">&#39;flux_distribution_func&#39;</span><span class="p">]]</span>
+        <span class="k">return</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;tev&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">cfunc</span><span class="p">,</span> <span class="n">fdfunc</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__inner_evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">ConstraintBasedModel</span><span class="p">,</span> <span class="n">context_func</span><span class="p">,</span> <span class="n">flux_distribution_func</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Solution</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate the current task on the model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model: ConstraintBasedModel</span>
+<span class="sd">            The model to evaluate the task on</span>
+<span class="sd">        context_func: function</span>
+<span class="sd">            A function to apply to the model prior to evaluation</span>
+<span class="sd">        flux_distribution_func: function</span>
+<span class="sd">            A function to apply to the model to get the flux distribution</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool, Solution: Whether the task was satisfied, and the solution to the model</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__activated_task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">task_to_eval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__tasks</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">__activated_task</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">context_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">context_func</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+            <span class="n">involved_reactions</span> <span class="o">=</span> <span class="n">task_to_eval</span><span class="o">.</span><span class="n">involved_reactions</span>
+
+            <span class="n">involved_reactions_in_model</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">involved_reactions</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">reaction_names</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span>
+
+            <span class="k">if</span> <span class="n">flux_distribution_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">sol</span> <span class="o">=</span> <span class="n">flux_distribution_func</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">nflows</span> <span class="o">=</span> <span class="n">task_to_eval</span><span class="o">.</span><span class="n">get_add_reaction_args</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">set_objective</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">nflows</span><span class="p">})</span>
+                <span class="n">sol</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+
+            <span class="c1"># evaluation, expected = task_to_eval.evaluate_solution(sol) if involved_reactions_in_model else (False, {})</span>
+            <span class="n">evaluation</span><span class="p">,</span> <span class="n">expected</span> <span class="o">=</span> <span class="n">task_to_eval</span><span class="o">.</span><span class="n">evaluate_solution</span><span class="p">(</span><span class="n">sol</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">involved_reactions_in_model</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Task &#39;</span> <span class="o">+</span> <span class="n">task_to_eval</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39; has references to missing reactions and was evaluated as &#39;</span>
+                                                            <span class="s1">&#39;False by default&#39;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">sol</span><span class="p">,</span> <span class="n">expected</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;No task is currently active. A loaded task must be activated prior to evaluation using the &#39;</span>
+                          <span class="s1">&#39;current_task setter (.current_task = task_name&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Task</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the tasks</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list: The tasks</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__tasks</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+
+    <span class="nd">@tasks</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the tasks</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        value: Iterable[Task]</span>
+<span class="sd">            The tasks to set</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">## TODO: improve task setter with an efficient method for adding reactions at once</span>
+        <span class="k">for</span> <span class="n">tn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__remove_task</span><span class="p">(</span><span class="n">tn</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__tasks</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">value</span><span class="p">}</span>
+
+        <span class="c1"># for t in value:</span>
+        <span class="c1"># 	self.__populate_task(t)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__populate_tasks</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__remove_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_name</span><span class="p">:</span> <span class="n">Task</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove a task from the model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        task_name: str</span>
+<span class="sd">            The name of the task to remove</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">to_remove</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__task_rxs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">task_name</span> <span class="ow">in</span> <span class="n">v</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">to_remove</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                <span class="n">v</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">task_name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">remove_reactions</span><span class="p">(</span><span class="n">to_remove</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__task_rxs</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__task_rxs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__tasks</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__tasks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="n">task_name</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">__populate_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Task</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Populate a task</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        task: Task</span>
+<span class="sd">            The task to populate</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cmds</span><span class="p">,</span> <span class="n">rxs</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_add_reaction_cmds</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">involved_reactions_in_model</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">involved_reactions</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">reaction_names</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="n">cmds</span><span class="o">.</span><span class="n">execute_all</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">rxs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__task_rxs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__task_rxs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__task_rxs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">involved_reactions_in_model</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s1">&#39;Task object with name &#39;</span> <span class="o">+</span> <span class="n">task</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39; refers to reactions that are not present in the model. &#39;</span>
+                                                       <span class="s1">&#39;This task will be loaded but will never evaluate as True&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__populate_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tasks</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Populate a set of tasks</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        tasks: Iterable[Task]</span>
+<span class="sd">            The tasks to populate</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">k_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">,</span> <span class="s1">&#39;bounds&#39;</span><span class="p">,</span> <span class="s1">&#39;names&#39;</span><span class="p">]</span>
+        <span class="n">add_rx_args</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">k_names</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
+            <span class="n">arg_list</span><span class="p">,</span> <span class="n">rxs_to_add</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_add_reaction_args</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">rxs_to_add</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__task_rxs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__task_rxs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">kp</span><span class="p">,</span> <span class="n">vp</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">k_names</span><span class="p">,</span> <span class="n">arg_list</span><span class="p">[</span><span class="n">k</span><span class="p">]):</span>
+                        <span class="n">add_rx_args</span><span class="p">[</span><span class="n">kp</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">vp</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__task_rxs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">add_reactions</span><span class="p">(</span><span class="o">**</span><span class="n">add_rx_args</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">array</span>
+
+    <span class="n">S</span> <span class="o">=</span> <span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+               <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+               <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+               <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+               <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+               <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+
+    <span class="n">rx_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;R&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
+    <span class="n">mt_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;M&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="p">)]</span>
+
+    <span class="n">irrev</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span>
+    <span class="n">bounds</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">0</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">irrev</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">)]</span>
+    <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">bounds</span><span class="p">))</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">T</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">)</span>
+
+    <span class="c1"># tasks = TaskEvaluator(S, lb, ub, rx_names, mt_names)</span>
+    <span class="kn">from</span> <span class="nn">cobamp.core.models</span> <span class="kn">import</span> <span class="n">ConstraintBasedModel</span>
+
+    <span class="n">cbm</span> <span class="o">=</span> <span class="n">ConstraintBasedModel</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">)),</span> <span class="n">rx_names</span><span class="p">,</span> <span class="n">mt_names</span><span class="p">)</span>
+
+    <span class="n">task</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span>
+        <span class="n">should_fail</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">inflow_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;glucose&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">]},</span>
+        <span class="n">outflow_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;etanol&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">]},</span>
+        <span class="c1"># &#39;m1 =&gt; 2 m2&#39;</span>
+        <span class="n">reaction_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;r1&#39;</span><span class="p">:</span>
+                           <span class="p">({</span><span class="s1">&#39;m1&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;m2&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">))}</span>
+    <span class="p">)</span>
+
+    <span class="kn">from</span> <span class="nn">troppo.tasks.task_io</span> <span class="kn">import</span> <span class="n">JSONTaskIO</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">JSONTaskIO</span><span class="p">()</span><span class="o">.</span><span class="n">write_to_string</span><span class="p">([</span><span class="n">task</span><span class="p">,</span> <span class="n">task</span><span class="p">]))</span>
+    <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">Task</span><span class="p">(</span>
+        <span class="n">flow_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;M4&#39;</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">)},</span>
+        <span class="n">should_fail</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">flux_constraints</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;R2&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">10</span><span class="p">)},</span>
+        <span class="n">name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">11</span><span class="p">)]</span>
+
+    <span class="n">tev</span> <span class="o">=</span> <span class="n">TaskEvaluator</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">cbm</span><span class="p">,</span> <span class="n">tasks</span><span class="o">=</span><span class="n">tasks</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tev</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
+        <span class="n">tev</span><span class="o">.</span><span class="n">current_task</span> <span class="o">=</span> <span class="n">task</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">tev</span><span class="o">.</span><span class="n">evaluate</span><span class="p">())</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

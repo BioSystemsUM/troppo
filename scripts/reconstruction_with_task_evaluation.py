@@ -14,10 +14,10 @@ import re
 
 if __name__ == '__main__':
 
-    # helper functions
-    patt = re.compile('__COBAMPGPRDOT__[0-9]{1}')  # find .{number} references
-    replace_alt_transcripts = lambda x: patt.sub('', x)  # replace .{number} with nothing
-
+    # # helper functions
+    # patt = re.compile('__COBAMPGPRDOT__[0-9]{1}')  # find .{number} references
+    # replace_alt_transcripts = lambda x: patt.sub('', x)  # replace .{number} with nothing
+    #
     import os
 
     # paths to necessary files
@@ -32,78 +32,78 @@ if __name__ == '__main__':
                                      'r3d_compact_task_results_ccle_bc_new_nodrains_only_feas.json')  # task evaluation
     CS_MODEL_DF_PATH = os.path.join(ROOT_FOLDER, 'results',
                                     'r3d_compact_ccle_bc_fastcore.csv')  # context-specific models extracted from algos
-
-    # mdl = load_matlab_model(os.path.join(ROOT_FOLDER, 'Recon3DModel_301.mat'))
-    # Context-specific model reconstruction #
-
-    # model preprocessing only if the model isn't loaded already
-    # this consists of:
-    # - removing artificial sinks and drug modules
-    # - removing blocked reactions
-    if not os.path.exists(CMODL_PATH):
-        model_consistent = read_sbml_model(MODEL_PATH)
-        model_consistent.remove_reactions(
-            [r for r in model_consistent.reactions if r.id[:3] == 'DM_' or r.id[:5] == 'sink_'], remove_orphans=True)
-        blocked_reactions = find_blocked_reactions(model_consistent)
-        model_consistent.remove_reactions(blocked_reactions, remove_orphans=True)
-        write_sbml_model(model_consistent, CMODL_PATH)  # write a model file if it doesn't exist
-    else:
-        model_consistent = read_sbml_model(CMODL_PATH)
-
-    # read the csv on DATA_PATH as a transcriptomics data set and get OmicsContainers, one per sample
-    ocs = TabularReader(path_or_df=DATA_PATH, nomenclature='entrez_id', omics_type='transcriptomics').to_containers()
-
-    # create a reconstruction wrapper instance that loads the consistent model
-    # GPRs are assumed to be in DNF form if the ratio between tokens and unique genes is above ttg_ratio
-    # the helper function replace_alt_transcripts is used here to replace .{number} with nothing
-    rw = ReconstructionWrapper(model_consistent, ttg_ratio=9999, gpr_gene_parse_function=replace_alt_transcripts)
-
-    # gene score threshold to determine core reactions
-    # on this dataset, genes were normalized using the following rule : 5*log(1+(expression/mean))
-    # thus, if the expression is average, the final score will be 5*log(2)
-    # we intend to keep reactions above this threshold as core
-    t = (5 * log(2))
-
-
-    # since we will be running multiple samples, we can generalize a model reconstruction as a function
-    # this function should take two arguments
-    # the first will be the variable between samples (in this case, a different omics container)
-    # the second should be a dictionary with static variables needed to build the model:
-    # - threshold
-    # - reconstruction wrapper
-    def integration_fx(data_map):
-        return [[k for k, v in data_map.get_scores().items() if (v is not None and v > t) or k in ['biomass_reaction']]]
-
-
-    def reconstruction_func(omics_container, params):
-        t, rw = [params[k] for k in ['t', 'rw']]  # load parameters
-        try:
-            # if no errors appear, call the run_from_omics method passing the omics_container,
-            # algorithm string, integration strategy (how the core is determined) and a solver
-            # for fastcore, a threshold-based integration strategy retrieves core reactions if the score
-            # is above the threshold t
-            return rw.run_from_omics(omics_data=omics_container, algorithm='fastcore',
-                                     integration_strategy=('custom', [integration_fx]), solver='CPLEX')
-        except:
-            # the result from run_from_omics is a dict mapping reaction ids and a boolean flag - True if
-            # the reaction is in the model or false otherwise
-            # in case an error arises, assume all reactions are False
-            return {r: False for r in rw.model_reader.r_ids}
-
-
-    # parallel reconstruction can be achieved with the batch_run function that takes in 4 key arguments:
-    # - the function to apply multiple times - reconstruction_func
-    # - a list of objects for which we want to apply the function - ocs (list of omics_containers)
-    # - a dictionary with the static params - containing a 't' and 'rw' entry (see reconstruction_func)
-    # - an integer value specifying the amount of parallel processes to be run
-    batch_fastcore_res = batch_run(reconstruction_func, ocs, {'t': t, 'rw': rw}, threads=11)
-
-    # create a dict mapping tuple of algorithm and condition informations: e.g. ('fastcore','MCF7')
-    # to each result from fastcore
-    fastcore_res_dict = dict(zip([('fastcore', oc.condition) for oc in ocs], batch_fastcore_res))
-
-    # write these results as a dataframe for future reference
-    pd.DataFrame.from_dict(fastcore_res_dict, orient='index').to_csv(CS_MODEL_DF_PATH)
+    # #
+    # # # mdl = load_matlab_model(os.path.join(ROOT_FOLDER, 'Recon3DModel_301.mat'))
+    # # Context-specific model reconstruction #
+    #
+    # # model preprocessing only if the model isn't loaded already
+    # # this consists of:
+    # # - removing artificial sinks and drug modules
+    # # - removing blocked reactions
+    # if not os.path.exists(CMODL_PATH):
+    #     model_consistent = read_sbml_model(MODEL_PATH)
+    #     model_consistent.remove_reactions(
+    #         [r for r in model_consistent.reactions if r.id[:3] == 'DM_' or r.id[:5] == 'sink_'], remove_orphans=True)
+    #     blocked_reactions = find_blocked_reactions(model_consistent)
+    #     model_consistent.remove_reactions(blocked_reactions, remove_orphans=True)
+    #     write_sbml_model(model_consistent, CMODL_PATH)  # write a model file if it doesn't exist
+    # else:
+    #     model_consistent = read_sbml_model(CMODL_PATH)
+    #
+    # # read the csv on DATA_PATH as a transcriptomics data set and get OmicsContainers, one per sample
+    # ocs = TabularReader(path_or_df=DATA_PATH, nomenclature='entrez_id', omics_type='transcriptomics').to_containers()
+    #
+    # # create a reconstruction wrapper instance that loads the consistent model
+    # # GPRs are assumed to be in DNF form if the ratio between tokens and unique genes is above ttg_ratio
+    # # the helper function replace_alt_transcripts is used here to replace .{number} with nothing
+    # rw = ReconstructionWrapper(model_consistent, ttg_ratio=9999, gpr_gene_parse_function=replace_alt_transcripts)
+    #
+    # # gene score threshold to determine core reactions
+    # # on this dataset, genes were normalized using the following rule : 5*log(1+(expression/mean))
+    # # thus, if the expression is average, the final score will be 5*log(2)
+    # # we intend to keep reactions above this threshold as core
+    # t = (5 * log(2))
+    #
+    #
+    # # since we will be running multiple samples, we can generalize a model reconstruction as a function
+    # # this function should take two arguments
+    # # the first will be the variable between samples (in this case, a different omics container)
+    # # the second should be a dictionary with static variables needed to build the model:
+    # # - threshold
+    # # - reconstruction wrapper
+    # def integration_fx(data_map):
+    #     return [[k for k, v in data_map.get_scores().items() if (v is not None and v > t) or k in ['biomass_reaction']]]
+    #
+    #
+    # def reconstruction_func(omics_container, params):
+    #     t, rw = [params[k] for k in ['t', 'rw']]  # load parameters
+    #     try:
+    #         # if no errors appear, call the run_from_omics method passing the omics_container,
+    #         # algorithm string, integration strategy (how the core is determined) and a solver
+    #         # for fastcore, a threshold-based integration strategy retrieves core reactions if the score
+    #         # is above the threshold t
+    #         return rw.run_from_omics(omics_data=omics_container, algorithm='fastcore',
+    #                                  integration_strategy=('custom', [integration_fx]), solver='CPLEX')
+    #     except:
+    #         # the result from run_from_omics is a dict mapping reaction ids and a boolean flag - True if
+    #         # the reaction is in the model or false otherwise
+    #         # in case an error arises, assume all reactions are False
+    #         return {r: False for r in rw.model_reader.r_ids}
+    #
+    #
+    # # parallel reconstruction can be achieved with the batch_run function that takes in 4 key arguments:
+    # # - the function to apply multiple times - reconstruction_func
+    # # - a list of objects for which we want to apply the function - ocs (list of omics_containers)
+    # # - a dictionary with the static params - containing a 't' and 'rw' entry (see reconstruction_func)
+    # # - an integer value specifying the amount of parallel processes to be run
+    # batch_fastcore_res = batch_run(reconstruction_func, ocs, {'t': t, 'rw': rw}, threads=11)
+    #
+    # # create a dict mapping tuple of algorithm and condition informations: e.g. ('fastcore','MCF7')
+    # # to each result from fastcore
+    # fastcore_res_dict = dict(zip([('fastcore', oc.condition) for oc in ocs], batch_fastcore_res))
+    #
+    # # write these results as a dataframe for future reference
+    # pd.DataFrame.from_dict(fastcore_res_dict, orient='index').to_csv(CS_MODEL_DF_PATH)
 
     fastcore_res_dict = pd.read_csv(CS_MODEL_DF_PATH, index_col=[0, 1]).T.to_dict()
     # Task evaluation #

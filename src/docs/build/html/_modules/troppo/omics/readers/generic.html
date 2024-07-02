@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>troppo.omics.readers.generic &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">Troppo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">troppo.omics.readers.generic</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for troppo.omics.readers.generic</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd"> Created by Jorge Gomes on 06/09/2018</span>
+<span class="sd"> source</span>
+<span class="sd"> generic_reader</span>
+<span class="sd"> </span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">read_csv</span><span class="p">,</span> <span class="n">DataFrame</span>
+
+<span class="kn">from</span> <span class="nn">troppo</span> <span class="kn">import</span> <span class="n">omics</span>
+
+
+<div class="viewcode-block" id="TabularReader"><a class="viewcode-back" href="../../../../troppo.omics.readers.html#troppo.omics.readers.generic.TabularReader">[docs]</a><span class="k">class</span> <span class="nc">TabularReader</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A generic reader for tabular files. It can be used to read any tabular file, but it is recommended to use</span>
+<span class="sd">    specialized readers for specific file types, such as ProbeReader for microarray files, or HpaReader for HPA files.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    path_or_df: str or pandas.DataFrame</span>
+<span class="sd">        The path to the file to be read, or a pandas DataFrame</span>
+<span class="sd">    index_col: int, optional</span>
+<span class="sd">        The index column of the file, by default 0</span>
+<span class="sd">    sample_in_rows: bool, optional</span>
+<span class="sd">        Whether the samples are in rows or columns, by default True</span>
+<span class="sd">    header_offset: int, optional</span>
+<span class="sd">        The number of lines to skip before the header, by default 0</span>
+<span class="sd">    cache_df: bool, optional</span>
+<span class="sd">        Whether to cache the DataFrame, by default False</span>
+<span class="sd">    ignore_samples: list, optional</span>
+<span class="sd">        A list of samples to ignore, by default None</span>
+<span class="sd">    omics_type: str, optional</span>
+<span class="sd">        The type of omics, by default &#39;transcriptomics&#39;</span>
+<span class="sd">    nomenclature: str, optional</span>
+<span class="sd">        The nomenclature of the omics, by default None</span>
+<span class="sd">    dsapply: function, optional</span>
+<span class="sd">        A function to apply to the DataFrame, by default None</span>
+<span class="sd">    **kwargs: dict, optional</span>
+<span class="sd">        Additional arguments to pass to pandas.read_csv</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    -------</span>
+<span class="sd">    __iter__:</span>
+<span class="sd">        Iterates over the file, yielding a tuple of (sample, data)</span>
+<span class="sd">    to_containers:</span>
+<span class="sd">        Converts the file to a list of OmicsContainers</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_or_df</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">index_col</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">sample_in_rows</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="n">header_offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">cache_df</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">ignore_samples</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">omics_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;transcriptomics&#39;</span><span class="p">,</span> <span class="n">nomenclature</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dsapply</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_col</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_axis</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_offset</span> <span class="o">=</span> \
+            <span class="n">path_or_df</span><span class="p">,</span> <span class="n">index_col</span><span class="p">,</span> <span class="n">sample_in_rows</span><span class="p">,</span> <span class="n">header_offset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pandas_args</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dsapply</span> <span class="o">=</span> <span class="n">dsapply</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dfcache</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache_df</span> <span class="o">=</span> <span class="n">cache_df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_samples</span> <span class="o">=</span> <span class="n">ignore_samples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">omics_type</span> <span class="o">=</span> <span class="n">omics_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nomenclature</span> <span class="o">=</span> <span class="n">nomenclature</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dfcache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">):</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">index_col</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pandas_args</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dfcache</span> <span class="o">=</span> <span class="n">df</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_df</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dfcache</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dfcache</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_axis</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignore_samples</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_samples</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_samples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dsapply</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dsapply</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="k">yield</span> <span class="n">name</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+<div class="viewcode-block" id="TabularReader.to_containers"><a class="viewcode-back" href="../../../../troppo.omics.readers.html#troppo.omics.readers.generic.TabularReader.to_containers">[docs]</a>    <span class="k">def</span> <span class="nf">to_containers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts the file to a list of OmicsContainers</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list : A list of OmicsContainers</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ocs</span> <span class="o">=</span> <span class="p">[</span><span class="n">omics</span><span class="o">.</span><span class="n">OmicsContainer</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="n">sample</span><span class="p">,</span> <span class="n">nomenclature</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nomenclature</span><span class="p">,</span>
+                              <span class="n">omicstype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">omics_type</span><span class="p">)</span>
+               <span class="k">for</span> <span class="n">sample</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dsapply</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">ocs</span></div></div>
+
+
+<div class="viewcode-block" id="GenericReader"><a class="viewcode-back" href="../../../../troppo.omics.readers.html#troppo.omics.readers.generic.GenericReader">[docs]</a><span class="k">class</span> <span class="nc">GenericReader</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A generic reader to be used with omics files that are unable to be loaded by ProbeReader, or HpaReader, such as</span>
+<span class="sd">    RNA-seq files from the gdc. Capable of handling files with additional info before the file header when supplied</span>
+<span class="sd">    header_start by the user.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    path: str</span>
+<span class="sd">        complete path to the file from which expresion data is read.</span>
+<span class="sd">    idCol: int or str</span>
+<span class="sd">        either the name of the identifier column or its index in the file header</span>
+<span class="sd">    expCol: int or str</span>
+<span class="sd">        either the name of the expression values column or its index in the file header</span>
+<span class="sd">    header_start: int</span>
+<span class="sd">        line of the file header. Default = 0</span>
+<span class="sd">    sep: str</span>
+<span class="sd">        field separator used in the omics file. Default = &quot;,&quot;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">idCol</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">str</span><span class="p">,</span> <span class="n">expCol</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">str</span><span class="p">,</span> <span class="n">header_start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_idCol</span> <span class="o">=</span> <span class="n">idCol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expCol</span> <span class="o">=</span> <span class="n">expCol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_headerStart</span> <span class="o">=</span> <span class="n">header_start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sep</span> <span class="o">=</span> <span class="n">sep</span>
+
+<div class="viewcode-block" id="GenericReader.load"><a class="viewcode-back" href="../../../../troppo.omics.readers.html#troppo.omics.readers.generic.GenericReader.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the loading of supplied omics file.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict: dictionary with the identifiers as keys and the expression values as values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">omics_ds</span> <span class="o">=</span> <span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_headerStart</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sep</span><span class="p">)</span>
+        <span class="n">omics</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">t_id</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_idCol</span><span class="p">)</span>
+        <span class="n">t_exp</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_expCol</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">t_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">t_exp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Invalid idCol or expCol. Please input one of the following:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">omics_ds</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">t_id</span> <span class="o">==</span> <span class="n">t_exp</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
+                <span class="n">omics</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">omics_ds</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idCol</span><span class="p">],</span> <span class="n">omics_ds</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expCol</span><span class="p">]))</span>
+            <span class="k">elif</span> <span class="n">t_id</span> <span class="o">==</span> <span class="n">t_exp</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+                <span class="n">omics</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">omics_ds</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_idCol</span><span class="p">],</span> <span class="n">omics_ds</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_expCol</span><span class="p">]))</span>
+            <span class="k">elif</span> <span class="n">t_id</span> <span class="ow">is</span> <span class="nb">int</span> <span class="ow">and</span> <span class="n">t_exp</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
+                <span class="n">omics</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">omics_ds</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idCol</span><span class="p">],</span> <span class="n">omics_ds</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_expCol</span><span class="p">]))</span>
+            <span class="k">elif</span> <span class="n">t_id</span> <span class="ow">is</span> <span class="nb">str</span> <span class="ow">and</span> <span class="n">t_exp</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">:</span>
+                <span class="n">omics</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">omics_ds</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_idCol</span><span class="p">],</span> <span class="n">omics_ds</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expCol</span><span class="p">]))</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;One or both of the supplied columns do not match any column of the file or supplied column index is&#39;</span>
+                  <span class="s1">&#39; out of range</span><span class="se">\n</span><span class="s1"> Header Size:</span><span class="si">{0}</span><span class="se">\n</span><span class="s1"> Columns:</span><span class="si">{1}</span><span class="s1">&#39;</span>
+                  <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">omics_ds</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">omics_ds</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">omics</span></div></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="c1"># path1 = &quot;C:/Users/Tese_Avoid_Namespaces/Tese/TsmRec/files/abc-gpl571-formatted_v3.csv&quot;</span>
+    <span class="c1"># gr = GenericReader(path1,&#39;probe_id&#39;, 22)</span>
+    <span class="c1"># gr.load()</span>
+    <span class="n">reader</span> <span class="o">=</span> <span class="n">TabularReader</span><span class="p">(</span><span class="s1">&#39;C:/Users/biosy/Documents/troppo/tests/data/Desai-GTEx_ensembl.csv&#39;</span><span class="p">,</span>
+                           <span class="n">nomenclature</span><span class="o">=</span><span class="s1">&#39;ensemble_gene_id&#39;</span><span class="p">,</span> <span class="n">omics_type</span><span class="o">=</span><span class="s1">&#39;transcriptomics&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">to_containers</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">reader</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

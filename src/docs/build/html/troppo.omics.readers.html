@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Readers for Omics data &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tasks Assessment Module" href="troppo.tasks.html" />
+    <link rel="prev" title="Omics Module" href="troppo.omics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Troppo</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.methods.html">Methods module</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="troppo.omics.html">Omics Module</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Readers for Omics data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#module-troppo.omics.readers.generic">Generic Reader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-troppo.omics.readers.hpa">HPA Reader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-troppo.omics.readers.microarray">Microarray Reader</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#module-troppo.omics.core">Core module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#module-troppo.omics.gene_level_thresholding">Gene-level thresholding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#module-troppo.omics.id_converter">Gene ID converter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.html#module-troppo.omics.integration">Reaction-level integration of Omics data</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.tasks.html">Tasks Assessment Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.utilities.html">Utilities module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.validation.html">Validation Module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Troppo</a></li>
+          <li class="breadcrumb-item"><a href="troppo.omics.html">Omics Module</a></li>
+      <li class="breadcrumb-item active">Readers for Omics data</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/troppo.omics.readers.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="readers-for-omics-data">
+<h1>Readers for Omics data<a class="headerlink" href="#readers-for-omics-data" title="Permalink to this heading"></a></h1>
+<section id="module-troppo.omics.readers.generic">
+<span id="generic-reader"></span><h2>Generic Reader<a class="headerlink" href="#module-troppo.omics.readers.generic" title="Permalink to this heading"></a></h2>
+<p>Created by Jorge Gomes on 06/09/2018
+source
+generic_reader</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.readers.generic.GenericReader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.readers.generic.</span></span><span class="sig-name descname"><span class="pre">GenericReader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idCol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expCol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">','</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/readers/generic.html#GenericReader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.readers.generic.GenericReader" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A generic reader to be used with omics files that are unable to be loaded by ProbeReader, or HpaReader, such as
+RNA-seq files from the gdc. Capable of handling files with additional info before the file header when supplied
+header_start by the user.</p>
+<section id="arguments">
+<h3>Arguments<a class="headerlink" href="#arguments" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>path: str</dt><dd><p>complete path to the file from which expresion data is read.</p>
+</dd>
+<dt>idCol: int or str</dt><dd><p>either the name of the identifier column or its index in the file header</p>
+</dd>
+<dt>expCol: int or str</dt><dd><p>either the name of the expression values column or its index in the file header</p>
+</dd>
+<dt>header_start: int</dt><dd><p>line of the file header. Default = 0</p>
+</dd>
+<dt>sep: str</dt><dd><p>field separator used in the omics file. Default = “,”</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.readers.generic.GenericReader.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/readers/generic.html#GenericReader.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.readers.generic.GenericReader.load" title="Permalink to this definition"></a></dt>
+<dd><p>Executes the loading of supplied omics file.</p>
+<section id="returns">
+<h4>Returns<a class="headerlink" href="#returns" title="Permalink to this heading"></a></h4>
+<p>dict: dictionary with the identifiers as keys and the expression values as values.</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.readers.generic.TabularReader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.readers.generic.</span></span><span class="sig-name descname"><span class="pre">TabularReader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_in_rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">omics_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'transcriptomics'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nomenclature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dsapply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/readers/generic.html#TabularReader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.readers.generic.TabularReader" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A generic reader for tabular files. It can be used to read any tabular file, but it is recommended to use
+specialized readers for specific file types, such as ProbeReader for microarray files, or HpaReader for HPA files.</p>
+<section id="id1">
+<h3>Arguments<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>path_or_df: str or pandas.DataFrame</dt><dd><p>The path to the file to be read, or a pandas DataFrame</p>
+</dd>
+<dt>index_col: int, optional</dt><dd><p>The index column of the file, by default 0</p>
+</dd>
+<dt>sample_in_rows: bool, optional</dt><dd><p>Whether the samples are in rows or columns, by default True</p>
+</dd>
+<dt>header_offset: int, optional</dt><dd><p>The number of lines to skip before the header, by default 0</p>
+</dd>
+<dt>cache_df: bool, optional</dt><dd><p>Whether to cache the DataFrame, by default False</p>
+</dd>
+<dt>ignore_samples: list, optional</dt><dd><p>A list of samples to ignore, by default None</p>
+</dd>
+<dt>omics_type: str, optional</dt><dd><p>The type of omics, by default ‘transcriptomics’</p>
+</dd>
+<dt>nomenclature: str, optional</dt><dd><p>The nomenclature of the omics, by default None</p>
+</dd>
+<dt>dsapply: function, optional</dt><dd><p>A function to apply to the DataFrame, by default None</p>
+</dd>
+<dt><a href="#id2"><span class="problematic" id="id3">**</span></a>kwargs: dict, optional</dt><dd><p>Additional arguments to pass to pandas.read_csv</p>
+</dd>
+</dl>
+</section>
+<section id="methods">
+<h3>Methods<a class="headerlink" href="#methods" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>__iter__:</dt><dd><p>Iterates over the file, yielding a tuple of (sample, data)</p>
+</dd>
+<dt>to_containers:</dt><dd><p>Converts the file to a list of OmicsContainers</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.readers.generic.TabularReader.to_containers">
+<span class="sig-name descname"><span class="pre">to_containers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/readers/generic.html#TabularReader.to_containers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.readers.generic.TabularReader.to_containers" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the file to a list of OmicsContainers</p>
+<section id="id4">
+<h4>Returns<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h4>
+<p>list : A list of OmicsContainers</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+<section id="module-troppo.omics.readers.hpa">
+<span id="hpa-reader"></span><h2>HPA Reader<a class="headerlink" href="#module-troppo.omics.readers.hpa" title="Permalink to this heading"></a></h2>
+<p>Created by Jorge Gomes on 09/03/2018
+source
+HPA_Reader</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.readers.hpa.HpaReader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.readers.hpa.</span></span><span class="sig-name descname"><span class="pre">HpaReader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fpath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tissue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">includeNA</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/readers/hpa.html#HpaReader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.readers.hpa.HpaReader" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Reads the HPA pathology.tsv file from a fpath in the system.
+Discrete values are converted to numerical and expression values account for the level with the most patients.</p>
+<section id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>fpath: str</dt><dd><p>complete path to the file from which omics data is read</p>
+</dd>
+<dt>tissue: str</dt><dd><p>Exactly as in the file, regarding the column where expression values should be retrieved</p>
+</dd>
+<dt>id_col: int,</dt><dd><p>either 0 (=”ensembl”) or 1(=”gene_symbol”) regarding which column shall be used for gene id</p>
+</dd>
+<dt>includeNA: bool</dt><dd><p>flag if NA values should be included or not</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.readers.hpa.HpaReader.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/readers/hpa.html#HpaReader.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.readers.hpa.HpaReader.load" title="Permalink to this definition"></a></dt>
+<dd><p>Executes the loading of supplied omics file.</p>
+<section id="id5">
+<h4>Returns<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h4>
+<p>dict: a dictionary of geneID: expressionValue</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+<section id="module-troppo.omics.readers.microarray">
+<span id="microarray-reader"></span><h2>Microarray Reader<a class="headerlink" href="#module-troppo.omics.readers.microarray" title="Permalink to this heading"></a></h2>
+<p>Created by Jorge Gomes on 19/03/2018
+source
+probe_reader</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.readers.microarray.ProbeReader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.readers.microarray.</span></span><span class="sig-name descname"><span class="pre">ProbeReader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fPath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expCol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">annotFile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">convTarget</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">convSep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">','</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expSep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">','</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/readers/microarray.html#ProbeReader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.readers.microarray.ProbeReader" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Reads expression files sourced from microarrays DBs such as Gene Expression Barcode or Gene Expression OmniBus.
+Considers each value is identified by a probeID on the first column of the file. An annotation file supplied by
+the microarray chip vendor must be supplied for appropriate probe to gene Id conversion.
+Cases where a probe has no match with convTarget nomenclature will be ignored.
+Handles cases where more than one probe translate to the same gene, and where a probe translates to more
+than a gene.</p>
+<section id="id6">
+<h3>Parameters<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>fPath: str</dt><dd><p>complete path to the file from which expresion data is read.</p>
+</dd>
+<dt>expCol: int</dt><dd><p>index of the column where expression values are retrieved from.</p>
+</dd>
+<dt>annotFile: str</dt><dd><p>complete path to the annotation file.</p>
+</dd>
+<dt>convTarget: str</dt><dd><p>exact match to the column name of the nomenclature used for probeID to geneID conversion
+recommended: Either Gene Symbol or Entrez Gene or equivalent.</p>
+</dd>
+<dt>expSep: str</dt><dd><p>field separator used in the probe intesity/expression file. Default is “,”</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.readers.microarray.ProbeReader.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/troppo/omics/readers/microarray.html#ProbeReader.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.readers.microarray.ProbeReader.load" title="Permalink to this definition"></a></dt>
+<dd><p>Executes the loading of supplied omics file.</p>
+<section id="id7">
+<h4>Returns<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h4>
+<p>dict: a dictionary of geneID: expressionValue</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="troppo.omics.html" class="btn btn-neutral float-left" title="Omics Module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="troppo.tasks.html" class="btn btn-neutral float-right" title="Tasks Assessment Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

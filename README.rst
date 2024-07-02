@@ -23,11 +23,6 @@ Methods to be implemented later:
     - mCADRE
     - PRIME
 
-Documentation
-~~~~~~~~~~~~~
-
-
-
 Instalation from PyPI (stable releases)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -41,6 +36,8 @@ Instalation from github (latest development release)
 ::
 
     pip install git+https://github.com/BioSystemsUM/troppo.git
+
+
 
 Credits and License
 ~~~~~~~~~~~~~~~~~~~

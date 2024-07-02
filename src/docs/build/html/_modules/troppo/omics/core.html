@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>troppo.omics.core &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">Troppo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">troppo.omics.core</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for troppo.omics.core</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">troppo.omics.id_converter</span> <span class="kn">import</span> <span class="n">searchNomenclature</span><span class="p">,</span> <span class="n">idConverter</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">numbers</span> <span class="kn">import</span> <span class="n">Number</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">GenericReader</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">HpaReader</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">ProbeReader</span>
+
+
+<div class="viewcode-block" id="OmicsContainer"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer">[docs]</a><span class="k">class</span> <span class="nc">OmicsContainer</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    OmicsContainer class to be used for the creation of objects that store omics data and other useful information, such</span>
+<span class="sd">    as its type, and the tissue condition from where this data was obtained.</span>
+<span class="sd">    To successfully create an OmicsContainer object one must:</span>
+<span class="sd">        a) create an OmicsContainer object providing: a) its omictype b) the tissue/patient condition</span>
+<span class="sd">        b) Use its .load() method providing a previously created reader object (HpaReader, ProbeReader, GenericReader)</span>
+
+<span class="sd">    Once created this object can be transformed in several ways:</span>
+<span class="sd">        a) Id conversion</span>
+<span class="sd">        b) Value conversion</span>
+<span class="sd">        c) Filtering by id, regular expressions, or values threshold</span>
+<span class="sd">        d) Log transformation, or data normalization</span>
+
+<span class="sd">    Main attribute is .data() which is a dictionary containing : {gene_id: Expression Value}</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    otype: str</span>
+<span class="sd">        The type of omics data stored in the container</span>
+<span class="sd">    condition: str</span>
+<span class="sd">        The condition from where the data was obtained</span>
+<span class="sd">    data: dict</span>
+<span class="sd">        The data stored in the container</span>
+<span class="sd">    nomenclature: str</span>
+<span class="sd">        The nomenclature used for the gene ids</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">omicstype</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">condition</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">nomenclature</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">otype</span> <span class="o">=</span> <span class="n">omicstype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">condition</span> <span class="o">=</span> <span class="n">condition</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nomenclature</span> <span class="o">=</span> <span class="n">nomenclature</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+<div class="viewcode-block" id="OmicsContainer.load"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">:</span> <span class="nb">dict</span> <span class="ow">or</span> <span class="n">HpaReader</span> <span class="ow">or</span> <span class="n">ProbeReader</span> <span class="ow">or</span> <span class="n">GenericReader</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads data into the OmicsContainer object. Data can be loaded from a dictionary or from a reader object.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        arg: dict or reader object</span>
+<span class="sd">            The data to be loaded into the OmicsContainer object</span>
+<span class="sd">        kwargs: dict</span>
+<span class="sd">            The keyword arguments to be passed to the reader object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">arg</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">arg</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nomenclature</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nomenclature</span> <span class="o">=</span> <span class="n">searchNomenclature</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span></div>
+
+<div class="viewcode-block" id="OmicsContainer.convertValues"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.convertValues">[docs]</a>    <span class="k">def</span> <span class="nf">convertValues</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts the values in the exp_val field to different values based on a valid user supplied mapping.</span>
+<span class="sd">        IMPORTANT: Will not work if _values contains NAs</span>
+<span class="sd">        Mapping shall be a dictionary of either:</span>
+<span class="sd">            - old value (may it be string or numeric): new value (may it be string or numeric)</span>
+<span class="sd">            - tuple of (lower bound, upper bound) of old value: new value (numeric, string)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        mapping: dict</span>
+<span class="sd">            a dictionary containing the mapping between the values to be converted and the desired values</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isNumeric</span><span class="p">():</span>
+
+            <span class="c1"># range to numeric/text</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">mapping</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">is</span> <span class="nb">tuple</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mapIsValid</span><span class="p">(</span><span class="s1">&#39;r2n&#39;</span><span class="p">,</span> <span class="n">mapping</span><span class="p">):</span>
+                    <span class="n">new_values</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">mapping</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                            <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="nb">float</span><span class="p">(</span><span class="n">tup</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                                <span class="n">new_values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">mapping</span><span class="p">[</span><span class="n">tup</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">new_values</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Supplied mapping is not valid for the intended conversion&#39;</span><span class="p">)</span>
+
+            <span class="c1"># numeric to numeric/discrete</span>
+            <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">mapping</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+
+                <span class="c1"># n2n</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">mapping</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mapIsValid</span><span class="p">(</span><span class="s1">&#39;n2n&#39;</span><span class="p">,</span> <span class="n">mapping</span><span class="p">):</span>
+                        <span class="n">new_values</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">mapping</span><span class="p">[</span><span class="n">v</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">new_values</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Supplied mapping is not valid for the intended conversion&#39;</span><span class="p">)</span>
+
+                <span class="c1"># n2d</span>
+                <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">mapping</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mapIsValid</span><span class="p">(</span><span class="s1">&#39;n2d&#39;</span><span class="p">,</span> <span class="n">mapping</span><span class="p">):</span>
+                        <span class="n">new_values</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">mapping</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">new_values</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Supplied mapping is not valid for the intended conversion&#39;</span><span class="p">)</span>
+
+            <span class="c1"># avoid cases where the mapping does not follow {oldval:newval}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Supplied mapping is not valid. Please supply a valid mapping with {oldval:newval}&#39;</span><span class="p">)</span>
+
+        <span class="c1"># discrete to integer/float</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mapIsValid</span><span class="p">(</span><span class="s1">&#39;d2n&#39;</span><span class="p">,</span> <span class="n">mapping</span><span class="p">):</span>
+                <span class="n">new_map</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">mapping</span><span class="p">)</span>  <span class="c1"># avoid a not intended effect where this would change the user mapping</span>
+
+                <span class="n">new_map</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">NaN</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span>
+                <span class="n">new_values</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">new_map</span><span class="p">[</span><span class="n">v</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">new_values</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Supplied mapping is not valid for the intended conversion&#39;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Value conversion is complete!&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OmicsContainer.convertIds"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.convertIds">[docs]</a>    <span class="k">def</span> <span class="nf">convertIds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Redefines the ids(keys) on the data attribute.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        new:string</span>
+<span class="sd">            designation of the new id according to hgnc</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nomenclature</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No valid nomenclature was found. Please reload your data carefully&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">idConverter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">nomenclature</span><span class="p">,</span> <span class="n">new</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span> <span class="ow">in</span> <span class="n">idConverter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">nomenclature</span><span class="p">,</span> <span class="n">new</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">new_data</span><span class="p">[</span><span class="n">new</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">old</span><span class="p">]</span>
+            <span class="n">lost</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s1">&#39;ID conversion is complete! </span><span class="si">{0}</span><span class="s1"> entries were lost due to inexistent match in the HGNC platform&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">lost</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nomenclature</span> <span class="o">=</span> <span class="n">new</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">new_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OmicsContainer.dropNA"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.dropNA">[docs]</a>    <span class="k">def</span> <span class="nf">dropNA</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># irreversible once done</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Removes every entry whose exp_val is NA</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="OmicsContainer.filterByValue"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.filterByValue">[docs]</a>    <span class="k">def</span> <span class="nf">filterByValue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">threshold</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s1">&#39;OmicsContainer&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Filters the _values attribute to match a user defined filter</span>
+<span class="sd">        above and under use &lt; and &gt; operators, while between uses &lt;= and &gt;=.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        op: string</span>
+<span class="sd">            one of (above, under, between, oneof)</span>
+<span class="sd">        threshold: int, float, tuple, string</span>
+<span class="sd">            numeric threshold for above and under, tuple of (lowerbound, upperbound) for between, string</span>
+<span class="sd">            for included discrete levels for levels operation</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        OmicsContainer:</span>
+<span class="sd">            a new OmicsContainer object is returned once this filter is applied. Original instance remains unchanged.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_values</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isNumeric</span><span class="p">():</span>
+
+            <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;above&#39;</span><span class="p">:</span>
+                <span class="n">new_values</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">new_values</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">}</span>
+
+            <span class="k">elif</span> <span class="n">op</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;under&#39;</span><span class="p">:</span>
+                <span class="n">new_values</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">new_values</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">}</span>
+
+            <span class="k">elif</span> <span class="n">op</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;between&#39;</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">new_values</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">new_values</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">threshold</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="n">threshold</span><span class="p">[</span><span class="mi">1</span><span class="p">]}</span>
+                <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Threshold for between operation must be a tuple of two elements&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Please input a valid operation for numeric filtering: </span><span class="se">\&#39;</span><span class="s1">above</span><span class="se">\&#39;</span><span class="s1">, </span><span class="se">\&#39;</span><span class="s1">under</span><span class="se">\&#39;</span><span class="s1"> or </span><span class="se">\&#39;</span><span class="s1">between</span><span class="se">\&#39;</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;levels&#39;</span><span class="p">:</span>
+                <span class="n">new_values</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">new_values</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">threshold</span><span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Discrete filtering only supports </span><span class="se">\&#39;</span><span class="s1">levels</span><span class="se">\&#39;</span><span class="s1"> operation&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__createNew</span><span class="p">(</span><span class="n">new_values</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OmicsContainer.filterById"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.filterById">[docs]</a>    <span class="k">def</span> <span class="nf">filterById</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">regex</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;OmicsContainer&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Filters the data attribute to contain genes that match a regular expression or string supplied by the user</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        regex: string</span>
+<span class="sd">            regular expression or string to be contained in the Gene Symbol field of the data attr.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        OmicsContainer:</span>
+<span class="sd">            a new OmicsContainer object is returned once this filter is applied. Original instance remains unchanged.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_values</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">exp</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">regex</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+            <span class="n">new_values</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">new_values</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">exp</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Regex must be a string&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__createNew</span><span class="p">(</span><span class="n">new_values</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OmicsContainer.transform"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Applies the func to the exp_values of the data attr.</span>
+<span class="sd">        Only compatible with numerical container.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        func: string</span>
+<span class="sd">            a function to be applied to the values of the container, either &#39;norm&#39; or &#39;logx&#39;</span>
+
+<span class="sd">        Original number = x</span>
+<span class="sd">        Transformed number x&#39;=log10(x)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">logs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;log&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">,</span> <span class="s1">&#39;log2&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">,</span> <span class="s1">&#39;log10&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">}</span>
+
+            <span class="k">if</span> <span class="n">func</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">logs</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">logs</span><span class="p">[</span><span class="n">func</span><span class="p">](</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+            <span class="k">elif</span> <span class="n">func</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;norm&#39;</span><span class="p">:</span>
+                <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+                <span class="n">maxV</span><span class="p">,</span> <span class="n">minV</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">vals</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
+                <span class="n">diff</span> <span class="o">=</span> <span class="n">maxV</span> <span class="o">-</span> <span class="n">minV</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="n">minV</span><span class="p">)</span> <span class="o">/</span> <span class="n">diff</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">except</span> <span class="ne">TypeError</span> <span class="ow">or</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Convert to numeric values before applying normalization or log transformations&#39;</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_isNumeric</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_mapIsValid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks if a supllied mapping is valid, namely if all fields are present (case-sensitive), and if all values</span>
+<span class="sd">        are numerical</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        task: string</span>
+<span class="sd">            one of (n2n, n2d, d2n, r2n)</span>
+<span class="sd">        mapping: dict</span>
+<span class="sd">            the mapping to be validated</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool:</span>
+<span class="sd">            True if the mapping is valid, False otherwise</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">unique</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">task</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;n2n&#39;</span><span class="p">,</span> <span class="s1">&#39;d2n&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapping</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="n">unique</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">mapping</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span>
+                                                          <span class="nb">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]])</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">task</span> <span class="o">==</span> <span class="s1">&#39;n2d&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapping</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="n">unique</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">mapping</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span>
+                                                          <span class="nb">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">])</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">task</span> <span class="o">==</span> <span class="s1">&#39;r2n&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">mapping</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">)])</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">mapping</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+                <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">unique</span><span class="p">:</span>
+                    <span class="n">covered</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">mapping</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="nb">float</span><span class="p">(</span><span class="n">tup</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                            <span class="n">covered</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">covered</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="kc">False</span>
+
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">__createNew</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_values</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;OmicsContainer&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a new OmicsContainer object with the same attributes as the original one, but with a new data attribute</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        new_values: dict</span>
+<span class="sd">            the new data attribute to be used in the new OmicsContainer object</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        OmicsContainer:</span>
+<span class="sd">            a new OmicsContainer object is returned once this filter is applied. Original instance remains unchanged.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">newOC</span> <span class="o">=</span> <span class="n">OmicsContainer</span><span class="p">(</span><span class="n">omicstype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_OmicsType</span><span class="p">(),</span> <span class="n">condition</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_Condition</span><span class="p">())</span>
+        <span class="n">newOC</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">new_values</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">newOC</span>
+
+    <span class="c1"># setters</span>
+<div class="viewcode-block" id="OmicsContainer.set_type"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.set_type">[docs]</a>    <span class="k">def</span> <span class="nf">set_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">newType</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">otype</span> <span class="o">=</span> <span class="n">newType</span></div>
+
+<div class="viewcode-block" id="OmicsContainer.set_condition"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.set_condition">[docs]</a>    <span class="k">def</span> <span class="nf">set_condition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">newCond</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">condition</span> <span class="o">=</span> <span class="n">newCond</span></div>
+
+<div class="viewcode-block" id="OmicsContainer.set_data"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.set_data">[docs]</a>    <span class="k">def</span> <span class="nf">set_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">newData</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">newData</span></div>
+
+    <span class="c1"># getters</span>
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+<div class="viewcode-block" id="OmicsContainer.get_OmicsType"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.get_OmicsType">[docs]</a>    <span class="k">def</span> <span class="nf">get_OmicsType</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">otype</span></div>
+
+<div class="viewcode-block" id="OmicsContainer.get_Condition"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.get_Condition">[docs]</a>    <span class="k">def</span> <span class="nf">get_Condition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition</span></div>
+
+<div class="viewcode-block" id="OmicsContainer.get_Data"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.get_Data">[docs]</a>    <span class="k">def</span> <span class="nf">get_Data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span></div>
+
+<div class="viewcode-block" id="OmicsContainer.get_Nomenclature"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.get_Nomenclature">[docs]</a>    <span class="k">def</span> <span class="nf">get_Nomenclature</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nomenclature</span></div>
+
+<div class="viewcode-block" id="OmicsContainer.get_integrated_data_map"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.get_integrated_data_map">[docs]</a>    <span class="k">def</span> <span class="nf">get_integrated_data_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_reader</span><span class="p">:</span> <span class="n">HpaReader</span> <span class="ow">or</span> <span class="n">ProbeReader</span> <span class="ow">or</span> <span class="n">GenericReader</span><span class="p">,</span>
+                                <span class="n">and_func</span><span class="o">=</span><span class="nb">min</span><span class="p">,</span> <span class="n">or_func</span><span class="o">=</span><span class="nb">max</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function responsible for the integration of different omics data with a metabolic model loaded with framed package.</span>
+<span class="sd">        Matches model ids for gene_ids, metabolites or reaction ids with those present in the omicsContainer object.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model_reader: HpaReader or ProbeReader or GenericReader</span>
+<span class="sd">            a cobamp AbstractModelObjectReader object</span>
+<span class="sd">        and_func:</span>
+<span class="sd">            the mathematical function to replace the &quot;AND&quot; operator present in the Gene-Protein-Rules</span>
+<span class="sd">        or_func:</span>
+<span class="sd">            the mathematical function to replace the &quot;OR&quot; operator present in the Gene-Protein-Rules</span>
+
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        OmicsDataMap:</span>
+<span class="sd">            an OmicsDataMap object which contains the mapping between reactions/metabolites and its fluxes</span>
+<span class="sd">            based on the supplied omics data.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">g2rIntegrate</span><span class="p">():</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Handles integration of both proteomics and transcriptomics expression data relying on framed&#39;s gene2reaction</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            OmicsDataMap:</span>
+<span class="sd">                an OmicsDataMap object which contains the mapping between reactions/metabolites and its fluxes</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="c1"># suffixAndPrefix()</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">model_reader</span><span class="o">.</span><span class="n">get_reaction_scores</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_Data</span><span class="p">(),</span> <span class="n">or_fx</span><span class="o">=</span><span class="n">or_func</span><span class="p">,</span> <span class="n">and_fx</span><span class="o">=</span><span class="n">and_func</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">aux_createMap</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="s1">&#39;ReactionDataMap&#39;</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">aux_createMap</span><span class="p">(</span><span class="n">mMap</span><span class="p">,</span> <span class="n">mapType</span><span class="p">):</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">OmicsDataMap</span><span class="p">(</span><span class="n">mMap</span><span class="p">,</span> <span class="n">mapType</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">m</span>
+
+        <span class="c1"># execution commands</span>
+
+        <span class="n">omicsType</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">otype</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">omicsType</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;proteomics&#39;</span><span class="p">,</span> <span class="s1">&#39;transcriptomics&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">g2rIntegrate</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Omics data type not yet supported&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OmicsContainer.print_values"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsContainer.print_values">[docs]</a>    <span class="k">def</span> <span class="nf">print_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Gene Symbol &gt;&gt;&gt; Exp Value&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> &gt;&gt;&gt; </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> container</span><span class="se">\n</span><span class="s1">&#39;</span>
+                   <span class="s1">&#39;Condition: </span><span class="si">{1}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                   <span class="s1">&#39;Nomenclature: </span><span class="si">{2}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                   <span class="s1">&#39;</span><span class="si">{3}</span><span class="s1"> Expression Values&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">otype</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nomenclature</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span></div>
+
+
+<div class="viewcode-block" id="OmicsDataMap"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsDataMap">[docs]</a><span class="k">class</span> <span class="nc">OmicsDataMap</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stores integrated omics data, matching a given metabolic model</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    _mapType: str</span>
+<span class="sd">        The type of map stored in the object</span>
+<span class="sd">    _scores: dict</span>
+<span class="sd">        The scores stored in the object</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">mapType</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mapType</span> <span class="o">=</span> <span class="n">mapType</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scores</span> <span class="o">=</span> <span class="n">scores</span>
+
+    <span class="c1"># getters</span>
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scores</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_scores</span><span class="p">()</span>
+
+<div class="viewcode-block" id="OmicsDataMap.mapType"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsDataMap.mapType">[docs]</a>    <span class="k">def</span> <span class="nf">mapType</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mapType</span></div>
+
+<div class="viewcode-block" id="OmicsDataMap.get_scores"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsDataMap.get_scores">[docs]</a>    <span class="k">def</span> <span class="nf">get_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scores</span></div>
+
+<div class="viewcode-block" id="OmicsDataMap.select"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsDataMap.select">[docs]</a>    <span class="k">def</span> <span class="nf">select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">threshold</span><span class="p">:</span> <span class="n">Number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Filtering the original reaction scores to be under or above a threshold. Above or under operations use the</span>
+<span class="sd">        &gt;= and &lt;= operators</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        op: str</span>
+<span class="sd">            either &quot;above&quot; or &quot;under&quot; determining which scores shall be chosen</span>
+<span class="sd">        threshold: Number</span>
+<span class="sd">            either a float or an integer whether under or above all scores shall be chosen</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        set:</span>
+<span class="sd">            a set of reaction ids whose scores are above or under the threshold</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Select threshold must be numeric!&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;above&#39;</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scores</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">y</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">}</span>
+
+        <span class="k">elif</span> <span class="n">op</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;under&#39;</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scores</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">y</span> <span class="o">&lt;=</span> <span class="n">threshold</span><span class="p">}</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Select operation must be either </span><span class="se">\&#39;</span><span class="s1">above</span><span class="se">\&#39;</span><span class="s1"> or </span><span class="se">\&#39;</span><span class="s1">under</span><span class="se">\&#39;</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># self.set_scores(res)</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+    <span class="c1"># setters</span>
+<div class="viewcode-block" id="OmicsDataMap.set_scores"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsDataMap.set_scores">[docs]</a>    <span class="k">def</span> <span class="nf">set_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">newScores</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets the scores attribute to a new dictionary</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        newScores: dict</span>
+<span class="sd">            the new scores to be set</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scores</span> <span class="o">=</span> <span class="n">newScores</span></div></div>
+
+
+<span class="n">lofl_array</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Number</span><span class="p">]],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="has_valid_dims"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.has_valid_dims">[docs]</a><span class="k">def</span> <span class="nf">has_valid_dims</span><span class="p">(</span><span class="n">rows</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">cols</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">lofl_array</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks if the data has the same dimensions as the rows and columns</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rows: Sequence</span>
+<span class="sd">        The rows of the data</span>
+<span class="sd">    cols: Sequence</span>
+<span class="sd">        The columns of the data</span>
+<span class="sd">    data: lofl_array</span>
+<span class="sd">        The data to be checked</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool, bool:</span>
+<span class="sd">        True if the data has the same dimensions as the rows and columns, False otherwise</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">shapes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">shapes</span><span class="p">),</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">shapes</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TabularContainer"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.TabularContainer">[docs]</a><span class="k">class</span> <span class="nc">TabularContainer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    TabularContainer class to be used for the creation of objects that store tabular data and other useful information,</span>
+<span class="sd">    such as its row and column labels. This class is meant to be used as a base class for other classes that store</span>
+<span class="sd">    tabular data.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    row_labels: Sequence[Union[str, int]]</span>
+<span class="sd">        The row labels of the data</span>
+<span class="sd">    column_labels: Sequence[str]</span>
+<span class="sd">        The column labels of the data</span>
+<span class="sd">    values: lofl_array</span>
+<span class="sd">        The values of the data</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data: pd.DataFrame</span>
+<span class="sd">        The data stored in the container</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row_labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span> <span class="n">column_labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">values</span><span class="p">:</span> <span class="n">lofl_array</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">valid_norm</span><span class="p">,</span> <span class="n">valid_txp</span> <span class="o">=</span> <span class="n">has_valid_dims</span><span class="p">(</span><span class="n">row_labels</span><span class="p">,</span> <span class="n">column_labels</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">valid_norm</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">valid_txp</span><span class="p">:</span>
+                <span class="n">row_labels</span><span class="p">,</span> <span class="n">column_labels</span> <span class="o">=</span> <span class="n">column_labels</span><span class="p">,</span> <span class="n">row_labels</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Values have been transposed since the original labels did not match dimensions.&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s1">&#39;row_labels or column_labels do not match the value dimensions.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">values</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">row_labels</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">column_labels</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span>
+
+    <span class="nd">@data</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">lofl_array</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;data must be set as a pandas DataFrame or list of lists&#39;</span><span class="p">)</span>
+        <span class="c1"># assert value.shape == self.data.shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__data</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">item</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">column_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span>
+
+    <span class="nd">@column_names</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">column_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;value must be a dict, Series, list or tuple&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">row_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">index</span>
+
+    <span class="nd">@row_names</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">row_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;value must be a dict, Series, list or tuple&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TabularContainer.transform"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.TabularContainer.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="nb">callable</span><span class="p">):</span>
+        <span class="n">new_data</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">new_data</span></div>
+
+<div class="viewcode-block" id="TabularContainer.drop"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.TabularContainer.drop">[docs]</a>    <span class="k">def</span> <span class="nf">drop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rows</span><span class="p">:</span> <span class="n">Sequence</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Sequence</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Drops the given rows and columns from the data attribute</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rows: Sequence</span>
+<span class="sd">            The rows to be dropped</span>
+<span class="sd">        columns: Sequence</span>
+<span class="sd">            The columns to be dropped</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">rows</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="IdentifierMapping"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.IdentifierMapping">[docs]</a><span class="k">class</span> <span class="nc">IdentifierMapping</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">type_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">id_mapping_table</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__name</span> <span class="o">=</span> <span class="n">type_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__id_map</span> <span class="o">=</span> <span class="n">id_mapping_table</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__name</span>
+
+<div class="viewcode-block" id="IdentifierMapping.get_id_table"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.IdentifierMapping.get_id_table">[docs]</a>    <span class="k">def</span> <span class="nf">get_id_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span> <span class="n">from_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">from_id</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">__id_map</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="n">from_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="IdentifierMapping.map_ids"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.IdentifierMapping.map_ids">[docs]</a>    <span class="k">def</span> <span class="nf">map_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span> <span class="n">from_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">to_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]):</span>
+        <span class="n">id_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_id_table</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">from_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">id_table</span><span class="p">[</span><span class="n">to_id</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="OmicsMeasurementSet"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsMeasurementSet">[docs]</a><span class="k">class</span> <span class="nc">OmicsMeasurementSet</span><span class="p">(</span><span class="n">TabularContainer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample_labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span> <span class="n">feature_labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">values</span><span class="p">:</span> <span class="n">lofl_array</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">sample_labels</span><span class="p">,</span> <span class="n">feature_labels</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+
+<div class="viewcode-block" id="OmicsMeasurementSet.to_omics_container"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.OmicsMeasurementSet.to_omics_container">[docs]</a>    <span class="k">def</span> <span class="nf">to_omics_container</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">OmicsContainer</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="n">sample_id</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">sample_id</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span></div></div>
+
+
+<div class="viewcode-block" id="TypedOmicsMeasurementSet"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.TypedOmicsMeasurementSet">[docs]</a><span class="k">class</span> <span class="nc">TypedOmicsMeasurementSet</span><span class="p">(</span><span class="n">OmicsMeasurementSet</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample_labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span> <span class="n">feature_labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">values</span><span class="p">:</span> <span class="n">lofl_array</span><span class="p">,</span>
+                 <span class="n">omics_type</span><span class="p">:</span> <span class="n">IdentifierMapping</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">sample_labels</span><span class="p">,</span> <span class="n">feature_labels</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">omics_type</span> <span class="o">=</span> <span class="n">omics_type</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">omics_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IdentifierMapping</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__omics_type</span>
+
+    <span class="nd">@omics_type</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">omics_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">IdentifierMapping</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__omics_type</span> <span class="o">=</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="TypedOmicsMeasurementSet.convert_feature_ids"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.TypedOmicsMeasurementSet.convert_feature_ids">[docs]</a>    <span class="k">def</span> <span class="nf">convert_feature_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_id</span><span class="p">,</span> <span class="n">to_id</span><span class="p">):</span>
+        <span class="n">new_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">omics_type</span><span class="o">.</span><span class="n">map_ids</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">(),</span> <span class="n">from_id</span><span class="p">,</span> <span class="n">to_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">column_names</span> <span class="o">=</span> <span class="n">new_ids</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isna</span><span class="p">()]</span></div>
+
+<div class="viewcode-block" id="TypedOmicsMeasurementSet.to_omics_container"><a class="viewcode-back" href="../../../troppo.omics.html#troppo.omics.core.TypedOmicsMeasurementSet.to_omics_container">[docs]</a>    <span class="k">def</span> <span class="nf">to_omics_container</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">OmicsContainer</span><span class="p">(</span><span class="n">omicstype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">omics_type</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="n">sample_id</span><span class="p">,</span>
+                              <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">sample_id</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">nomenclature</span><span class="o">=</span><span class="s1">&#39;custom&#39;</span><span class="p">)</span></div></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">id_map</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span>
+        <span class="p">[</span><span class="s1">&#39;one&#39;</span><span class="p">,</span> <span class="s1">&#39;uno&#39;</span><span class="p">,</span> <span class="s1">&#39;eins&#39;</span><span class="p">,</span> <span class="s1">&#39;un&#39;</span><span class="p">,</span> <span class="s1">&#39;um&#39;</span><span class="p">],</span>
+        <span class="p">[</span><span class="s1">&#39;two&#39;</span><span class="p">,</span> <span class="s1">&#39;dos&#39;</span><span class="p">,</span> <span class="s1">&#39;zwei&#39;</span><span class="p">,</span> <span class="s1">&#39;deux&#39;</span><span class="p">,</span> <span class="s1">&#39;dois&#39;</span><span class="p">],</span>
+        <span class="p">[</span><span class="s1">&#39;three&#39;</span><span class="p">,</span> <span class="s1">&#39;tres&#39;</span><span class="p">,</span> <span class="s1">&#39;drei&#39;</span><span class="p">,</span> <span class="s1">&#39;trois&#39;</span><span class="p">,</span> <span class="s1">&#39;tres&#39;</span><span class="p">]</span>
+    <span class="p">],</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;en&#39;</span><span class="p">,</span> <span class="s1">&#39;es&#39;</span><span class="p">,</span> <span class="s1">&#39;de&#39;</span><span class="p">,</span> <span class="s1">&#39;fr&#39;</span><span class="p">,</span> <span class="s1">&#39;pt&#39;</span><span class="p">])</span>
+
+    <span class="n">samples</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;sampleA&#39;</span><span class="p">,</span> <span class="s1">&#39;sampleB&#39;</span><span class="p">]</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;eins&#39;</span><span class="p">,</span> <span class="s1">&#39;zwei&#39;</span><span class="p">,</span> <span class="s1">&#39;drei&#39;</span><span class="p">,</span> <span class="s1">&#39;vier&#39;</span><span class="p">]</span>
+    <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">]]</span>
+
+    <span class="n">id_map_obj</span> <span class="o">=</span> <span class="n">IdentifierMapping</span><span class="p">(</span><span class="s1">&#39;numbers&#39;</span><span class="p">,</span> <span class="n">id_map</span><span class="p">)</span>
+    <span class="n">exp_set</span> <span class="o">=</span> <span class="n">OmicsMeasurementSet</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
+    <span class="n">typed_exp_set</span> <span class="o">=</span> <span class="n">TypedOmicsMeasurementSet</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">id_map_obj</span><span class="p">)</span>
+    <span class="n">typed_exp_set</span><span class="o">.</span><span class="n">convert_feature_ids</span><span class="p">(</span><span class="s1">&#39;de&#39;</span><span class="p">,</span> <span class="s1">&#39;fr&#39;</span><span class="p">)</span>
+    <span class="n">oc</span> <span class="o">=</span> <span class="n">typed_exp_set</span><span class="o">.</span><span class="n">to_omics_container</span><span class="p">(</span><span class="s1">&#39;sampleA&#39;</span><span class="p">)</span>
+    <span class="n">oc</span><span class="o">.</span><span class="n">get_Condition</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
