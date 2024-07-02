@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task performance evaluation &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Batch integration of Omics Data" href="tutorial_batch_run.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Troppo</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="tutorial.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="tutorial_gene_level_thresholding.html">Gene-level thresholding tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial_gimme.html">GIMME tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial_fastcore.html">FastCORE tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial_tinit.html">tINIT tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial_imat.html">iMAT tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial_batch_run.html">Batch integration of Omics Data</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Task performance evaluation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#setup-the-model-and-the-tasks">Setup the model and the tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#evaluate-a-set-of-tasks">Evaluate a set of tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#save-the-results">Save the results</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="tutorial.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Task performance evaluation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/tutorial_task_eval.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="task-performance-evaluation">
+<h1>Task performance evaluation<a class="headerlink" href="#task-performance-evaluation" title="Permalink to this heading"></a></h1>
+<p><em>Troppo</em> includes a module that allows for the evaluation of metabolic tasks performance.
+The class responsible for this is called <cite>TaskEvaluator</cite>.
+This class is a wrapper around a model that allows the evaluation of tasks on the model. It can be used to evaluate a single task, or to evaluate a batch of tasks on a batch of models.</p>
+<p>To initialize a <cite>TaskEvaluator</cite> object, you need to pass a model object and the tasks to evaluate.
+The tasks should be instances of the <cite>Task</cite> class, which is a simple data structure that contains the following fields:</p>
+<ul class="simple">
+<li><p><cite>reaction_dict</cite>: a dictionary with the reaction identifiers as keys and a dictionary with the metabolites and their respective stoichiometry as values. (eg. rxd = {‘r1’:({‘m1’:-1, ‘m2’:2}, (lb, ub)), … })</p></li>
+<li><p><cite>inflow_dict</cite>: a dictionary with the metabolite identifiers as keys and the inflow rate as values. (eg. inflow = {‘m1’:(1, 1), … })</p></li>
+<li><p><cite>outflow_dict</cite>: a dictionary with the metabolite identifiers as keys and the outflow rate as values. (eg. outflow = {‘m5’:(5, 5), … })</p></li>
+</ul>
+<section id="setup-the-model-and-the-tasks">
+<h2>Setup the model and the tasks<a class="headerlink" href="#setup-the-model-and-the-tasks" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">#imports</span>
+<span class="kn">from</span> <span class="nn">troppo.tasks.core</span> <span class="kn">import</span> <span class="n">TaskEvaluator</span>
+<span class="kn">from</span> <span class="nn">troppo.tasks.task_io</span> <span class="kn">import</span> <span class="n">JSONTaskIO</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">json</span> <span class="kn">import</span> <span class="n">JSONEncoder</span><span class="p">,</span> <span class="n">JSONDecoder</span>
+<span class="kn">from</span> <span class="nn">cobamp.utilities.parallel</span> <span class="kn">import</span> <span class="n">batch_run</span>
+
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">log</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="c1">#load the model</span>
+<span class="n">task_model</span> <span class="o">=</span> <span class="n">read_sbml_model</span><span class="p">(</span><span class="s1">&#39;data/Recon3D_301_consistent.xml&#39;</span><span class="p">)</span>
+
+<span class="c1">#load the reconstruction results as a dictionary</span>
+<span class="n">fastcore_res_dict</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;data/r3d_compact_ccle_bc_fastcore.csv&#39;</span><span class="p">,</span>
+                                <span class="n">index_col</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+<span class="c1">#get only first sample</span>
+<span class="n">sample</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">fastcore_res_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">fastcore_res_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">sample</span><span class="p">:</span> <span class="n">fastcore_res_dict</span><span class="p">[</span><span class="n">sample</span><span class="p">]}</span>
+
+<span class="n">TASKS_PATH</span> <span class="o">=</span> <span class="s1">&#39;data/nl2019_tasks_r3d_compact.json&#39;</span>
+
+<span class="c1"># parse tasks from a previously existing JSON</span>
+<span class="c1"># the supplied file contains tasks adapted from the publication of Richelle et. al, 2019</span>
+<span class="n">task_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">JSONTaskIO</span><span class="p">()</span><span class="o">.</span><span class="n">read_task</span><span class="p">(</span><span class="n">TASKS_PATH</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">((</span><span class="nb">set</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">inflow_dict</span><span class="p">)</span> <span class="o">|</span>
+             <span class="nb">set</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">outflow_dict</span><span class="p">))</span> <span class="o">-</span> <span class="nb">set</span><span class="p">([</span><span class="n">m</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">task_model</span><span class="o">.</span><span class="n">metabolites</span><span class="p">]))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">task_list</span><span class="p">:</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">inflow_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">outflow_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">else</span> <span class="p">[</span><span class="o">-</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span>
+                        <span class="n">task</span><span class="o">.</span><span class="n">inflow_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">outflow_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">outflow_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                         <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">inflow_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">task_list</span><span class="p">:</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">mandatory_activity</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1"># tasks should be evaluated without open boundary reactions. We can easily close them on</span>
+<span class="c1"># the COBRA model</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">task_model</span><span class="o">.</span><span class="n">boundary</span><span class="p">:</span>
+    <span class="n">k</span><span class="o">.</span><span class="n">knock_out</span><span class="p">()</span>
+
+<span class="c1"># get the names of all reactions in the model - this will be useful further on</span>
+<span class="n">all_reactions</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">task_model</span><span class="o">.</span><span class="n">reactions</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="evaluate-a-set-of-tasks">
+<h2>Evaluate a set of tasks<a class="headerlink" href="#evaluate-a-set-of-tasks" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># create a structure to hold all of these results - a dictionary</span>
+<span class="n">task_eval_results</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="c1"># for each k (tuple with algorithm and sample information) and result (dict with reaction presences)</span>
+<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">fastcore_res_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="c1"># using with statements to change the COBRA model temporarily</span>
+    <span class="c1"># this is done to knock-out reaction not appearing the FASTCORE result</span>
+    <span class="k">with</span> <span class="n">task_model</span> <span class="k">as</span> <span class="n">context_specific_model</span><span class="p">:</span>
+        <span class="c1"># get reactions included in the sample-specific model</span>
+        <span class="n">protected</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">])</span>
+        <span class="c1"># get reactions except the protected ones</span>
+        <span class="n">to_remove</span> <span class="o">=</span> <span class="n">all_reactions</span> <span class="o">-</span> <span class="n">protected</span>
+        <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">to_remove</span><span class="p">:</span>
+            <span class="c1"># knock-out reactions not in the model</span>
+            <span class="n">context_specific_model</span><span class="o">.</span><span class="n">reactions</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">rid</span><span class="p">)</span><span class="o">.</span><span class="n">knock_out</span><span class="p">()</span>
+
+        <span class="c1"># create a task evaluator instance with the context specific model and the supplied</span>
+        <span class="c1"># task list and solver</span>
+        <span class="n">task_eval</span> <span class="o">=</span> <span class="n">TaskEvaluator</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">context_specific_model</span><span class="p">,</span> <span class="n">tasks</span><span class="o">=</span><span class="n">task_list</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;CPLEX&#39;</span><span class="p">)</span>
+
+        <span class="c1"># get task names (for future reference)</span>
+        <span class="n">task_names</span> <span class="o">=</span> <span class="n">task_eval</span><span class="o">.</span><span class="n">tasks</span>
+
+        <span class="c1"># use the batch_function from the TaskEvaluator class (takes the name of a loaded task,</span>
+        <span class="c1"># a params dictionary with the task evaluator associated to the &#39;tev&#39; key) and set the</span>
+        <span class="c1"># amount of threads to be used</span>
+        <span class="n">batch_res_tasks</span> <span class="o">=</span> <span class="n">batch_run</span><span class="p">(</span><span class="n">TaskEvaluator</span><span class="o">.</span><span class="n">batch_function</span><span class="p">,</span> <span class="n">task_names</span><span class="p">,</span>
+                                    <span class="p">{</span><span class="s1">&#39;tev&#39;</span><span class="p">:</span> <span class="n">task_eval</span><span class="p">},</span> <span class="n">threads</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># each element in the list of results in batch_res_tasks is a tuple of length 3:</span>
+    <span class="c1"># 0 - boolean flag representing the task evaluation</span>
+    <span class="c1"># 1 - Solution instance used to evaluate the task</span>
+    <span class="c1"># 2 - A dictionary with reactions supposed to be active mapped to True/False</span>
+    <span class="c1"># according to that criterion</span>
+
+    <span class="c1"># keep only items 0 and 2 of the task result - we don&#39;t need the flux distribution</span>
+    <span class="n">task_csm_res</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">task_names</span><span class="p">,</span> <span class="n">batch_res_tasks</span><span class="p">))</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">protected</span><span class="p">),</span> <span class="nb">len</span><span class="p">([</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">task_csm_res</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]]),</span> <span class="s1">&#39;tasks completed.&#39;</span><span class="p">)</span>
+    <span class="c1"># assign this dictionary to it&#39;s sample on the master results dictionary</span>
+    <span class="n">task_eval_results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">task_csm_res</span>
+</pre></div>
+</div>
+</section>
+<section id="save-the-results">
+<h2>Save the results<a class="headerlink" href="#save-the-results" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># save these results for later analysis as a JSON file</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;data/r3d_compact_task_results_ccle_bc_new_nodrains_only_feas.json&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">JSONEncoder</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">([(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">task_eval_results</span><span class="o">.</span><span class="n">items</span><span class="p">()]))</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="tutorial_batch_run.html" class="btn btn-neutral float-left" title="Batch integration of Omics Data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>troppo.methods.gapfill.fastcc &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">Troppo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">troppo.methods.gapfill.fastcc</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for troppo.methods.gapfill.fastcc</h1><div class="highlight"><pre>
+<span></span><span class="c1"># import numpy as np</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">setdiff1d</span><span class="p">,</span> <span class="n">intersect1d</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="nb">abs</span><span class="p">,</span> <span class="n">ones</span><span class="p">,</span> <span class="n">union1d</span><span class="p">,</span> <span class="n">diag</span><span class="p">,</span> <span class="n">where</span><span class="p">,</span> <span class="n">inf</span><span class="p">,</span> <span class="n">vstack</span><span class="p">,</span> <span class="n">dot</span>
+<span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="kn">import</span> <span class="n">norm</span>
+<span class="c1"># from troppo.utilities.extra_functions_model import ExtraFunctionsModel</span>
+
+<span class="kn">from</span> <span class="nn">troppo.methods.base</span> <span class="kn">import</span> <span class="n">PropertiesReconstruction</span>
+<span class="kn">from</span> <span class="nn">troppo.methods.reconstruction.fastcore</span> <span class="kn">import</span> <span class="n">FASTcore</span>
+
+
+<div class="viewcode-block" id="FastCC"><a class="viewcode-back" href="../../../../troppo.methods.gapfill.html#troppo.methods.gapfill.fastcc.FastCC">[docs]</a><span class="k">class</span> <span class="nc">FastCC</span><span class="p">(</span><span class="n">FASTcore</span><span class="p">):</span>
+<span class="w">	</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	FASTCC gap-filling method for the reconstruction of metabolic models using the FASTcore algorithm.</span>
+
+<span class="sd">	Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	S : numpy.ndarray</span>
+<span class="sd">		The stoichiometric matrix of the model.</span>
+<span class="sd">	lb : numpy.ndarray</span>
+<span class="sd">		The lower bounds of the model.</span>
+<span class="sd">	ub : numpy.ndarray</span>
+<span class="sd">		The upper bounds of the model.</span>
+<span class="sd">	properties : dict</span>
+<span class="sd">		The properties of the model.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+	<span class="c1"># notes: compared to the MATLAB version, modeFlag is always &#39;on&#39;</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">lb</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">ub</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">properties</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">,</span> <span class="n">properties</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;flux_threshold&#39;</span><span class="p">]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">o_S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">o_lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">o_ub</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">lb</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">ub</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">s_S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_ub</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">f_S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_ub</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Supp</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">incI</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">irrev_reverse</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">nA1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nA2</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="FastCC.prepocessing"><a class="viewcode-back" href="../../../../troppo.methods.gapfill.html#troppo.methods.gapfill.fastcc.FastCC.prepocessing">[docs]</a>	<span class="k">def</span> <span class="nf">prepocessing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Preprocessing of the model.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="c1"># extra = ExtraFunctionsModel()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">irrev_reverse</span> <span class="o">=</span> <span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ub</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">irrev_reverse</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reverse_irreversible_reactions_in_reverse_direction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">irrev_reverse</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">s_S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_ub</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">lb</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">ub</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">I</span> <span class="o">=</span> <span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">o_lb</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="n">intersect1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; Total reactions&#39;</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; Reversible reactions&#39;</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; Irreversible reactions&#39;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">array</span><span class="p">([])</span>
+		<span class="c1"># self.generate_base_LPproblem()</span>
+		<span class="c1"># self.update_LP7_problem(self.J)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LP7</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">Supp</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mf">0.99</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;flux_threshold&#39;</span><span class="p">])</span>
+							<span class="ow">and</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Supp</span>
+		<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; Flux consistent reactions, without flipping&#39;</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">()))])</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">incI</span> <span class="o">=</span> <span class="n">setdiff1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">)</span>  <span class="c1"># set of irreversible reaction with inconsistent flux</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">incI</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incI</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; Flux inconsistent irreversible reactions, without flipping&#39;</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="n">setdiff1d</span><span class="p">(</span><span class="n">setdiff1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">incI</span><span class="p">)</span>
+		<span class="c1"># set of reactions with absolute value less than epsilon in the first LP7</span>
+		<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; Flux inconsistent reactions, without flipping&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FastCC.fastcc"><a class="viewcode-back" href="../../../../troppo.methods.gapfill.html#troppo.methods.gapfill.fastcc.FastCC.fastcc">[docs]</a>	<span class="k">def</span> <span class="nf">fastcc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		FASTCC algorithm.</span>
+
+<span class="sd">		Returns</span>
+<span class="sd">		-------</span>
+<span class="sd">		self.A : numpy.ndarray</span>
+<span class="sd">			The set of reactions that are flux consistent.</span>
+<span class="sd">		self.V : numpy.ndarray</span>
+<span class="sd">			The flux vectors of the flux consistent reactions.</span>
+<span class="sd">		self.incI : numpy.ndarray</span>
+<span class="sd">			The set of irreversible reactions that are flux inconsistent.</span>
+<span class="sd">		self.irrev_reverse : numpy.ndarray</span>
+<span class="sd">			The set of irreversible reactions that are in reverse direction.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">flipped</span> <span class="o">=</span> <span class="kc">False</span>
+		<span class="n">singleton</span> <span class="o">=</span> <span class="kc">False</span>
+		<span class="n">JiRev</span> <span class="o">=</span> <span class="n">array</span><span class="p">([])</span>
+		<span class="n">orientation</span> <span class="o">=</span> <span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">o_S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+		<span class="c1"># self.generate_base_LPproblem()</span>
+		<span class="c1"># self.generate_LP3_problem()</span>
+		<span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;original&#39;</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">singleton</span><span class="p">:</span>
+					<span class="n">Ji</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LP3</span><span class="p">(</span><span class="n">Ji</span><span class="p">)</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="n">Ji</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">J</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LP7</span><span class="p">(</span><span class="n">Ji</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span><span class="p">)</span>
+			<span class="k">else</span><span class="p">:</span>  <span class="c1"># TODO implement the fastcc_nonconvex_check_consistency_one_reaction() and fastcc_nonconvex_maximise_card_J</span>
+				<span class="k">pass</span>
+
+			<span class="c1"># Supp is the set of reactions in v with absolute value greater than epsilon</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">Supp</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mf">0.99</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;flux_threshold&#39;</span><span class="p">])</span>
+								<span class="ow">and</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
+
+			<span class="c1"># A is the set of reactions in self.v with an absolute value greater than epsilon</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">nA1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">size</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="n">union1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Supp</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">nA2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">size</span>
+
+			<span class="c1"># save self.v if new flux consistent reaction found</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nA2</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">nA1</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">JiRev</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+					<span class="c1"># l = orientation.size # TODO check if I really need this</span>
+					<span class="n">vf</span> <span class="o">=</span> <span class="n">dot</span><span class="p">(</span><span class="n">diag</span><span class="p">(</span><span class="n">orientation</span><span class="p">),</span> <span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">vf</span><span class="p">])</span>
+
+					<span class="c1"># sanity check</span>
+					<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;sanity check&#39;</span><span class="p">)</span>
+					<span class="k">if</span> <span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_S</span><span class="p">,</span> <span class="n">vf</span><span class="p">))</span> <span class="o">&gt;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">/</span> <span class="mi">100</span><span class="p">):</span>
+						<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; = epsilon/100&#39;</span><span class="p">)</span>
+						<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Should be zero &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">o_S</span><span class="p">,</span> <span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">()))))))</span>
+						<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Should be zero &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_S</span><span class="p">,</span> <span class="n">vf</span><span class="p">))))</span>
+						<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;May not be zero &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">o_S</span><span class="p">,</span> <span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">()))))))</span>
+						<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;May not be zero &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_S</span><span class="p">,</span> <span class="n">vf</span><span class="p">))))</span>
+						<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Flipped flux consistency step failed&#39;</span><span class="p">)</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">()))])</span>
+				<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; Flux consistent reactions&#39;</span><span class="p">)</span>
+
+			<span class="c1"># second part - if the set of reactions in V with absolute value less than epsilon has</span>
+			<span class="c1"># no reactions in common with the set of reactions in V with absolute value</span>
+			<span class="c1"># greater than epsilon, then flip the sign of the reactions with absolute</span>
+			<span class="c1"># value less than epsilon because perhaps they are flux consistent in</span>
+			<span class="c1"># the reverse direction</span>
+
+			<span class="k">if</span> <span class="n">intersect1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">)</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="n">setdiff1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">)</span>
+				<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; Flux inconsistent reversible reactions left to flip&#39;</span><span class="p">)</span>
+				<span class="n">flipped</span> <span class="o">=</span> <span class="kc">False</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="c1"># do not flip the direction of exclusively forward reactions</span>
+				<span class="n">JiRev</span> <span class="o">=</span> <span class="n">setdiff1d</span><span class="p">(</span><span class="n">Ji</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+				<span class="k">if</span> <span class="n">flipped</span> <span class="ow">or</span> <span class="n">JiRev</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+					<span class="n">flipped</span> <span class="o">=</span> <span class="kc">False</span>
+					<span class="k">if</span> <span class="n">singleton</span><span class="p">:</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="n">setdiff1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="p">,</span> <span class="n">Ji</span><span class="p">)</span>
+						<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">[</span><span class="n">Ji</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39; flux is inconsistent&#39;</span><span class="p">)</span>
+					<span class="k">else</span><span class="p">:</span>
+						<span class="n">singleton</span> <span class="o">=</span> <span class="kc">True</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">generate_LP3_problem</span><span class="p">()</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">reverse_irreversible_reactions_in_reverse_direction</span><span class="p">(</span><span class="n">JiRev</span><span class="p">)</span>
+					<span class="n">flipped</span> <span class="o">=</span> <span class="kc">True</span>
+					<span class="n">orientation</span><span class="p">[</span><span class="n">JiRev</span><span class="p">]</span> <span class="o">=</span> <span class="n">dot</span><span class="p">(</span><span class="n">orientation</span><span class="p">[</span><span class="n">JiRev</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+					<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">JiRev</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; reversible reactions flipped&#39;</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">f_S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_ub</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">lb</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">ub</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+		<span class="n">flippedReverseOrientation</span> <span class="o">=</span> <span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+		<span class="n">flippedReverseOrientation</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">irrev_reverse</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">dot</span><span class="p">(</span><span class="n">diag</span><span class="p">(</span><span class="n">flippedReverseOrientation</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="n">norm</span><span class="p">(</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">o_S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">),</span> <span class="n">inf</span><span class="p">)</span> <span class="o">&gt;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">/</span> <span class="mi">100</span><span class="p">):</span>
+			<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">/</span> <span class="mi">100</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; = epsilon/100&#39;</span><span class="p">)</span>
+			<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">norm</span><span class="p">(</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">),</span> <span class="n">inf</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; = ||S*V||.&#39;</span><span class="p">)</span>
+			<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Flux consistency numerically challenged&#39;</span><span class="p">)</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_ub</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Flux consistency check finished&#39;</span><span class="p">)</span>
+		<span class="c1"># print((sum(any(</span>
+		<span class="c1"># 	abs(self.V)) &gt;= 0.99 * self.epsilon)) + &#39; = Number of flux consistent columns&#39;  # this should fuck up here</span>
+		<span class="c1"># print((norm(dot(self.o_S, self.V)), inf) + &#39; ||S*V||&#39;)</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_reactions</span><span class="p">:</span>
+			<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Fastcc: the input model is entirely flux consistent&#39;</span><span class="p">)</span>
+
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_ub</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span></div>
+
+<div class="viewcode-block" id="FastCC.run"><a class="viewcode-back" href="../../../../troppo.methods.gapfill.html#troppo.methods.gapfill.fastcc.FastCC.run">[docs]</a>	<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">prepocessing</span><span class="p">()</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fastcc</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="FastCCProperties"><a class="viewcode-back" href="../../../../troppo.methods.gapfill.html#troppo.methods.gapfill.fastcc.FastCCProperties">[docs]</a><span class="k">class</span> <span class="nc">FastCCProperties</span><span class="p">(</span><span class="n">PropertiesReconstruction</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+<span class="w">	</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Properties for FastCC</span>
+
+<span class="sd">	Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	flux_threshold : float</span>
+<span class="sd">		Flux threshold</span>
+<span class="sd">	method : str</span>
+<span class="sd">		&#39;original&#39; or &#39;nonconvex&#39;</span>
+<span class="sd">	solver : str</span>
+<span class="sd">		Solver to use</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux_threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">solver</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+		<span class="n">new_mandatory</span> <span class="o">=</span> <span class="p">{</span>
+			<span class="s1">&#39;flux_threshold&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span>
+			<span class="s1">&#39;method&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
+			<span class="s1">&#39;solver&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="n">new_optional</span> <span class="o">=</span> <span class="p">{</span>
+
+		<span class="p">}</span>
+		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">add_new_properties</span><span class="p">(</span><span class="n">new_mandatory</span><span class="p">,</span> <span class="n">new_optional</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="p">[</span><span class="s1">&#39;flux_threshold&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">flux_threshold</span>
+		<span class="bp">self</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">solver</span>
+		<span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;original&#39;</span><span class="p">,</span> <span class="s1">&#39;nonconvex&#39;</span><span class="p">]:</span>
+			<span class="bp">self</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">method</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Methods have to be </span><span class="se">\&#39;</span><span class="s1">original</span><span class="se">\&#39;</span><span class="s1"> or </span><span class="se">\&#39;</span><span class="s1">nonconvex</span><span class="se">\&#39;</span><span class="s1">&#39;</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

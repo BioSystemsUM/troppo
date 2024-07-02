@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gapfilling Methods &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Reconstruction Methods" href="troppo.methods.reconstruction.html" />
+    <link rel="prev" title="Methods module" href="troppo.methods.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Troppo</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="troppo.methods.html">Methods module</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Gapfilling Methods</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#module-troppo.methods.gapfill.consensus">Combinatorial Gapfilling Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#elementary-flux-mode-gapfilling-algorithm">Elementary Flux Mode Gapfilling Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-troppo.methods.gapfill.fastcc">FastCC Gapfilling Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-troppo.methods.gapfill.pathway_analysis">Pathway Analysis Gapfilling Algorithm</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.reconstruction.html">Reconstruction Methods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.methods.html#base-classes-for-gapfilling-and-reconstruction">Base classes for Gapfilling and Reconstruction</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.omics.html">Omics Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.tasks.html">Tasks Assessment Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.utilities.html">Utilities module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.validation.html">Validation Module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Troppo</a></li>
+          <li class="breadcrumb-item"><a href="troppo.methods.html">Methods module</a></li>
+      <li class="breadcrumb-item active">Gapfilling Methods</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/troppo.methods.gapfill.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="gapfilling-methods">
+<h1>Gapfilling Methods<a class="headerlink" href="#gapfilling-methods" title="Permalink to this heading"></a></h1>
+<section id="module-troppo.methods.gapfill.consensus">
+<span id="combinatorial-gapfilling-algorithm"></span><h2>Combinatorial Gapfilling Algorithm<a class="headerlink" href="#module-troppo.methods.gapfill.consensus" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.consensus.CombinatorialGapfill">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.gapfill.consensus.</span></span><span class="sig-name descname"><span class="pre">CombinatorialGapfill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">template_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tasks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_acceptable_tasks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/consensus.html#CombinatorialGapfill"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.consensus.CombinatorialGapfill" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This Class uses a combinatorial gap-filling algorithm to remove reactions to the final model</p>
+<section id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>template_model<span class="classifier">dict</span></dt><dd><p>A dictionary containing the template model. Must contain {S, lb, ub} and possibly rx_names/met_names.</p>
+</dd>
+<dt>task_dict<span class="classifier">dict</span></dt><dd><p>A dictionary containing the tasks that need to be completed by the final model.</p>
+</dd>
+<dt>min_acceptable_tasks<span class="classifier">int or float (default: 0.5)</span></dt><dd><p>The minimum number of tasks that need to be completed by the final model. If an integer is provided,
+this is the minimum number of tasks that need to be completed. If a float is provided, this is the
+minimum percentage of tasks.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.consensus.CombinatorialGapfill.build_final_model">
+<span class="sig-name descname"><span class="pre">build_final_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partials</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_from</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lost_metabolic_tasks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lost_reaction_sets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validators</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">set</span></span></span><a class="reference internal" href="_modules/troppo/methods/gapfill/consensus.html#CombinatorialGapfill.build_final_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.consensus.CombinatorialGapfill.build_final_model" title="Permalink to this definition"></a></dt>
+<dd><p>This method builds the final model by adding reactions to the partial model that completes the most tasks.</p>
+<section id="id1">
+<h4>Parameters<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>partials: dict</dt><dd><p>A dictionary containing the partial models.</p>
+</dd>
+<dt>start_from: int</dt><dd><p>The index of the partial model to start from.</p>
+</dd>
+<dt>lost_metabolic_tasks: dict</dt><dd><p>A dictionary containing the tasks that were lost when a reaction was removed from the model.</p>
+</dd>
+<dt>lost_reaction_sets: dict</dt><dd><p>A dictionary containing the reactions that were removed from the model.</p>
+</dd>
+<dt>validators: dict</dt><dd><p>A dictionary containing the TaskValidator instances.</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h4>Returns<a class="headerlink" href="#returns" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>final_model: set</dt><dd><p>A set containing the indices of the reactions that are present in the final model.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.consensus.CombinatorialGapfill.gapfill">
+<span class="sig-name descname"><span class="pre">gapfill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rx_presences</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterable</span></span></span><a class="reference internal" href="_modules/troppo/methods/gapfill/consensus.html#CombinatorialGapfill.gapfill"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.consensus.CombinatorialGapfill.gapfill" title="Permalink to this definition"></a></dt>
+<dd><p>This method performs gap-filling to build the final model.</p>
+<section id="id2">
+<h4>Parameters<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>rx_presences: list</dt><dd><p>A list containing the indices of the reactions that are present in the model.</p>
+</dd>
+</dl>
+</section>
+<section id="id3">
+<h4>Returns<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>final_model: list</dt><dd><p>A list containing the indices of the reactions that are present in the final model.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.consensus.CombinatorialGapfill.generate_partial_models">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_partial_models</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rx_presences</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/troppo/methods/gapfill/consensus.html#CombinatorialGapfill.generate_partial_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.consensus.CombinatorialGapfill.generate_partial_models" title="Permalink to this definition"></a></dt>
+<dd><p>Generates partial models from the presence/absence of reactions in the template model.</p>
+<section id="id4">
+<h4>Parameters<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>rx_presences: list</dt><dd><p>A list containing the indices of the reactions that are present in the model.</p>
+</dd>
+</dl>
+</section>
+<section id="id5">
+<h4>Returns<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>partial_models: dict</dt><dd><p>A dictionary containing the partial models.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.consensus.CombinatorialGapfill.is_valid_model">
+<span class="sig-name descname"><span class="pre">is_valid_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tasks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ko</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="troppo.tasks.html#troppo.tasks.core.TaskEvaluator" title="troppo.tasks.core.TaskEvaluator"><span class="pre">TaskEvaluator</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/troppo/methods/gapfill/consensus.html#CombinatorialGapfill.is_valid_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.consensus.CombinatorialGapfill.is_valid_model" title="Permalink to this definition"></a></dt>
+<dd><p>This method checks if a model is valid by testing the presence of the tasks after removing a reaction.</p>
+<section id="id6">
+<h4>Parameters<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>tasks: set</dt><dd><p>A set containing the indices of the tasks to be tested.</p>
+</dd>
+<dt>ko: int</dt><dd><p>The index of the reaction to be knocked out.</p>
+</dd>
+<dt>validator: TaskEvaluator</dt><dd><p>A TaskEvaluator instance.</p>
+</dd>
+</dl>
+</section>
+<section id="id7">
+<h4>Returns<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>valid: bool</dt><dd><p>A boolean indicating if the model is valid.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+<section id="elementary-flux-mode-gapfilling-algorithm">
+<h2>Elementary Flux Mode Gapfilling Algorithm<a class="headerlink" href="#elementary-flux-mode-gapfilling-algorithm" title="Permalink to this heading"></a></h2>
+<span class="target" id="module-troppo.methods.gapfill.efm"></span><dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.efm.EFMGapfill">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.gapfill.efm.</span></span><span class="sig-name descname"><span class="pre">EFMGapfill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ub</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.methods.gapfill.efm.EFMGapfillProperties" title="troppo.methods.gapfill.efm.EFMGapfillProperties"><span class="pre">EFMGapfillProperties</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/efm.html#EFMGapfill"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.efm.EFMGapfill" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.GapfillAlgorithm" title="troppo.methods.base.GapfillAlgorithm"><code class="xref py py-class docutils literal notranslate"><span class="pre">GapfillAlgorithm</span></code></a></p>
+<p>Gap-filling algorithm based on the KShortestEFMAlgorithm.</p>
+<section id="id8">
+<h3>Parameters:<a class="headerlink" href="#id8" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>S: ndarray</dt><dd><p>Stoichiometric matrix.</p>
+</dd>
+<dt>lb: ndarray</dt><dd><p>Lower bounds.</p>
+</dd>
+<dt>ub: ndarray</dt><dd><p>Upper bounds.</p>
+</dd>
+<dt>properties: EFMGapfillProperties</dt><dd><p>Properties for the algorithm.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.efm.EFMGapfill.gapfill">
+<span class="sig-name descname"><span class="pre">gapfill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">avbl_fluxes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lsystem_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterable</span></span></span><a class="reference internal" href="_modules/troppo/methods/gapfill/efm.html#EFMGapfill.gapfill"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.efm.EFMGapfill.gapfill" title="Permalink to this definition"></a></dt>
+<dd><p>Gap-filling algorithm based on the KShortestEFMAlgorithm.</p>
+<section id="id9">
+<h4>Parameters<a class="headerlink" href="#id9" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>avbl_fluxes: list</dt><dd><p>Available fluxes.</p>
+</dd>
+<dt>lsystem_args: dict</dt><dd><p>Dictionary of arguments to be passed to the IrreversibleLinearPatternSystem.</p>
+</dd>
+<dt>solver: str</dt><dd><p>Solver to be used by the IrreversibleLinearPatternSystem.</p>
+</dd>
+</dl>
+</section>
+<section id="id10">
+<h4>Returns<a class="headerlink" href="#id10" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>enumerator: Iterable</dt><dd><p>Enumerator for the EFM Gap-filling algorithm.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.efm.EFMGapfill.get_enumerator">
+<span class="sig-name descname"><span class="pre">get_enumerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ub</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">avbl_fluxes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lsystem_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterable</span></span></span><a class="reference internal" href="_modules/troppo/methods/gapfill/efm.html#EFMGapfill.get_enumerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.efm.EFMGapfill.get_enumerator" title="Permalink to this definition"></a></dt>
+<dd><p>Get the enumerator for the EFM Gap-filling algorithm.</p>
+<section id="id11">
+<h4>Parameters<a class="headerlink" href="#id11" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>S: ndarray</dt><dd><p>Stoichiometric matrix.</p>
+</dd>
+<dt>lb: ndarray</dt><dd><p>Lower bounds.</p>
+</dd>
+<dt>ub: ndarray</dt><dd><p>Upper bounds.</p>
+</dd>
+<dt>avbl_fluxes: list</dt><dd><p>Available fluxes.</p>
+</dd>
+<dt>solver: str</dt><dd><p>Solver to be used by the IrreversibleLinearPatternSystem.</p>
+</dd>
+<dt>lsystem_args: dict</dt><dd><p>Dictionary of arguments to be passed to the IrreversibleLinearPatternSystem.</p>
+</dd>
+</dl>
+</section>
+<section id="id12">
+<h4>Returns<a class="headerlink" href="#id12" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>enumerator: Iterable</dt><dd><p>Enumerator for the EFM Gap-filling algorithm.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.efm.EFMGapfill.properties_class">
+<span class="sig-name descname"><span class="pre">properties_class</span></span><a class="headerlink" href="#troppo.methods.gapfill.efm.EFMGapfill.properties_class" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <a class="reference internal" href="#troppo.methods.gapfill.efm.EFMGapfillProperties" title="troppo.methods.gapfill.efm.EFMGapfillProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">EFMGapfillProperties</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.efm.EFMGapfill.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/troppo/methods/gapfill/efm.html#EFMGapfill.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.efm.EFMGapfill.run" title="Permalink to this definition"></a></dt>
+<dd><p>Run the EFM Gap-filling algorithm.</p>
+<section id="id13">
+<h4>Returns<a class="headerlink" href="#id13" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>result: list</dt><dd><p>Indices of active indicator variables (maps with variables on the original stoichiometric matrix)</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.efm.EFMGapfillProperties">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.gapfill.efm.</span></span><span class="sig-name descname"><span class="pre">EFMGapfillProperties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">avbl_fluxes:</span> <span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lsystem_args:</span> <span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'CPLEX'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kshproperties:</span> <span class="pre">~cobamp.algorithms.kshortest.KShortestProperties</span> <span class="pre">=</span> <span class="pre">N_THREADS</span> <span class="pre">=</span> <span class="pre">0</span> <span class="pre">FORCE_NON_CANCEL</span> <span class="pre">=</span> <span class="pre">True</span> <span class="pre">BIGMVALUE</span> <span class="pre">=</span> <span class="pre">1000000.0</span> <span class="pre">BIGM_CONSTS</span> <span class="pre">=</span> <span class="pre">True</span> <span class="pre">MAXSOLUTIONS</span> <span class="pre">=</span> <span class="pre">1</span> <span class="pre">TIMELIMIT</span> <span class="pre">=</span> <span class="pre">0</span> <span class="pre">METHOD</span> <span class="pre">=</span> <span class="pre">ITERATE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/efm.html#EFMGapfillProperties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.efm.EFMGapfillProperties" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.GapfillProperties" title="troppo.methods.base.GapfillProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">GapfillProperties</span></code></a></p>
+<p>Properties for the EFM Gap-filling algorithm.</p>
+<section id="id14">
+<h3>Parameters:<a class="headerlink" href="#id14" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>avbl_fluxes: list</dt><dd><p>List of available fluxes.</p>
+</dd>
+<dt>lsystem_args: dict</dt><dd><p>Dictionary of arguments to be passed to the IrreversibleLinearPatternSystem.</p>
+</dd>
+<dt>solver: str</dt><dd><p>Solver to be used by the IrreversibleLinearPatternSystem.</p>
+</dd>
+<dt>kshproperties: KShortestProperties</dt><dd><p>Properties for the KShortestEFMAlgorithm.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+<section id="module-troppo.methods.gapfill.fastcc">
+<span id="fastcc-gapfilling-algorithm"></span><h2>FastCC Gapfilling Algorithm<a class="headerlink" href="#module-troppo.methods.gapfill.fastcc" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.fastcc.FastCC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.gapfill.fastcc.</span></span><span class="sig-name descname"><span class="pre">FastCC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ub</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/fastcc.html#FastCC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.fastcc.FastCC" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.reconstruction.html#troppo.methods.reconstruction.fastcore.FASTcore" title="troppo.methods.reconstruction.fastcore.FASTcore"><code class="xref py py-class docutils literal notranslate"><span class="pre">FASTcore</span></code></a></p>
+<p>FASTCC gap-filling method for the reconstruction of metabolic models using the FASTcore algorithm.</p>
+<section id="id15">
+<h3>Parameters<a class="headerlink" href="#id15" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>S<span class="classifier">numpy.ndarray</span></dt><dd><p>The stoichiometric matrix of the model.</p>
+</dd>
+<dt>lb<span class="classifier">numpy.ndarray</span></dt><dd><p>The lower bounds of the model.</p>
+</dd>
+<dt>ub<span class="classifier">numpy.ndarray</span></dt><dd><p>The upper bounds of the model.</p>
+</dd>
+<dt>properties<span class="classifier">dict</span></dt><dd><p>The properties of the model.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.fastcc.FastCC.fastcc">
+<span class="sig-name descname"><span class="pre">fastcc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/fastcc.html#FastCC.fastcc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.fastcc.FastCC.fastcc" title="Permalink to this definition"></a></dt>
+<dd><p>FASTCC algorithm.</p>
+<section id="id16">
+<h4>Returns<a class="headerlink" href="#id16" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>self.A<span class="classifier">numpy.ndarray</span></dt><dd><p>The set of reactions that are flux consistent.</p>
+</dd>
+<dt>self.V<span class="classifier">numpy.ndarray</span></dt><dd><p>The flux vectors of the flux consistent reactions.</p>
+</dd>
+<dt>self.incI<span class="classifier">numpy.ndarray</span></dt><dd><p>The set of irreversible reactions that are flux inconsistent.</p>
+</dd>
+<dt>self.irrev_reverse<span class="classifier">numpy.ndarray</span></dt><dd><p>The set of irreversible reactions that are in reverse direction.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.fastcc.FastCC.prepocessing">
+<span class="sig-name descname"><span class="pre">prepocessing</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/fastcc.html#FastCC.prepocessing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.fastcc.FastCC.prepocessing" title="Permalink to this definition"></a></dt>
+<dd><p>Preprocessing of the model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.fastcc.FastCC.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/fastcc.html#FastCC.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.fastcc.FastCC.run" title="Permalink to this definition"></a></dt>
+<dd><p>Run Fastcore algorithm.</p>
+<section id="id17">
+<h4>Returns<a class="headerlink" href="#id17" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>list</dt><dd><p>List with the reaction IDs of the reactions in the resulting model</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.fastcc.FastCCProperties">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.gapfill.fastcc.</span></span><span class="sig-name descname"><span class="pre">FastCCProperties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flux_threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/fastcc.html#FastCCProperties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.fastcc.FastCCProperties" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="troppo.methods.html#troppo.methods.base.PropertiesReconstruction" title="troppo.methods.base.PropertiesReconstruction"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertiesReconstruction</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Properties for FastCC</p>
+<section id="id18">
+<h3>Parameters<a class="headerlink" href="#id18" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>flux_threshold<span class="classifier">float</span></dt><dd><p>Flux threshold</p>
+</dd>
+<dt>method<span class="classifier">str</span></dt><dd><p>‘original’ or ‘nonconvex’</p>
+</dd>
+<dt>solver<span class="classifier">str</span></dt><dd><p>Solver to use</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+<section id="module-troppo.methods.gapfill.pathway_analysis">
+<span id="pathway-analysis-gapfilling-algorithm"></span><h2>Pathway Analysis Gapfilling Algorithm<a class="headerlink" href="#module-troppo.methods.gapfill.pathway_analysis" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.pathway_analysis.CombinatorialEFMGapfill">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.gapfill.pathway_analysis.</span></span><span class="sig-name descname"><span class="pre">CombinatorialEFMGapfill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">template_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">media</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/pathway_analysis.html#CombinatorialEFMGapfill"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.pathway_analysis.CombinatorialEFMGapfill" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.pathway_analysis.CombinatorialEFMGapfill.combinatorial_gapfill">
+<span class="sig-name descname"><span class="pre">combinatorial_gapfill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_approval_fx</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/pathway_analysis.html#CombinatorialEFMGapfill.combinatorial_gapfill"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.pathway_analysis.CombinatorialEFMGapfill.combinatorial_gapfill" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.pathway_analysis.CombinatorialEFMGapfill.gapfill_partial_pair">
+<span class="sig-name descname"><span class="pre">gapfill_partial_pair</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">m0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_approval_fx</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/pathway_analysis.html#CombinatorialEFMGapfill.gapfill_partial_pair"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.pathway_analysis.CombinatorialEFMGapfill.gapfill_partial_pair" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.pathway_analysis.CombinatorialEFMGapfill.generate_partial_models">
+<span class="sig-name descname"><span class="pre">generate_partial_models</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_models</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/pathway_analysis.html#CombinatorialEFMGapfill.generate_partial_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.pathway_analysis.CombinatorialEFMGapfill.generate_partial_models" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.pathway_analysis.CombinatorialEFMGapfill.prune_model">
+<span class="sig-name descname"><span class="pre">prune_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_keep</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/pathway_analysis.html#CombinatorialEFMGapfill.prune_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.pathway_analysis.CombinatorialEFMGapfill.prune_model" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.pathway_analysis.SubEFMGapfill">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.methods.gapfill.pathway_analysis.</span></span><span class="sig-name descname"><span class="pre">SubEFMGapfill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">template_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_reactions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subset_forced_reactions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterative</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_threads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">big_m</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">big_m_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">at_most_n_sols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">populate_max_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/pathway_analysis.html#SubEFMGapfill"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.pathway_analysis.SubEFMGapfill" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Solve the gap-filling problem using an Elementary Flux Mode enumeration algorithm.</p>
+<section id="id19">
+<h3>Parameters<a class="headerlink" href="#id19" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>template_model: dict</dt><dd><p>The template model for the gap-filling problem. Must contain {S, lb, ub} and possibly rx_names/met_names.</p>
+</dd>
+<dt>task_reactions</dt><dd><p>Contains the task reactions.</p>
+</dd>
+<dt>subset_forced_reactions</dt><dd><p>Contains the indexes of the forced reactions’ subset.</p>
+</dd>
+<dt>iterative: bool</dt><dd><p>Flag to determine whether the k-shortest algorithm behaviour.</p>
+</dd>
+<dt>max_time: int</dt><dd><p>Maximum time for the algorithm to run.</p>
+</dd>
+<dt>max_threads: int</dt><dd><p>Maximum number of threads to be used.</p>
+</dd>
+<dt>big_m: bool</dt><dd><p>Flag to determine whether to use big-M constraints.</p>
+</dd>
+<dt>big_m_value: int</dt><dd><p>Value of the big-M constraints.</p>
+</dd>
+<dt>solver: str</dt><dd><p>Solver to be used by the IrreversibleLinearPatternSystem.</p>
+</dd>
+<dt>at_most_n_sols: int</dt><dd><p>Maximum number of solutions to be returned.</p>
+</dd>
+<dt>populate_max_size: int</dt><dd><p>Maximum size of the population.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.pathway_analysis.SubEFMGapfill.gapfill">
+<span class="sig-name descname"><span class="pre">gapfill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">missing_set</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forced</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_forced</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/pathway_analysis.html#SubEFMGapfill.gapfill"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.pathway_analysis.SubEFMGapfill.gapfill" title="Permalink to this definition"></a></dt>
+<dd><p>Gapfill the model using the task reactions and the subset of forced reactions.</p>
+<section id="id20">
+<h4>Parameters<a class="headerlink" href="#id20" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>missing_set</dt><dd><p>Dictionary containing the indexes of the missing reactions.</p>
+</dd>
+<dt>forced:</dt><dd><p>Dictionary containing the indexes of the forced reactions.</p>
+</dd>
+<dt>non_forced:</dt><dd><p>Dictionary containing the indexes of the non-forced reactions.</p>
+</dd>
+</dl>
+</section>
+<section id="id21">
+<h4>Returns<a class="headerlink" href="#id21" title="Permalink to this heading"></a></h4>
+<p>List of solutions.</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="troppo.methods.gapfill.pathway_analysis.simulate_context">
+<span class="sig-prename descclassname"><span class="pre">troppo.methods.gapfill.pathway_analysis.</span></span><span class="sig-name descname"><span class="pre">simulate_context</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sense</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sol_approval_fx</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/methods/gapfill/pathway_analysis.html#simulate_context"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.methods.gapfill.pathway_analysis.simulate_context" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="troppo.methods.html" class="btn btn-neutral float-left" title="Methods module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="troppo.methods.reconstruction.html" class="btn btn-neutral float-right" title="Reconstruction Methods" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

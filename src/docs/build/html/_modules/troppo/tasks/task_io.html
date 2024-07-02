@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>troppo.tasks.task_io &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">Troppo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">troppo.tasks.task_io</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for troppo.tasks.task_io</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">abc</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">TextIOBase</span>
+<span class="kn">from</span> <span class="nn">json</span> <span class="kn">import</span> <span class="n">JSONDecoder</span><span class="p">,</span> <span class="n">JSONEncoder</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">troppo.tasks.core</span> <span class="kn">import</span> <span class="n">Task</span>
+
+
+<div class="viewcode-block" id="TaskIO"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.task_io.TaskIO">[docs]</a><span class="k">class</span> <span class="nc">TaskIO</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">	</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Abstract class for reading and writing tasks to and from files.</span>
+
+<span class="sd">	&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="TaskIO.read_task"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.task_io.TaskIO.read_task">[docs]</a>	<span class="k">def</span> <span class="nf">read_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffer_or_path</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="n">TextIOBase</span><span class="p">,</span> <span class="n">binary_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Reads a task from a file or buffer. The file or buffer must be in the format specified by the subclass.</span>
+
+<span class="sd">		Parameters</span>
+<span class="sd">		----------</span>
+<span class="sd">		buffer_or_path: str or TextIOBase</span>
+<span class="sd">			The path to the file or a buffer containing the task</span>
+<span class="sd">		binary_mode: bool</span>
+<span class="sd">			Whether to open the file in binary mode. Only relevant for file paths.</span>
+
+<span class="sd">		Returns</span>
+<span class="sd">		-------</span>
+<span class="sd">		list of Task objects</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">buffer_or_path</span><span class="p">,</span> <span class="n">TextIOBase</span><span class="p">):</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_from_string</span><span class="p">(</span><span class="n">buffer_or_path</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+		<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">buffer_or_path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+			<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">buffer_or_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;b&#39;</span> <span class="k">if</span> <span class="n">binary_mode</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">))</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+				<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_from_string</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Invalid buffer or path&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TaskIO.write_task"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.task_io.TaskIO.write_task">[docs]</a>	<span class="k">def</span> <span class="nf">write_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffer_or_path</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="n">TextIOBase</span><span class="p">,</span> <span class="n">task_arg</span><span class="p">:</span> <span class="n">Task</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">,</span>
+				   <span class="n">binary_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Writes a task to a file or buffer. The file or buffer will be in the format specified by the subclass.</span>
+
+<span class="sd">		Parameters</span>
+<span class="sd">		----------</span>
+<span class="sd">		buffer_or_path: str or TextIOBase</span>
+<span class="sd">			The path to the file or a buffer containing the task</span>
+<span class="sd">		task_arg: Task or list of Task</span>
+<span class="sd">			The task or tasks to write</span>
+<span class="sd">		binary_mode: bool</span>
+<span class="sd">			Whether to open the file in binary mode. Only relevant for file paths.</span>
+
+<span class="sd">		Returns</span>
+<span class="sd">		-------</span>
+<span class="sd">		int or None</span>
+<span class="sd">			The number of bytes written to the file or buffer. Only relevant for file paths.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">task_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_to_string</span><span class="p">(</span><span class="n">task_arg</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">buffer_or_path</span><span class="p">,</span> <span class="n">TextIOBase</span><span class="p">):</span>
+			<span class="n">buffer_or_path</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">task_string</span><span class="p">)</span>
+		<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">buffer_or_path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+			<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">buffer_or_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;b&#39;</span> <span class="k">if</span> <span class="n">binary_mode</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">))</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+				<span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">task_string</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Invalid buffer or path&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TaskIO.write_to_string"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.task_io.TaskIO.write_to_string">[docs]</a>	<span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+	<span class="k">def</span> <span class="nf">write_to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+		<span class="k">return</span> <span class="s1">&#39;&#39;</span></div>
+
+<div class="viewcode-block" id="TaskIO.read_from_string"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.task_io.TaskIO.read_from_string">[docs]</a>	<span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+	<span class="k">def</span> <span class="nf">read_from_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
+		<span class="k">return</span> <span class="p">[]</span></div></div>
+
+
+<div class="viewcode-block" id="JSONTaskIO"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.task_io.JSONTaskIO">[docs]</a><span class="k">class</span> <span class="nc">JSONTaskIO</span><span class="p">(</span><span class="n">TaskIO</span><span class="p">):</span>
+<span class="w">	</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	JSONTaskIO is a TaskIO subclass that reads and writes tasks to and from JSON files.</span>
+
+<span class="sd">	&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="JSONTaskIO.read_from_string"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.task_io.JSONTaskIO.read_from_string">[docs]</a>	<span class="k">def</span> <span class="nf">read_from_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Reads a task from a JSON string. The string must be in the format specified by the subclass.</span>
+
+<span class="sd">		Parameters</span>
+<span class="sd">		----------</span>
+<span class="sd">		string: str</span>
+
+<span class="sd">		Returns</span>
+<span class="sd">		-------</span>
+<span class="sd">		list of Task objects</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">def</span> <span class="nf">sanity_check</span><span class="p">(</span><span class="n">json_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">			</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">			Checks if the keys in the JSON file are valid and have the correct type. If not, the default value is used.</span>
+
+<span class="sd">			Parameters</span>
+<span class="sd">			----------</span>
+<span class="sd">			json_dict: dict</span>
+<span class="sd">				The dictionary to check</span>
+
+<span class="sd">			Returns</span>
+<span class="sd">			-------</span>
+<span class="sd">			dict</span>
+<span class="sd">				The dictionary with the correct keys and types</span>
+
+<span class="sd">			&quot;&quot;&quot;</span>
+			<span class="n">types</span><span class="p">,</span> <span class="n">defaults</span> <span class="o">=</span> <span class="n">Task</span><span class="o">.</span><span class="n">__types__</span><span class="p">,</span> <span class="n">Task</span><span class="o">.</span><span class="vm">__defaults__</span>
+			<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">defaults</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">json_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+					<span class="n">str_msg</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;Key&#39;</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="s1">&#39;has no value.&#39;</span><span class="p">,</span> <span class="s1">&#39;Setting default value =&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">defaults</span><span class="p">[</span><span class="n">key</span><span class="p">])])</span>
+					<span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">str_msg</span><span class="p">)</span>
+					<span class="n">json_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">defaults</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+				<span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">json_dict</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="o">!=</span> <span class="n">types</span><span class="p">[</span><span class="n">key</span><span class="p">]:</span>
+					<span class="n">str_msg</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+						<span class="p">[</span><span class="s1">&#39;Key&#39;</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="s1">&#39;with value=&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">json_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]),</span> <span class="s1">&#39;does not match the expected type.&#39;</span><span class="p">,</span>
+						 <span class="s1">&#39;Setting default value =&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">defaults</span><span class="p">[</span><span class="n">key</span><span class="p">])])</span>
+					<span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">str_msg</span><span class="p">)</span>
+					<span class="n">json_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">defaults</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+			<span class="k">return</span> <span class="n">json_dict</span>
+
+		<span class="n">json_dict</span> <span class="o">=</span> <span class="n">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+			<span class="k">return</span> <span class="p">[</span><span class="n">Task</span><span class="p">(</span><span class="o">**</span><span class="n">sanity_check</span><span class="p">(</span><span class="n">s</span><span class="p">))</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">json_dict</span><span class="p">]</span>
+		<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+			<span class="k">return</span> <span class="p">[</span><span class="n">Task</span><span class="p">(</span><span class="o">**</span><span class="n">sanity_check</span><span class="p">(</span><span class="n">json_dict</span><span class="p">))]</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;The supplied JSON file does not have a proper structure&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="JSONTaskIO.write_to_string"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.task_io.JSONTaskIO.write_to_string">[docs]</a>	<span class="k">def</span> <span class="nf">write_to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_arg</span><span class="p">:</span> <span class="n">Task</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Writes a task to a JSON string. The string will be in the format specified by the subclass.</span>
+
+<span class="sd">		Parameters</span>
+<span class="sd">		----------</span>
+<span class="sd">		task_arg: Task or list of Task</span>
+
+<span class="sd">		Returns</span>
+<span class="sd">		-------</span>
+<span class="sd">		str</span>
+<span class="sd">			The JSON string</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="c1">## TODO: Make this less hardcoded</span>
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task_arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">set</span><span class="p">)):</span>
+			<span class="n">d</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">task</span><span class="p">:</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">dv</span> <span class="ow">in</span> <span class="n">Task</span><span class="o">.</span><span class="vm">__defaults__</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="o">!=</span> <span class="n">dv</span><span class="p">}</span>
+			<span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">task_arg</span><span class="p">]</span>
+			<span class="k">return</span> <span class="n">JSONEncoder</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
+		<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task_arg</span><span class="p">,</span> <span class="n">Task</span><span class="p">):</span>
+			<span class="k">return</span> <span class="n">JSONEncoder</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">task_arg</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;task_arg is not an iterable containing Task objects or a Task object itself.&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ExcelTaskIO"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.task_io.ExcelTaskIO">[docs]</a><span class="k">class</span> <span class="nc">ExcelTaskIO</span><span class="p">(</span><span class="n">TaskIO</span><span class="p">):</span>
+<span class="w">	</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	ExcelTaskIO is a TaskIO subclass that reads and writes tasks to and from Excel files.</span>
+
+<span class="sd">	&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="ExcelTaskIO.read_task"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.task_io.ExcelTaskIO.read_task">[docs]</a>	<span class="k">def</span> <span class="nf">read_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffer_or_path</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="n">TextIOBase</span><span class="p">,</span> <span class="n">binary_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Reads a task from an Excel file or buffer. The file or buffer must be in the format specified by the subclass.</span>
+
+<span class="sd">		Parameters</span>
+<span class="sd">		----------</span>
+<span class="sd">		buffer_or_path: str or TextIOBase</span>
+<span class="sd">			The path to the file or a buffer containing the task</span>
+<span class="sd">		binary_mode: bool</span>
+<span class="sd">			Whether to open the file in binary mode. Only relevant for file paths.</span>
+
+<span class="sd">		Returns</span>
+<span class="sd">		-------</span>
+<span class="sd">		list of Task objects</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">read_task</span><span class="p">(</span><span class="n">buffer_or_path</span><span class="p">,</span> <span class="n">binary_mode</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExcelTaskIO.read_from_string"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.task_io.ExcelTaskIO.read_from_string">[docs]</a>	<span class="k">def</span> <span class="nf">read_from_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Reads a task from an Excel string. The string must be in the format specified by the subclass.</span>
+
+<span class="sd">		Parameters</span>
+<span class="sd">		----------</span>
+<span class="sd">		string: str</span>
+
+<span class="sd">		Returns</span>
+<span class="sd">		-------</span>
+<span class="sd">		list of Task objects</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">shd_fail</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;SHOULD FAIL&#39;</span><span class="p">]</span>
+		<span class="n">bounds</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;LB&#39;</span><span class="p">,</span> <span class="s1">&#39;UB&#39;</span><span class="p">]</span>
+		<span class="n">inflows</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;IN &#39;</span> <span class="o">+</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">bounds</span><span class="p">]</span>
+		<span class="n">outflows</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;OUT &#39;</span> <span class="o">+</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">bounds</span><span class="p">]</span>
+		<span class="n">eqs</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;EQU &#39;</span> <span class="o">+</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">bounds</span><span class="p">]</span>
+		<span class="n">flx_const</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;CHANGED &#39;</span> <span class="o">+</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;RXN&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">bounds</span><span class="p">]</span>
+
+		<span class="n">core_info</span> <span class="o">=</span> <span class="n">shd_fail</span> <span class="o">+</span> <span class="n">inflows</span> <span class="o">+</span> <span class="n">outflows</span> <span class="o">+</span> <span class="n">eqs</span> <span class="o">+</span> <span class="n">flx_const</span>
+		<span class="n">tdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;xlrd&#39;</span><span class="p">)</span>
+		<span class="n">valid_tdf</span> <span class="o">=</span> <span class="n">tdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">tdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;#&#39;</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span>
+
+		<span class="c1"># create unique ids</span>
+		<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+		<span class="n">id_counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+		<span class="n">lbs</span><span class="p">,</span> <span class="n">ubs</span> <span class="o">=</span> <span class="p">[[</span><span class="n">inflows</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">outflows</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">eqs</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]]</span>
+		<span class="n">valid_tdf</span><span class="p">[</span><span class="n">lbs</span><span class="p">]</span> <span class="o">=</span> <span class="n">valid_tdf</span><span class="p">[</span><span class="n">lbs</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+		<span class="n">valid_tdf</span><span class="p">[</span><span class="n">ubs</span><span class="p">]</span> <span class="o">=</span> <span class="n">valid_tdf</span><span class="p">[</span><span class="n">ubs</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+
+		<span class="n">real_id</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">valid_tdf</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+			<span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+				<span class="n">id_counter</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+				<span class="n">real_id</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">id_counter</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">real_id</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">real_id</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+		<span class="n">valid_tdf</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">real_id</span>
+
+		<span class="n">task_info</span> <span class="o">=</span> <span class="p">{}</span>
+		<span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">rows</span> <span class="ow">in</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">valid_tdf</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;ID&#39;</span><span class="p">)):</span>
+			<span class="n">annotations</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">core_info</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span> \
+				<span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">x</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">]))</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+			<span class="n">task_info</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;annotations&#39;</span><span class="p">:</span> <span class="n">annotations</span><span class="p">}</span>
+			<span class="n">task_info</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task_id</span>
+			<span class="k">for</span> <span class="n">dtname</span><span class="p">,</span> <span class="n">datatype</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s1">&#39;inflow_dict&#39;</span><span class="p">,</span> <span class="s1">&#39;outflow_dict&#39;</span><span class="p">,</span> <span class="s1">&#39;reaction_dict&#39;</span><span class="p">,</span> <span class="s1">&#39;flux_constraints&#39;</span><span class="p">],</span>
+										<span class="p">[</span><span class="n">inflows</span><span class="p">,</span> <span class="n">outflows</span><span class="p">,</span> <span class="n">eqs</span><span class="p">,</span> <span class="n">flx_const</span><span class="p">]):</span>
+				<span class="n">task_info</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="n">dtname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+				<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">[</span><span class="n">datatype</span><span class="p">]</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+					<span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+						<span class="n">task_info</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="n">dtname</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">)})</span>
+			<span class="n">task_info</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">task_info</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">}</span>
+			<span class="c1"># parse reactions</span>
+			<span class="k">if</span> <span class="s1">&#39;reaction_dict&#39;</span> <span class="ow">in</span> <span class="n">task_info</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+				<span class="n">new_reactions_dict</span> <span class="o">=</span> <span class="p">{}</span>
+				<span class="k">for</span> <span class="n">rxstr</span><span class="p">,</span> <span class="n">bounds</span> <span class="ow">in</span> <span class="n">task_info</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="s1">&#39;reaction_dict&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+					<span class="k">if</span> <span class="s1">&#39;&lt;=&gt;&#39;</span> <span class="ow">in</span> <span class="n">rxstr</span><span class="p">:</span>
+						<span class="n">delim</span><span class="p">,</span> <span class="n">rev</span> <span class="o">=</span> <span class="s1">&#39;&lt;=&gt;&#39;</span><span class="p">,</span> <span class="kc">True</span>
+					<span class="k">else</span><span class="p">:</span>
+						<span class="n">delim</span><span class="p">,</span> <span class="n">rev</span> <span class="o">=</span> <span class="s1">&#39;=&gt;&#39;</span><span class="p">,</span> <span class="kc">False</span>
+					<span class="n">rctns</span><span class="p">,</span> <span class="n">prods</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">rxstr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">delim</span><span class="p">))</span>
+					<span class="n">coef_dict</span> <span class="o">=</span> <span class="p">{}</span>
+					<span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="n">rctns</span><span class="p">,</span> <span class="n">prods</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]):</span>
+						<span class="n">coef_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+							<span class="p">{</span><span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span> <span class="o">*</span> <span class="n">z</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span>
+							 <span class="p">[</span><span class="n">y</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; + &#39;</span><span class="p">)]})</span>
+					<span class="n">new_reactions_dict</span><span class="p">[</span><span class="s1">&#39;reaction_&#39;</span> <span class="o">+</span> <span class="n">task_id</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">new_reactions_dict</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span>
+						<span class="n">coef_dict</span><span class="p">,</span> <span class="n">bounds</span><span class="p">)</span>
+				<span class="n">task_info</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="s1">&#39;reaction_dict&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_reactions_dict</span>
+			<span class="n">task_info</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="s1">&#39;should_fail&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="n">shd_fail</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+		<span class="k">return</span> <span class="p">[</span><span class="n">Task</span><span class="p">(</span><span class="o">**</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">task_info</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span></div>
+
+<div class="viewcode-block" id="ExcelTaskIO.write_to_string"><a class="viewcode-back" href="../../../troppo.tasks.html#troppo.tasks.task_io.ExcelTaskIO.write_to_string">[docs]</a>	<span class="k">def</span> <span class="nf">write_to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Task</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Writes a task to an Excel string. The string will be in the format specified by the subclass.</span>
+
+<span class="sd">		Parameters</span>
+<span class="sd">		----------</span>
+<span class="sd">		task: Task or list of Task</span>
+
+<span class="sd">		Returns</span>
+<span class="sd">		-------</span>
+<span class="sd">		str</span>
+<span class="sd">			The Excel string</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Not yet implemented!&#39;</span><span class="p">)</span></div></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+	<span class="c1"># jtio = JSONTaskIO()</span>
+	<span class="c1"># tasks = jtio.read_task(&#39;resources/generic_models/task_test.json&#39;)</span>
+	<span class="c1"># jtio.write_task(&#39;resources/generic_models/task_write_test.json&#39;, tasks)</span>
+
+	<span class="n">etio</span> <span class="o">=</span> <span class="n">ExcelTaskIO</span><span class="p">()</span>
+	<span class="n">tasks</span> <span class="o">=</span> <span class="n">etio</span><span class="o">.</span><span class="n">read_task</span><span class="p">(</span><span class="s1">&#39;shared/task_sets/metabolicTasks_Essential.xlsx&#39;</span><span class="p">)</span>
+	<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

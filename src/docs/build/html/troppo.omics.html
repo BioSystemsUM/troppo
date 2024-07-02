@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Omics Module &mdash; Troppo 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Readers for Omics data" href="troppo.omics.readers.html" />
+    <link rel="prev" title="Reconstruction Methods" href="troppo.methods.reconstruction.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Troppo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Troppo</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.methods.html">Methods module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Omics Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.readers.html">Readers for Omics data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-troppo.omics.core">Core module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.core.IdentifierMapping"><code class="docutils literal notranslate"><span class="pre">IdentifierMapping</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.core.OmicsContainer"><code class="docutils literal notranslate"><span class="pre">OmicsContainer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.core.OmicsDataMap"><code class="docutils literal notranslate"><span class="pre">OmicsDataMap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.core.OmicsMeasurementSet"><code class="docutils literal notranslate"><span class="pre">OmicsMeasurementSet</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.core.TabularContainer"><code class="docutils literal notranslate"><span class="pre">TabularContainer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.core.TypedOmicsMeasurementSet"><code class="docutils literal notranslate"><span class="pre">TypedOmicsMeasurementSet</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.core.has_valid_dims"><code class="docutils literal notranslate"><span class="pre">has_valid_dims()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-troppo.omics.gene_level_thresholding">Gene-level thresholding</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.gene_level_thresholding.GeneLevelThresholding"><code class="docutils literal notranslate"><span class="pre">GeneLevelThresholding</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-troppo.omics.id_converter">Gene ID converter</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.id_converter.idConverter"><code class="docutils literal notranslate"><span class="pre">idConverter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.id_converter.searchNomenclature"><code class="docutils literal notranslate"><span class="pre">searchNomenclature()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-troppo.omics.integration">Reaction-level integration of Omics data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.integration.AdjustedScoreIntegrationStrategy"><code class="docutils literal notranslate"><span class="pre">AdjustedScoreIntegrationStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.integration.ContinuousScoreIntegrationStrategy"><code class="docutils literal notranslate"><span class="pre">ContinuousScoreIntegrationStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.integration.CustomSelectionIntegrationStrategy"><code class="docutils literal notranslate"><span class="pre">CustomSelectionIntegrationStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.integration.DefaultCoreIntegrationStrategy"><code class="docutils literal notranslate"><span class="pre">DefaultCoreIntegrationStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.integration.ReactionProtectionMixin"><code class="docutils literal notranslate"><span class="pre">ReactionProtectionMixin</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.integration.ScoreIntegrationStrategy"><code class="docutils literal notranslate"><span class="pre">ScoreIntegrationStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troppo.omics.integration.ThresholdSelectionIntegrationStrategy"><code class="docutils literal notranslate"><span class="pre">ThresholdSelectionIntegrationStrategy</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.tasks.html">Tasks Assessment Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.utilities.html">Utilities module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.validation.html">Validation Module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Troppo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Troppo</a></li>
+      <li class="breadcrumb-item active">Omics Module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/troppo.omics.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="omics-module">
+<h1>Omics Module<a class="headerlink" href="#omics-module" title="Permalink to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="troppo.omics.readers.html">Readers for Omics data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troppo.omics.readers.html#module-troppo.omics.readers.generic">Generic Reader</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.readers.html#troppo.omics.readers.generic.GenericReader"><code class="docutils literal notranslate"><span class="pre">GenericReader</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.readers.html#troppo.omics.readers.generic.TabularReader"><code class="docutils literal notranslate"><span class="pre">TabularReader</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.omics.readers.html#module-troppo.omics.readers.hpa">HPA Reader</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.readers.html#troppo.omics.readers.hpa.HpaReader"><code class="docutils literal notranslate"><span class="pre">HpaReader</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troppo.omics.readers.html#module-troppo.omics.readers.microarray">Microarray Reader</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troppo.omics.readers.html#troppo.omics.readers.microarray.ProbeReader"><code class="docutils literal notranslate"><span class="pre">ProbeReader</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<section id="module-troppo.omics.core">
+<span id="core-module"></span><h2>Core module<a class="headerlink" href="#module-troppo.omics.core" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.core.IdentifierMapping">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.core.</span></span><span class="sig-name descname"><span class="pre">IdentifierMapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id_mapping_table</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#IdentifierMapping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.IdentifierMapping" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.IdentifierMapping.get_id_table">
+<span class="sig-name descname"><span class="pre">get_id_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#IdentifierMapping.get_id_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.IdentifierMapping.get_id_table" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.IdentifierMapping.map_ids">
+<span class="sig-name descname"><span class="pre">map_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#IdentifierMapping.map_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.IdentifierMapping.map_ids" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.omics.core.IdentifierMapping.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#troppo.omics.core.IdentifierMapping.name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.core.</span></span><span class="sig-name descname"><span class="pre">OmicsContainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">omicstype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nomenclature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>OmicsContainer class to be used for the creation of objects that store omics data and other useful information, such
+as its type, and the tissue condition from where this data was obtained.
+To successfully create an OmicsContainer object one must:</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li><p>create an OmicsContainer object providing: a) its omictype b) the tissue/patient condition</p></li>
+<li><p>Use its .load() method providing a previously created reader object (HpaReader, ProbeReader, GenericReader)</p></li>
+</ol>
+</div></blockquote>
+<dl class="simple">
+<dt>Once created this object can be transformed in several ways:</dt><dd><ol class="loweralpha simple">
+<li><p>Id conversion</p></li>
+<li><p>Value conversion</p></li>
+<li><p>Filtering by id, regular expressions, or values threshold</p></li>
+<li><p>Log transformation, or data normalization</p></li>
+</ol>
+</dd>
+</dl>
+<p>Main attribute is .data() which is a dictionary containing : {gene_id: Expression Value}</p>
+<section id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>otype: str</dt><dd><p>The type of omics data stored in the container</p>
+</dd>
+<dt>condition: str</dt><dd><p>The condition from where the data was obtained</p>
+</dd>
+<dt>data: dict</dt><dd><p>The data stored in the container</p>
+</dd>
+<dt>nomenclature: str</dt><dd><p>The nomenclature used for the gene ids</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.convertIds">
+<span class="sig-name descname"><span class="pre">convertIds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.convertIds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.convertIds" title="Permalink to this definition"></a></dt>
+<dd><p>Redefines the ids(keys) on the data attribute.</p>
+<section id="parameters">
+<h4>Parameters<a class="headerlink" href="#parameters" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>new:string</dt><dd><p>designation of the new id according to hgnc</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.convertValues">
+<span class="sig-name descname"><span class="pre">convertValues</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mapping</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.convertValues"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.convertValues" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the values in the exp_val field to different values based on a valid user supplied mapping.
+IMPORTANT: Will not work if _values contains NAs
+Mapping shall be a dictionary of either:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>old value (may it be string or numeric): new value (may it be string or numeric)</p></li>
+<li><p>tuple of (lower bound, upper bound) of old value: new value (numeric, string)</p></li>
+</ul>
+</div></blockquote>
+<section id="id1">
+<h4>Parameters<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>mapping: dict</dt><dd><p>a dictionary containing the mapping between the values to be converted and the desired values</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.dropNA">
+<span class="sig-name descname"><span class="pre">dropNA</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.dropNA"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.dropNA" title="Permalink to this definition"></a></dt>
+<dd><p>Removes every entry whose exp_val is NA</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.filterById">
+<span class="sig-name descname"><span class="pre">filterById</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regex</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#troppo.omics.core.OmicsContainer" title="troppo.omics.core.OmicsContainer"><span class="pre">OmicsContainer</span></a></span></span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.filterById"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.filterById" title="Permalink to this definition"></a></dt>
+<dd><p>Filters the data attribute to contain genes that match a regular expression or string supplied by the user</p>
+<section id="id2">
+<h4>Parameters<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>regex: string</dt><dd><p>regular expression or string to be contained in the Gene Symbol field of the data attr.</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h4>Returns<a class="headerlink" href="#returns" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>OmicsContainer:</dt><dd><p>a new OmicsContainer object is returned once this filter is applied. Original instance remains unchanged.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.filterByValue">
+<span class="sig-name descname"><span class="pre">filterByValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#troppo.omics.core.OmicsContainer" title="troppo.omics.core.OmicsContainer"><span class="pre">OmicsContainer</span></a></span></span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.filterByValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.filterByValue" title="Permalink to this definition"></a></dt>
+<dd><p>Filters the _values attribute to match a user defined filter
+above and under use &lt; and &gt; operators, while between uses &lt;= and &gt;=.</p>
+<section id="id3">
+<h4>Parameters<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>op: string</dt><dd><p>one of (above, under, between, oneof)</p>
+</dd>
+<dt>threshold: int, float, tuple, string</dt><dd><p>numeric threshold for above and under, tuple of (lowerbound, upperbound) for between, string
+for included discrete levels for levels operation</p>
+</dd>
+</dl>
+</section>
+<section id="id4">
+<h4>Returns<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>OmicsContainer:</dt><dd><p>a new OmicsContainer object is returned once this filter is applied. Original instance remains unchanged.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.get_Condition">
+<span class="sig-name descname"><span class="pre">get_Condition</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.get_Condition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.get_Condition" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.get_Data">
+<span class="sig-name descname"><span class="pre">get_Data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.get_Data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.get_Data" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.get_Nomenclature">
+<span class="sig-name descname"><span class="pre">get_Nomenclature</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.get_Nomenclature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.get_Nomenclature" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.get_OmicsType">
+<span class="sig-name descname"><span class="pre">get_OmicsType</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.get_OmicsType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.get_OmicsType" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.get_integrated_data_map">
+<span class="sig-name descname"><span class="pre">get_integrated_data_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_reader:</span> <span class="pre">~troppo.omics.readers.hpa.HpaReader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">and_func=&lt;built-in</span> <span class="pre">function</span> <span class="pre">min&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">or_func=&lt;built-in</span> <span class="pre">function</span> <span class="pre">max&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.get_integrated_data_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.get_integrated_data_map" title="Permalink to this definition"></a></dt>
+<dd><p>Function responsible for the integration of different omics data with a metabolic model loaded with framed package.
+Matches model ids for gene_ids, metabolites or reaction ids with those present in the omicsContainer object.</p>
+<section id="id5">
+<h4>Parameters<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>model_reader: HpaReader or ProbeReader or GenericReader</dt><dd><p>a cobamp AbstractModelObjectReader object</p>
+</dd>
+<dt>and_func:</dt><dd><p>the mathematical function to replace the “AND” operator present in the Gene-Protein-Rules</p>
+</dd>
+<dt>or_func:</dt><dd><p>the mathematical function to replace the “OR” operator present in the Gene-Protein-Rules</p>
+</dd>
+</dl>
+</section>
+<section id="id6">
+<h4>Returns<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>OmicsDataMap:</dt><dd><p>an OmicsDataMap object which contains the mapping between reactions/metabolites and its fluxes
+based on the supplied omics data.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.load" title="Permalink to this definition"></a></dt>
+<dd><p>Loads data into the OmicsContainer object. Data can be loaded from a dictionary or from a reader object.</p>
+<section id="id7">
+<h4>Parameters<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>arg: dict or reader object</dt><dd><p>The data to be loaded into the OmicsContainer object</p>
+</dd>
+<dt>kwargs: dict</dt><dd><p>The keyword arguments to be passed to the reader object</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.print_values">
+<span class="sig-name descname"><span class="pre">print_values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.print_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.print_values" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.set_condition">
+<span class="sig-name descname"><span class="pre">set_condition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">newCond</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.set_condition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.set_condition" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.set_data">
+<span class="sig-name descname"><span class="pre">set_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">newData</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.set_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.set_data" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.set_type">
+<span class="sig-name descname"><span class="pre">set_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">newType</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.set_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.set_type" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsContainer.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsContainer.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsContainer.transform" title="Permalink to this definition"></a></dt>
+<dd><p>Applies the func to the exp_values of the data attr.
+Only compatible with numerical container.</p>
+<section id="id8">
+<h4>Parameters<a class="headerlink" href="#id8" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>func: string</dt><dd><p>a function to be applied to the values of the container, either ‘norm’ or ‘logx’</p>
+</dd>
+</dl>
+<p>Original number = x
+Transformed number x’=log10(x)</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsDataMap">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.core.</span></span><span class="sig-name descname"><span class="pre">OmicsDataMap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mapType</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsDataMap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsDataMap" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Stores integrated omics data, matching a given metabolic model</p>
+<section id="id9">
+<h3>Attributes<a class="headerlink" href="#id9" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>_mapType: str</dt><dd><p>The type of map stored in the object</p>
+</dd>
+<dt>_scores: dict</dt><dd><p>The scores stored in the object</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsDataMap.get_scores">
+<span class="sig-name descname"><span class="pre">get_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsDataMap.get_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsDataMap.get_scores" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsDataMap.mapType">
+<span class="sig-name descname"><span class="pre">mapType</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsDataMap.mapType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsDataMap.mapType" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsDataMap.select">
+<span class="sig-name descname"><span class="pre">select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Number</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">set</span></span></span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsDataMap.select"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsDataMap.select" title="Permalink to this definition"></a></dt>
+<dd><p>Filtering the original reaction scores to be under or above a threshold. Above or under operations use the
+&gt;= and &lt;= operators</p>
+<section id="id10">
+<h4>Parameters<a class="headerlink" href="#id10" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>op: str</dt><dd><p>either “above” or “under” determining which scores shall be chosen</p>
+</dd>
+<dt>threshold: Number</dt><dd><p>either a float or an integer whether under or above all scores shall be chosen</p>
+</dd>
+</dl>
+</section>
+<section id="id11">
+<h4>Returns<a class="headerlink" href="#id11" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>set:</dt><dd><p>a set of reaction ids whose scores are above or under the threshold</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsDataMap.set_scores">
+<span class="sig-name descname"><span class="pre">set_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">newScores</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsDataMap.set_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsDataMap.set_scores" title="Permalink to this definition"></a></dt>
+<dd><p>Sets the scores attribute to a new dictionary</p>
+<section id="id12">
+<h4>Parameters<a class="headerlink" href="#id12" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>newScores: dict</dt><dd><p>the new scores to be set</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsMeasurementSet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.core.</span></span><span class="sig-name descname"><span class="pre">OmicsMeasurementSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Number</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsMeasurementSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsMeasurementSet" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#troppo.omics.core.TabularContainer" title="troppo.omics.core.TabularContainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">TabularContainer</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.OmicsMeasurementSet.to_omics_container">
+<span class="sig-name descname"><span class="pre">to_omics_container</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#OmicsMeasurementSet.to_omics_container"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.OmicsMeasurementSet.to_omics_container" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.core.TabularContainer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.core.</span></span><span class="sig-name descname"><span class="pre">TabularContainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Number</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#TabularContainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.TabularContainer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>TabularContainer class to be used for the creation of objects that store tabular data and other useful information,
+such as its row and column labels. This class is meant to be used as a base class for other classes that store
+tabular data.</p>
+<section id="id13">
+<h3>Parameters<a class="headerlink" href="#id13" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>row_labels: Sequence[Union[str, int]]</dt><dd><p>The row labels of the data</p>
+</dd>
+<dt>column_labels: Sequence[str]</dt><dd><p>The column labels of the data</p>
+</dd>
+<dt>values: lofl_array</dt><dd><p>The values of the data</p>
+</dd>
+</dl>
+</section>
+<section id="id14">
+<h3>Attributes<a class="headerlink" href="#id14" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>data: pd.DataFrame</dt><dd><p>The data stored in the container</p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.omics.core.TabularContainer.column_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">column_names</span></span><a class="headerlink" href="#troppo.omics.core.TabularContainer.column_names" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.omics.core.TabularContainer.data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#troppo.omics.core.TabularContainer.data" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.TabularContainer.drop">
+<span class="sig-name descname"><span class="pre">drop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#TabularContainer.drop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.TabularContainer.drop" title="Permalink to this definition"></a></dt>
+<dd><p>Drops the given rows and columns from the data attribute</p>
+<section id="id15">
+<h4>Parameters<a class="headerlink" href="#id15" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>rows: Sequence</dt><dd><p>The rows to be dropped</p>
+</dd>
+<dt>columns: Sequence</dt><dd><p>The columns to be dropped</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.omics.core.TabularContainer.row_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">row_names</span></span><a class="headerlink" href="#troppo.omics.core.TabularContainer.row_names" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.TabularContainer.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">callable</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#TabularContainer.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.TabularContainer.transform" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.core.TypedOmicsMeasurementSet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.core.</span></span><span class="sig-name descname"><span class="pre">TypedOmicsMeasurementSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Number</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">omics_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.omics.core.IdentifierMapping" title="troppo.omics.core.IdentifierMapping"><span class="pre">IdentifierMapping</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#TypedOmicsMeasurementSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.TypedOmicsMeasurementSet" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#troppo.omics.core.OmicsMeasurementSet" title="troppo.omics.core.OmicsMeasurementSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">OmicsMeasurementSet</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.TypedOmicsMeasurementSet.convert_feature_ids">
+<span class="sig-name descname"><span class="pre">convert_feature_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#TypedOmicsMeasurementSet.convert_feature_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.TypedOmicsMeasurementSet.convert_feature_ids" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="troppo.omics.core.TypedOmicsMeasurementSet.omics_type">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">omics_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#troppo.omics.core.IdentifierMapping" title="troppo.omics.core.IdentifierMapping"><span class="pre">IdentifierMapping</span></a></em><a class="headerlink" href="#troppo.omics.core.TypedOmicsMeasurementSet.omics_type" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.core.TypedOmicsMeasurementSet.to_omics_container">
+<span class="sig-name descname"><span class="pre">to_omics_container</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#TypedOmicsMeasurementSet.to_omics_container"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.TypedOmicsMeasurementSet.to_omics_container" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="troppo.omics.core.has_valid_dims">
+<span class="sig-prename descclassname"><span class="pre">troppo.omics.core.</span></span><span class="sig-name descname"><span class="pre">has_valid_dims</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Number</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/core.html#has_valid_dims"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.core.has_valid_dims" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the data has the same dimensions as the rows and columns</p>
+<section id="id16">
+<h3>Parameters<a class="headerlink" href="#id16" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>rows: Sequence</dt><dd><p>The rows of the data</p>
+</dd>
+<dt>cols: Sequence</dt><dd><p>The columns of the data</p>
+</dd>
+<dt>data: lofl_array</dt><dd><p>The data to be checked</p>
+</dd>
+</dl>
+</section>
+<section id="id17">
+<h3>Returns<a class="headerlink" href="#id17" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>bool, bool:</dt><dd><p>True if the data has the same dimensions as the rows and columns, False otherwise</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+<section id="module-troppo.omics.gene_level_thresholding">
+<span id="gene-level-thresholding"></span><h2>Gene-level thresholding<a class="headerlink" href="#module-troppo.omics.gene_level_thresholding" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.gene_level_thresholding.GeneLevelThresholding">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.gene_level_thresholding.</span></span><span class="sig-name descname"><span class="pre">GeneLevelThresholding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">omics_dataframe</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thresholding_strat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'global'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_threshold_lower</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_threshold_upper</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/gene_level_thresholding.html#GeneLevelThresholding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.gene_level_thresholding.GeneLevelThresholding" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class is used to transform the dataframe containing the omics data and perform gene-level thresholding on omics
+data. It currently supports Global and Local thresholding approaches described by Richelle, Joshi and Lewis (2019)
+(<a class="reference external" href="https://doi.org/10.1371/journal.pcbi.1007185">https://doi.org/10.1371/journal.pcbi.1007185</a>). These include:
+- global: genes with a value lower than the upper global threshold (GTU) are considered inactive; genes with a value
+greater than the lower global threshold (GTL) are considered active.
+- local t1: genes with a value lower than the upper global threshold (GTU) are considered inactive; for genes
+with a value greater than the GTU, if the value is lower than the local threshold (LT), the gene is considered
+inactive, otherwise it is considered active.
+- local t2: genes with a value lower than the upper global threshold (GTU) are considered inactive; genes with
+a value greater than the lower global threshold (GTU) are considered active; for genes with a value between the GTU
+and the lower global threshold (GTL), they are only considered active if their value is greater than the local
+threshold (LT).
+Thresholds are selected in accordance with the distribution of the data. The numbers in the thresholding options
+represent the position of the value to use. Currently, the options are: [0.1, 0.25, 0.5, 0.75, 0.9];
+the threshold value will then be value of the dataset at that corresponding quantile.’</p>
+<section id="id18">
+<h3>Parameters<a class="headerlink" href="#id18" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>omics_dataframe: pandas.DataFrame</dt><dd><p>Omics data to be thresholded.</p>
+</dd>
+<dt>thresholding_strat: str</dt><dd><p>Thresholding strategy to be used. Must be one of: global, local t1, local t2.</p>
+</dd>
+<dt>global_threshold_lower: int or None, default = None</dt><dd><p>Position of the Global Lower threshold value on the quantile list.</p>
+</dd>
+<dt>global_threshold_upper: int or None, default = None</dt><dd><p>Position of the Global Upper threshold value on the quantile list.</p>
+</dd>
+<dt>local_threshold: int or None, default = None</dt><dd><p>Position of the Local threshold value on the quantile list.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.gene_level_thresholding.GeneLevelThresholding.apply_thresholding_filter">
+<span class="sig-name descname"><span class="pre">apply_thresholding_filter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/troppo/omics/gene_level_thresholding.html#GeneLevelThresholding.apply_thresholding_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.gene_level_thresholding.GeneLevelThresholding.apply_thresholding_filter" title="Permalink to this definition"></a></dt>
+<dd><p>Thresholding filter for the omics data.</p>
+<section id="id19">
+<h4>Returns<a class="headerlink" href="#id19" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>filtered_dataset: pandas.DataFrame</dt><dd><p>Filtered omics dataframe.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.gene_level_thresholding.GeneLevelThresholding.global_thresholding">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">global_thresholding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gtlow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxexp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/troppo/omics/gene_level_thresholding.html#GeneLevelThresholding.global_thresholding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.gene_level_thresholding.GeneLevelThresholding.global_thresholding" title="Permalink to this definition"></a></dt>
+<dd><p>Global thresholding strategy for the omics data. Processes a single sample at the time.</p>
+<section id="id20">
+<h4>Parameters<a class="headerlink" href="#id20" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>sample_series: pandas.Series</dt><dd><p>Omics data from a specific sample.</p>
+</dd>
+<dt>gtlow: float</dt><dd><p>Global threshold lower value.</p>
+</dd>
+<dt>maxexp: float</dt><dd><p>Maximum expression value of the dataset.</p>
+</dd>
+</dl>
+</section>
+<section id="id21">
+<h4>Returns<a class="headerlink" href="#id21" title="Permalink to this heading"></a></h4>
+<p>filtered_sample: dict</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.gene_level_thresholding.GeneLevelThresholding.local_t1_thresholding">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">local_t1_thresholding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gtlow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxexp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/troppo/omics/gene_level_thresholding.html#GeneLevelThresholding.local_t1_thresholding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.gene_level_thresholding.GeneLevelThresholding.local_t1_thresholding" title="Permalink to this definition"></a></dt>
+<dd><p>Local T1 thresholding strategy for the omics data. Processes a single sample at the time.</p>
+<section id="id22">
+<h4>Parameters<a class="headerlink" href="#id22" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>sample_series: pandas.Series</dt><dd><p>Omics data from a specific sample.</p>
+</dd>
+<dt>gtlow: float</dt><dd><p>Global threshold lower value.</p>
+</dd>
+<dt>lt: pd.Series</dt><dd><p>Local threshold value for each sample.</p>
+</dd>
+<dt>maxexp: float</dt><dd><p>Maximum expression value of the dataset.</p>
+</dd>
+</dl>
+</section>
+<section id="id23">
+<h4>Returns<a class="headerlink" href="#id23" title="Permalink to this heading"></a></h4>
+<p>filtered_sample: dict</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.gene_level_thresholding.GeneLevelThresholding.local_t2_thresholding">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">local_t2_thresholding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gtlow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gtup</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxexp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/troppo/omics/gene_level_thresholding.html#GeneLevelThresholding.local_t2_thresholding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.gene_level_thresholding.GeneLevelThresholding.local_t2_thresholding" title="Permalink to this definition"></a></dt>
+<dd><p>Local T2 thresholding strategy for the omics data. Processes a single sample at the time.</p>
+<section id="id24">
+<h4>Parameters<a class="headerlink" href="#id24" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>sample_series: pandas.Series</dt><dd><p>Omics data from a specific sample.</p>
+</dd>
+<dt>gtlow: float</dt><dd><p>Global threshold lower value.</p>
+</dd>
+<dt>gtup: float</dt><dd><p>Global threshold upper value.</p>
+</dd>
+<dt>lt: pandas.Series</dt><dd><p>Local threshold value for each gene.</p>
+</dd>
+<dt>maxexp: float</dt><dd><p>Maximum expression value of the dataset.</p>
+</dd>
+</dl>
+</section>
+<section id="id25">
+<h4>Returns<a class="headerlink" href="#id25" title="Permalink to this heading"></a></h4>
+<p>filtered_sample: dict</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.gene_level_thresholding.GeneLevelThresholding.threshold_strategy">
+<span class="sig-name descname"><span class="pre">threshold_strategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_series</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/troppo/omics/gene_level_thresholding.html#GeneLevelThresholding.threshold_strategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.gene_level_thresholding.GeneLevelThresholding.threshold_strategy" title="Permalink to this definition"></a></dt>
+<dd><p>Thresholding strategy for the omics data. Processes a single sample at the time.</p>
+<section id="id26">
+<h4>Parameters<a class="headerlink" href="#id26" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>sample_series: pandas.Series</dt><dd><p>Omics data from a specific sample.</p>
+</dd>
+</dl>
+</section>
+<section id="id27">
+<h4>Returns<a class="headerlink" href="#id27" title="Permalink to this heading"></a></h4>
+<p>filtered_sample: dict</p>
+<blockquote>
+<div><p>Filtered omics data from a specific sample.</p>
+</div></blockquote>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+<section id="module-troppo.omics.id_converter">
+<span id="gene-id-converter"></span><h2>Gene ID converter<a class="headerlink" href="#module-troppo.omics.id_converter" title="Permalink to this heading"></a></h2>
+<p>Created by Jorge Gomes on 06/06/2018
+id_converter</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="troppo.omics.id_converter.idConverter">
+<span class="sig-prename descclassname"><span class="pre">troppo.omics.id_converter.</span></span><span class="sig-name descname"><span class="pre">idConverter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/troppo/omics/id_converter.html#idConverter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.id_converter.idConverter" title="Permalink to this definition"></a></dt>
+<dd><p>This function converts the ids from a given omics dataset into the desired ones to better match a metabolic model.
+Conversion is done based on the HGNC database.</p>
+<p>NOMENCLATURES:
+[“hgnc_id”,”symbol”,”name”,”entrez_id”,”ensembl_gene_id”,”vega_id”,”ucsc_id”,”ccds_id”, “uniprot_ids”,</p>
+<blockquote>
+<div><p>“pubmed_id”,”omim_id”,”locus_group”,”locus_type”,”alias_symbol”,”alias_name”, “prev_symbol”,”prev_name”,
+“ena”,”refseq_accession”,”rna_central_ids”]</p>
+</div></blockquote>
+<section id="id28">
+<h3>Parameters<a class="headerlink" href="#id28" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>ids: list or set</dt><dd><p>containing the ids to be converted</p>
+</dd>
+<dt>old: string</dt><dd><p>exact match, the nomenclature designation of the input IDS. Must be different from new and contained in
+NOMENCLATURES</p>
+</dd>
+<dt>new: string</dt><dd><p>exact match, the nomenclature designation of the output IDs. Must be different from old and contained in
+NOMENCLATURES</p>
+</dd>
+</dl>
+</section>
+<section id="id29">
+<h3>Returns<a class="headerlink" href="#id29" title="Permalink to this heading"></a></h3>
+<p>dict: dictionary with the converted ids as keys and the original ids as values</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="troppo.omics.id_converter.searchNomenclature">
+<span class="sig-prename descclassname"><span class="pre">troppo.omics.id_converter.</span></span><span class="sig-name descname"><span class="pre">searchNomenclature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/troppo/omics/id_converter.html#searchNomenclature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.id_converter.searchNomenclature" title="Permalink to this definition"></a></dt>
+<dd><p>This function searches which gene identification nomenclature is used on the provided ids.
+When ids from different nomenclatures are input, the result will be the nomenclature with the most matches.
+Also handles cases where some ids do not match but others do.</p>
+<section id="id30">
+<h3>Parameters<a class="headerlink" href="#id30" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>ids: list</dt><dd><p>List of ids (all using the same nomenclature)</p>
+</dd>
+</dl>
+</section>
+<section id="id31">
+<h3>Returns<a class="headerlink" href="#id31" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>string</dt><dd><p>the nomenclature designation according to HGNC complete set table.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+<section id="module-troppo.omics.integration">
+<span id="reaction-level-integration-of-omics-data"></span><h2>Reaction-level integration of Omics data<a class="headerlink" href="#module-troppo.omics.integration" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.integration.AdjustedScoreIntegrationStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.integration.</span></span><span class="sig-name descname"><span class="pre">AdjustedScoreIntegrationStrategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">protected_reactions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/integration.html#AdjustedScoreIntegrationStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.integration.AdjustedScoreIntegrationStrategy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#troppo.omics.integration.ScoreIntegrationStrategy" title="troppo.omics.integration.ScoreIntegrationStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScoreIntegrationStrategy</span></code></a>, <a class="reference internal" href="#troppo.omics.integration.ReactionProtectionMixin" title="troppo.omics.integration.ReactionProtectionMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReactionProtectionMixin</span></code></a></p>
+<p>This class is used to integrate the scores of the different omics data.</p>
+<section id="id32">
+<h3>Attributes<a class="headerlink" href="#id32" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>protected_reactions<span class="classifier">list</span></dt><dd><p>The list of reactions to be protected from being removed by the integration strategy.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.integration.AdjustedScoreIntegrationStrategy.integrate">
+<span class="sig-name descname"><span class="pre">integrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.omics.core.OmicsDataMap" title="troppo.omics.core.OmicsDataMap"><span class="pre">OmicsDataMap</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/troppo/omics/integration.html#AdjustedScoreIntegrationStrategy.integrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.integration.AdjustedScoreIntegrationStrategy.integrate" title="Permalink to this definition"></a></dt>
+<dd><p>This method is used to integrate the scores of the different omics data.</p>
+<section id="id33">
+<h4>Parameters<a class="headerlink" href="#id33" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>data_map: OmicsDataMap</dt><dd><p>The data map containing the gene scores to be integrated into reaction scores.</p>
+</dd>
+</dl>
+</section>
+<section id="id34">
+<h4>Returns<a class="headerlink" href="#id34" title="Permalink to this heading"></a></h4>
+<p>dict: The integrated scores.</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.integration.ContinuousScoreIntegrationStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.integration.</span></span><span class="sig-name descname"><span class="pre">ContinuousScoreIntegrationStrategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">score_apply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/integration.html#ContinuousScoreIntegrationStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.integration.ContinuousScoreIntegrationStrategy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#troppo.omics.integration.ScoreIntegrationStrategy" title="troppo.omics.integration.ScoreIntegrationStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScoreIntegrationStrategy</span></code></a></p>
+<p>This class is used to integrate continuous scores.</p>
+<section id="id35">
+<h3>Attributes<a class="headerlink" href="#id35" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>score_apply<span class="classifier">function</span></dt><dd><p>The function to be applied to the scores.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.integration.ContinuousScoreIntegrationStrategy.integrate">
+<span class="sig-name descname"><span class="pre">integrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.omics.core.OmicsDataMap" title="troppo.omics.core.OmicsDataMap"><span class="pre">OmicsDataMap</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/troppo/omics/integration.html#ContinuousScoreIntegrationStrategy.integrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.integration.ContinuousScoreIntegrationStrategy.integrate" title="Permalink to this definition"></a></dt>
+<dd><p>This method is used to integrate the scores of the different omics data.</p>
+<section id="id36">
+<h4>Parameters<a class="headerlink" href="#id36" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>data_map: OmicsDataMap</dt><dd><p>The data map containing the gene scores to be integrated into reaction scores.</p>
+</dd>
+</dl>
+</section>
+<section id="id37">
+<h4>Returns<a class="headerlink" href="#id37" title="Permalink to this heading"></a></h4>
+<p>dict: The integrated scores.</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.integration.CustomSelectionIntegrationStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.integration.</span></span><span class="sig-name descname"><span class="pre">CustomSelectionIntegrationStrategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_functions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/integration.html#CustomSelectionIntegrationStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.integration.CustomSelectionIntegrationStrategy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#troppo.omics.integration.ScoreIntegrationStrategy" title="troppo.omics.integration.ScoreIntegrationStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScoreIntegrationStrategy</span></code></a></p>
+<p>This class is used to integrate the scores of the different omics data.</p>
+<section id="id38">
+<h3>Attributes<a class="headerlink" href="#id38" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>group_functions<span class="classifier">dict</span></dt><dd><p>The dictionary containing the functions to be applied to the scores.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.integration.CustomSelectionIntegrationStrategy.integrate">
+<span class="sig-name descname"><span class="pre">integrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.omics.core.OmicsDataMap" title="troppo.omics.core.OmicsDataMap"><span class="pre">OmicsDataMap</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/troppo/omics/integration.html#CustomSelectionIntegrationStrategy.integrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.integration.CustomSelectionIntegrationStrategy.integrate" title="Permalink to this definition"></a></dt>
+<dd><p>This method is used to integrate the scores of the different omics data.</p>
+<section id="id39">
+<h4>Parameters<a class="headerlink" href="#id39" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>data_map: OmicsDataMap</dt><dd><p>The data map containing the gene scores to be integrated into reaction scores.</p>
+</dd>
+</dl>
+</section>
+<section id="id40">
+<h4>Returns<a class="headerlink" href="#id40" title="Permalink to this heading"></a></h4>
+<p>list: The integrated scores.</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.integration.DefaultCoreIntegrationStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.integration.</span></span><span class="sig-name descname"><span class="pre">DefaultCoreIntegrationStrategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protected_reactions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/integration.html#DefaultCoreIntegrationStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.integration.DefaultCoreIntegrationStrategy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#troppo.omics.integration.ScoreIntegrationStrategy" title="troppo.omics.integration.ScoreIntegrationStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScoreIntegrationStrategy</span></code></a>, <a class="reference internal" href="#troppo.omics.integration.ReactionProtectionMixin" title="troppo.omics.integration.ReactionProtectionMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReactionProtectionMixin</span></code></a></p>
+<p>This class is used to integrate the scores of the different omics data.</p>
+<section id="id41">
+<h3>Attributes<a class="headerlink" href="#id41" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>threshold: float or int</dt><dd><p>The threshold to be applied to the scores.</p>
+</dd>
+<dt>protected_reactions<span class="classifier">list</span></dt><dd><p>The list of reactions to be protected from being removed by the integration strategy.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.integration.DefaultCoreIntegrationStrategy.integrate">
+<span class="sig-name descname"><span class="pre">integrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.omics.core.OmicsDataMap" title="troppo.omics.core.OmicsDataMap"><span class="pre">OmicsDataMap</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/troppo/omics/integration.html#DefaultCoreIntegrationStrategy.integrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.integration.DefaultCoreIntegrationStrategy.integrate" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.integration.ReactionProtectionMixin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.integration.</span></span><span class="sig-name descname"><span class="pre">ReactionProtectionMixin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">protected_reactions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/integration.html#ReactionProtectionMixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.integration.ReactionProtectionMixin" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class is used to protect reactions from being removed by the integration strategy.</p>
+<section id="id42">
+<h3>Attributes<a class="headerlink" href="#id42" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>protected_reactions<span class="classifier">list</span></dt><dd><p>The list of reactions to be protected from being removed by the integration strategy.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.integration.ScoreIntegrationStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.integration.</span></span><span class="sig-name descname"><span class="pre">ScoreIntegrationStrategy</span></span><a class="reference internal" href="_modules/troppo/omics/integration.html#ScoreIntegrationStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.integration.ScoreIntegrationStrategy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.integration.ScoreIntegrationStrategy.integrate">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">integrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.omics.core.OmicsDataMap" title="troppo.omics.core.OmicsDataMap"><span class="pre">OmicsDataMap</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/integration.html#ScoreIntegrationStrategy.integrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.integration.ScoreIntegrationStrategy.integrate" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="troppo.omics.integration.ThresholdSelectionIntegrationStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">troppo.omics.integration.</span></span><span class="sig-name descname"><span class="pre">ThresholdSelectionIntegrationStrategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thresholds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/troppo/omics/integration.html#ThresholdSelectionIntegrationStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.integration.ThresholdSelectionIntegrationStrategy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#troppo.omics.integration.ScoreIntegrationStrategy" title="troppo.omics.integration.ScoreIntegrationStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScoreIntegrationStrategy</span></code></a></p>
+<p>This class is used to integrate the scores of the different omics data.</p>
+<section id="id43">
+<h3>Attributes<a class="headerlink" href="#id43" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>thresholds<span class="classifier">list or float or int</span></dt><dd><p>The thresholds to be applied to the scores. If a list is provided, the integration will be performed for each
+threshold. If a single value is provided, the integration will be performed only once.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="troppo.omics.integration.ThresholdSelectionIntegrationStrategy.integrate">
+<span class="sig-name descname"><span class="pre">integrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#troppo.omics.core.OmicsDataMap" title="troppo.omics.core.OmicsDataMap"><span class="pre">OmicsDataMap</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/troppo/omics/integration.html#ThresholdSelectionIntegrationStrategy.integrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#troppo.omics.integration.ThresholdSelectionIntegrationStrategy.integrate" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="troppo.methods.reconstruction.html" class="btn btn-neutral float-left" title="Reconstruction Methods" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="troppo.omics.readers.html" class="btn btn-neutral float-right" title="Readers for Omics data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Vitor Vieira, Jorge Ferreira, Alexandre Oliveira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
