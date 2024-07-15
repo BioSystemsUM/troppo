@@ -16,8 +16,6 @@ class IMATProperties(PropertiesReconstruction):
     ----------
     exp_vector : np.ndarray or list
         The vector of expression values
-    objectives : list
-        The list of objectives
     exp_thresholds : tuple
         The thresholds for the expression values
     core : list, optional
@@ -31,7 +29,6 @@ class IMATProperties(PropertiesReconstruction):
                  core: ndarray or list or tuple = None, tolerance: float = 1e-8, epsilon: int or float = 1):
         new_mandatory = {
             'exp_vector': lambda x: isinstance(x, list) and len(x) > 0 or isinstance(x, ndarray),
-            'objectives': lambda x: type(x) in [list, ndarray],
             'exp_thresholds': lambda x: type(x) in (tuple, list, ndarray) and type(x[0]) in [float, int] and type(
                 x[1]) in [float, int]
         }
@@ -121,8 +118,8 @@ class IMAT(ContextSpecificModelReconstructionAlgorithm):
         core = self.properties['core']
         epsilon = self.properties['epsilon']
 
-        high_idx = (np.where(exp_vector >= exp_ub)[0]).astype(int)
-        low_idx = (np.where((exp_vector >= 0) & (exp_vector < exp_lb))[0]).astype(int)
+        high_idx = (np.where(np.array(exp_vector) >= exp_ub)[0]).astype(int)
+        low_idx = (np.where((np.array(exp_vector) >= 0) & (np.array(exp_vector) < exp_lb))[0]).astype(int)
 
         if core:
             high_idx = np.union1d(high_idx, np.array(core))
