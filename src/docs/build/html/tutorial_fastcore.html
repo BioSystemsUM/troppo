@@ -1,28 +1,27 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FastCORE tutorial &mdash; Troppo 0.0.7 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
   
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=99d54efb"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="tINIT tutorial" href="tutorial_tinit.html" />
+    <link rel="next" title="iMAT tutorial" href="tutorial_imat.html" />
     <link rel="prev" title="GIMME tutorial" href="tutorial_gimme.html" /> 
 </head>
 
@@ -49,10 +48,17 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Troppo</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="tutorial.html">Tutorials</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="tutorial_gene_level_thresholding.html">Gene-level thresholding tutorial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial_gimme.html">GIMME tutorial</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">FastCORE tutorial</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial_tinit.html">tINIT tutorial</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">FastCORE tutorial</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#imports-and-setup">Imports and Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#initial-setup">Initial Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#create-the-omicscontainer-object">Create the OmicsContainer object</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#create-a-model-wrapper">Create a model wrapper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#map-gene-ids-in-the-data-to-model-ids">Map gene IDs in the data to model IDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#integrate-scores">Integrate Scores</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#run-gimme">Run GIMME</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial_imat.html">iMAT tutorial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial_batch_run.html">Batch integration of Omics Data</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial_task_eval.html">Task performance evaluation</a></li>
@@ -87,6 +93,139 @@
              
   <section id="fastcore-tutorial">
 <h1>FastCORE tutorial<a class="headerlink" href="#fastcore-tutorial" title="Permalink to this heading"></a></h1>
+<section id="imports-and-setup">
+<h2>Imports and Setup<a class="headerlink" href="#imports-and-setup" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">cobra</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">troppo.omics.readers.generic</span> <span class="kn">import</span> <span class="n">TabularReader</span>
+<span class="kn">from</span> <span class="nn">troppo.methods_wrappers</span> <span class="kn">import</span> <span class="n">ModelBasedWrapper</span>
+<span class="kn">from</span> <span class="nn">troppo.omics.integration</span> <span class="kn">import</span> <span class="n">CustomSelectionIntegrationStrategy</span>
+<span class="kn">from</span> <span class="nn">troppo.methods.reconstruction.fastcore</span> <span class="kn">import</span> <span class="n">FASTcore</span><span class="p">,</span> <span class="n">FastcoreProperties</span>
+</pre></div>
+</div>
+</section>
+<section id="initial-setup">
+<h2>Initial Setup<a class="headerlink" href="#initial-setup" title="Permalink to this heading"></a></h2>
+<p>First, we need to define the parsing rules for the GPRs that will be used later on.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">patt</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s1">&#39;__COBAMPGPRDOT__[0-9]</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="n">replace_alt_transcripts</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">patt</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Secondly, we need to load the model and the csv file containing the expression dataset.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">cobra</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">read_sbml_model</span><span class="p">(</span><span class="s1">&#39;data/HumanGEM_Consistent.xml&#39;</span><span class="p">)</span>
+<span class="n">expression_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;data/expression_data.csv&#39;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="create-the-omicscontainer-object">
+<h2>Create the OmicsContainer object<a class="headerlink" href="#create-the-omicscontainer-object" title="Permalink to this heading"></a></h2>
+<p>The <cite>TabularReader</cite> class is used to read and store the omics data in a container that can then be used by <em>Troppo</em>.</p>
+<p>Relevant arguments from the <cite>TabularReader</cite> class:</p>
+<ul class="simple">
+<li><p><cite>path_or_df</cite>: the omics data can be either a pandas dataframe or a path to a dataset file. The file can be in any format supported by pandas.</p></li>
+<li><p><cite>index_col</cite>: the name of the column that contains the identifiers of the genes.</p></li>
+<li><p><cite>sample_in_rows</cite>: a boolean indicating whether the samples are in rows or columns.</p></li>
+<li><p><cite>header_offset</cite>: the number of rows to skip before reading the header.</p></li>
+<li><p><cite>omics_type</cite>: a string containing the type of omics data. This is used to select the appropriate integration method.</p></li>
+<li><p><cite>nomenclature</cite>: a string containing the nomenclature of the identifiers in the omics data. This is used to map the identifiers to the identifiers in the model.</p></li>
+</ul>
+<p>The <cite>to_containers()</cite> method returns a list of containers, one for each sample of the dataset. In this example, we will be using only one sample, however, the process can be iterated for all the samples in the dataset.
+The <cite>get_integrated_data_map()</cite> method is used to map the identifiers in the omics data to the identifiers in the model. This is done by using the <cite>gpr_gene_parse_function</cite> argument from the <cite>ModelBasedWrapper</cite> class.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">omics_container</span> <span class="o">=</span> <span class="n">TabularReader</span><span class="p">(</span><span class="n">path_or_df</span><span class="o">=</span><span class="n">omics_data</span><span class="p">,</span> <span class="n">nomenclature</span><span class="o">=</span><span class="s1">&#39;entrez_id&#39;</span><span class="p">,</span>
+                                <span class="n">omics_type</span><span class="o">=</span><span class="s1">&#39;transcriptomics&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">to_containers</span><span class="p">()</span>
+<span class="n">single_sample</span> <span class="o">=</span> <span class="n">omics_container</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="create-a-model-wrapper">
+<h2>Create a model wrapper<a class="headerlink" href="#create-a-model-wrapper" title="Permalink to this heading"></a></h2>
+<p>The <cite>ModelBasedWrapper</cite> class is used to wrap the model so that it can be used by <em>Troppo</em>.</p>
+<p>Relevant arguments from this class include:</p>
+<ul class="simple">
+<li><p><cite>model</cite>: the model to be wrapped.</p></li>
+<li><p><cite>ttg_ratio</cite>: the ratio between the number of reactions to be selected and the total number of reactions in the model.</p></li>
+<li><p><cite>gpr_gene_parse_function</cite>: a function that parses the GPRs of the model. This is used to map the identifiers in the omics data to the identifiers in the model.</p></li>
+</ul>
+<p>Important attributes from this class include:</p>
+<ul class="simple">
+<li><p><cite>model_reader</cite>: a COBRAModelObjectReader instance containing all the information of the model, such as, reaction_ids, metabolite_ids, GPRs, bounds, etc.</p></li>
+<li><p><cite>S</cite>: the stoichiometric matrix of the model.</p></li>
+<li><p><cite>lb</cite>: the lower bounds of the reactions in the model.</p></li>
+<li><p><cite>ub</cite>: the upper bounds of the reactions in the model.</p></li>
+</ul>
+<p>In this specific example we will use the <cite>ReconstructionWrapper</cite> class instead of the base <cite>ModelBasedWrapper</cite> class.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model_wrapper</span> <span class="o">=</span> <span class="n">ReconstructionWrapper</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">ttg_ratio</span><span class="o">=</span><span class="mi">9999</span><span class="p">,</span>
+                                      <span class="n">gpr_gene_parse_function</span><span class="o">=</span><span class="n">replace_alt_transcripts</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="map-gene-ids-in-the-data-to-model-ids">
+<h2>Map gene IDs in the data to model IDs<a class="headerlink" href="#map-gene-ids-in-the-data-to-model-ids" title="Permalink to this heading"></a></h2>
+<p>For this we can use the <cite>get_integrated_data_map()</cite> method from the <cite>TabularReader</cite> class. This maps the gene ids in the omics dataset reaction ids in the model through their GPRs, and attributes a score to each reaction in accordance with the expression values of the associated genes. This method returns a dictionary with the reaction ids as keys and the scores as values.</p>
+<p>Important arguments from this method include:</p>
+<ul class="simple">
+<li><p><cite>model_reader</cite>: a COBRAModelObjectReader instance containing all the information of the model. It can be accessed through the <cite>model_wrapper.model_reader</cite>.</p></li>
+<li><p><cite>and_func</cite>: a function that is used to combine the scores of the genes associated with a reaction for AND rules in the GPR. In this example, we will be using the minimum function, which means that the score of a reaction with AND in their GPRs will be the minimum score of the genes associated with it.</p></li>
+<li><p><cite>or_func</cite>: a function that is used to combine the scores of the genes associated with a reaction for OR rules in the GPR. In this example, we will be using the sum function, which means that the score of a reaction with OR in their GPRs will be the sum of the scores of the genes associated with it.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">data_map</span> <span class="o">=</span> <span class="n">single_sample</span><span class="o">.</span><span class="n">get_integrated_data_map</span><span class="p">(</span><span class="n">model_reader</span><span class="o">=</span><span class="n">model_wrapper</span><span class="o">.</span><span class="n">model_reader</span><span class="p">,</span>
+                                                 <span class="n">and_func</span><span class="o">=</span><span class="nb">min</span><span class="p">,</span> <span class="n">or_func</span><span class="o">=</span><span class="nb">sum</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="integrate-scores">
+<h2>Integrate Scores<a class="headerlink" href="#integrate-scores" title="Permalink to this heading"></a></h2>
+<p>The <cite>CustomSelectionIntegrationStrategy</cite> class allows the user to define a custom function that is tailored to the output we need for the following steps of the pipeline.
+For the <cite>FastCORE</cite> method the most adequate integration strategy is to select reactions whose score is above a defined threshold.</p>
+<p>This also can be achieved by using the <cite>ThresholdSelectionIntegrationStrategy</cite> class, however, since we also want to include a set of reaction to be protected during the integration we will use a custom method that will be defined by <cite>integration_fx</cite>.</p>
+<p>Moreover, through this function we also want the output to be a list with reaction IDs that will belong to the core reactions that will be inputted for the <cite>FastCORE</cite> algorithm.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">log</span>
+<span class="n">threshold</span> <span class="o">=</span>  <span class="p">(</span><span class="mi">5</span> <span class="o">*</span> <span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">protected_reactions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;biomass&#39;</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">integration_fx</span><span class="p">(</span><span class="n">reaction_map_scores</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">reaction_map_scores</span><span class="o">.</span><span class="n">get_scores</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="p">(</span><span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">)</span> <span class="ow">or</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">protected_reactions</span><span class="p">]]</span>
+
+<span class="n">threshold_integration</span> <span class="o">=</span> <span class="n">CustomSelectionIntegrationStrategy</span><span class="p">(</span><span class="n">group_functions</span><span class="o">=</span><span class="p">[</span><span class="n">integration_fx</span><span class="p">])</span>
+<span class="n">threshold_scores</span> <span class="o">=</span> <span class="n">threshold_integration</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">data_map</span><span class="o">=</span><span class="n">data_map</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">threshold_scores</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="run-gimme">
+<h2>Run GIMME<a class="headerlink" href="#run-gimme" title="Permalink to this heading"></a></h2>
+<p>The <cite>FastcoreProperties</cite> class is used to create the properties for the GIMME algorithm. This class contains the following arguments:</p>
+<ul class="simple">
+<li><p><cite>core</cite>: List of indexes of the reactions that are considered core, as determined by the integrated scores.</p></li>
+<li><p><cite>flux_threshold</cite>: Flux threshold for the algorithm.</p></li>
+<li><p><cite>solver</cite>: Solver to be used.</p></li>
+</ul>
+<p>The <cite>FASTcore</cite> class is used to run the GIMME algorithm. This class contains the following arguments:</p>
+<ul class="simple">
+<li><p><cite>S</cite>: the stoichiometric matrix of the model. It can be accessed through the <cite>model_wrapper.S</cite>.</p></li>
+<li><p><cite>lb</cite>: the lower bounds of the reactions in the model. It can be accessed through the <cite>model_wrapper.lb</cite>.</p></li>
+<li><p><cite>ub</cite>: the upper bounds of the reactions in the model. It can be accessed through the <cite>model_wrapper.ub</cite>.</p></li>
+<li><p><cite>properties</cite>: a <cite>GIMMEProperties</cite> instance containing the properties for the GIMME algorithm.</p></li>
+</ul>
+<p>In the end, the <cite>run()</cite> method of the <cite>FASTcore</cite> class will return a list with the index of the reactions to be keept in the model.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the index of the reaction of the CORE reaction set</span>
+<span class="n">ordered_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">r</span><span class="p">:</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">r</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model_wrapper</span><span class="o">.</span><span class="n">model_reader</span><span class="o">.</span><span class="n">r_ids</span><span class="p">)}</span>
+<span class="n">core_idx</span> <span class="o">=</span> <span class="p">[[</span><span class="n">ordered_ids</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">l</span><span class="p">]</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">threshold_scores</span><span class="p">]</span>
+
+<span class="c1"># Define the FastCORE properties</span>
+<span class="n">properties</span> <span class="o">=</span> <span class="n">FastcoreProperties</span><span class="p">(</span><span class="n">core</span><span class="o">=</span><span class="n">core_idx</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;CPLEX&#39;</span><span class="p">)</span>
+
+<span class="c1"># instantiate the FastCORE class</span>
+<span class="n">fastcore</span> <span class="o">=</span> <span class="n">FASTcore</span><span class="p">(</span><span class="n">S</span><span class="o">=</span><span class="n">model_wrapper</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">lb</span><span class="o">=</span><span class="n">model_wrapper</span><span class="o">.</span><span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="n">model_wrapper</span><span class="o">.</span><span class="n">ub</span><span class="p">,</span> <span class="n">properties</span><span class="o">=</span><span class="n">properties</span><span class="p">)</span>
+
+<span class="c1"># Run the algorithm</span>
+<span class="n">model_fastcore</span> <span class="o">=</span> <span class="n">fastcore</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
 </section>
 
 
@@ -94,7 +233,7 @@
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="tutorial_gimme.html" class="btn btn-neutral float-left" title="GIMME tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="tutorial_tinit.html" class="btn btn-neutral float-right" title="tINIT tutorial" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="tutorial_imat.html" class="btn btn-neutral float-right" title="iMAT tutorial" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
