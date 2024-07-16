@@ -3,4 +3,5 @@ rst-to-myst
 sphinx-rtd-theme
 sphinx-autobuild
 myst-parser
+cobra==0.26.2
 cobamp==0.2.1
