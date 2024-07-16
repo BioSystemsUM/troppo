@@ -1,28 +1,29 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gene-level thresholding tutorial &mdash; Troppo 0.0.7 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
 
   
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=99d54efb"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Task performance evaluation" href="tutorial_task_eval.html" />
-    <link rel="prev" title="Batch integration of Omics Data" href="tutorial_batch_run.html" /> 
+    <link rel="next" title="GIMME tutorial" href="tutorial_gimme.html" />
+    <link rel="prev" title="Tutorials" href="tutorial.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -48,17 +49,12 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Troppo</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="tutorial.html">Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Gene-level thresholding tutorial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial_gimme.html">GIMME tutorial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial_fastcore.html">FastCORE tutorial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial_tinit.html">tINIT tutorial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial_imat.html">iMAT tutorial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial_batch_run.html">Batch integration of Omics Data</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Gene-level thresholding tutorial</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#imports-and-setup">Imports and Setup</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#read-omics-data">Read Omics Data</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#apply-gene-level-thresholding">Apply Gene-level Thresholding</a></li>
-</ul>
-</li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial_task_eval.html">Task performance evaluation</a></li>
 </ul>
 </li>
@@ -91,62 +87,14 @@
              
   <section id="gene-level-thresholding-tutorial">
 <h1>Gene-level thresholding tutorial<a class="headerlink" href="#gene-level-thresholding-tutorial" title="Permalink to this heading"></a></h1>
-<p>When using a threshold integration strategy, the threshold is only applied to the score that was attributed to the reactions from the omics data.
-However, other strategies were introduced that use thresholds to access which genes are active before the integration process.
-In troppo such methods can be used through the <a href="#id1"><span class="problematic" id="id2">`</span></a>GeneLevelThresholding`class.</p>
-<p>This class is used to transform the dataframe containing the omics data and perform gene-level thresholding on omics data. It currently supports Global and Local thresholding approaches described by Richelle, Joshi and Lewis (2019) (<a class="reference external" href="https://doi.org/10.1371/journal.pcbi.1007185">https://doi.org/10.1371/journal.pcbi.1007185</a>). These include:</p>
-<ul class="simple">
-<li><p>global: genes with a value lower than the upper global threshold (GTU) are considered inactive; genes with a value greater than the lower global threshold (GTL) are considered active.</p></li>
-<li><p>local t1: genes with a value lower than the upper global threshold (GTU) are considered inactive; for genes with a value greater than the GTU, if the value is lower than the local threshold (LT), the gene is considered inactive, otherwise it is considered active.</p></li>
-<li><p>local t2: genes with a value lower than the upper global threshold (GTU) are considered inactive; genes with a value greater than the lower global threshold (GTU) are considered active; for genes with a value between the GTU and the lower global threshold (GTL), they are only considered active if their value is greater than the local threshold (LT).</p></li>
-</ul>
-<p>An example of how these thresholds are applied is provided bellow.</p>
-<img alt="_images/gl_thresholding.jpg" src="_images/gl_thresholding.jpg" />
-<p>Thresholds are selected in accordance with the distribution of the data. The numbers in the thresholding options
-represent the position of the value to use. Currently, the options are: [0.1, 0.25, 0.5, 0.75, 0.9];
-the threshold value will then be the value on the dataset that corresponds to that quantile.</p>
-<p>To instantiate the <cite>GeneLevelThresholding</cite> class the following parameters are required:</p>
-<ul class="simple">
-<li><p><cite>omics_dataframe</cite>: Omics data to be processed in a pandas dataframe format.</p></li>
-<li><p><cite>thresholding_strat</cite>: String containing the thresholding strategy to be used. Must be one of: global, local t1, local t2.</p></li>
-<li><p><cite>global_threshold_lower</cite>: Position of the Global Lower threshold value on the quantile list.</p></li>
-<li><p><cite>global_threshold_upper</cite>: Position of the Global Upper threshold value on the quantile list.</p></li>
-<li><p><cite>local_threshold</cite>: Position of the Local threshold value on the quantile list.</p></li>
-</ul>
-<p>To apply the transformation to the data the <cite>apply_thresholding_filter</cite> method must be called.</p>
-<section id="imports-and-setup">
-<h2>Imports and Setup<a class="headerlink" href="#imports-and-setup" title="Permalink to this heading"></a></h2>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">troppo.omics</span> <span class="kn">import</span> <span class="n">GeneLevelThresholding</span>
-</pre></div>
-</div>
-</section>
-<section id="read-omics-data">
-<h2>Read Omics Data<a class="headerlink" href="#read-omics-data" title="Permalink to this heading"></a></h2>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">omics_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filepath_or_buffer</span><span class="o">=</span><span class="s1">&#39;data/Desai-GTEx_ensembl.csv&#39;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="apply-gene-level-thresholding">
-<h2>Apply Gene-level Thresholding<a class="headerlink" href="#apply-gene-level-thresholding" title="Permalink to this heading"></a></h2>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">threshold</span> <span class="o">=</span> <span class="n">GeneLevelThresholding</span><span class="p">(</span><span class="n">omics_dataframe</span><span class="o">=</span><span class="n">omics_data</span><span class="p">,</span>
-                              <span class="n">thresholding_strat</span><span class="o">=</span><span class="s1">&#39;local t2&#39;</span><span class="p">,</span>
-                              <span class="n">global_threshold_lower</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                              <span class="n">global_threshold_upper</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-                              <span class="n">local_threshold</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-
-<span class="n">new_omics_data</span> <span class="o">=</span> <span class="n">threshold</span><span class="o">.</span><span class="n">apply_thresholding_filter</span><span class="p">()</span>
-</pre></div>
-</div>
-</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="tutorial_batch_run.html" class="btn btn-neutral float-left" title="Batch integration of Omics Data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="tutorial_task_eval.html" class="btn btn-neutral float-right" title="Task performance evaluation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="tutorial.html" class="btn btn-neutral float-left" title="Tutorials" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tutorial_gimme.html" class="btn btn-neutral float-right" title="GIMME tutorial" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
