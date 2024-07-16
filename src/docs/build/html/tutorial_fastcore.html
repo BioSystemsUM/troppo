@@ -21,7 +21,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="iMAT tutorial" href="tutorial_imat.html" />
+    <link rel="next" title="tINIT tutorial" href="tutorial_tinit.html" />
     <link rel="prev" title="GIMME tutorial" href="tutorial_gimme.html" /> 
 </head>
 
@@ -56,11 +56,13 @@
 <li class="toctree-l3"><a class="reference internal" href="#create-a-model-wrapper">Create a model wrapper</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#map-gene-ids-in-the-data-to-model-ids">Map gene IDs in the data to model IDs</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#integrate-scores">Integrate Scores</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#run-gimme">Run GIMME</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#run-fastcore">Run FASTcore</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial_tinit.html">tINIT tutorial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial_imat.html">iMAT tutorial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial_batch_run.html">Batch integration of Omics Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial_gene_level_thresholding.html">Gene-level thresholding tutorial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial_task_eval.html">Task performance evaluation</a></li>
 </ul>
 </li>
@@ -195,8 +197,8 @@ For the <cite>FastCORE</cite> method the most adequate integration strategy is t
 </pre></div>
 </div>
 </section>
-<section id="run-gimme">
-<h2>Run GIMME<a class="headerlink" href="#run-gimme" title="Permalink to this heading"></a></h2>
+<section id="run-fastcore">
+<h2>Run FASTcore<a class="headerlink" href="#run-fastcore" title="Permalink to this heading"></a></h2>
 <p>The <cite>FastcoreProperties</cite> class is used to create the properties for the GIMME algorithm. This class contains the following arguments:</p>
 <ul class="simple">
 <li><p><cite>core</cite>: List of indexes of the reactions that are considered core, as determined by the integrated scores.</p></li>
@@ -208,7 +210,7 @@ For the <cite>FastCORE</cite> method the most adequate integration strategy is t
 <li><p><cite>S</cite>: the stoichiometric matrix of the model. It can be accessed through the <cite>model_wrapper.S</cite>.</p></li>
 <li><p><cite>lb</cite>: the lower bounds of the reactions in the model. It can be accessed through the <cite>model_wrapper.lb</cite>.</p></li>
 <li><p><cite>ub</cite>: the upper bounds of the reactions in the model. It can be accessed through the <cite>model_wrapper.ub</cite>.</p></li>
-<li><p><cite>properties</cite>: a <cite>GIMMEProperties</cite> instance containing the properties for the GIMME algorithm.</p></li>
+<li><p><cite>properties</cite>: a <cite>FastcoreProperties</cite> instance containing the properties for the GIMME algorithm.</p></li>
 </ul>
 <p>In the end, the <cite>run()</cite> method of the <cite>FASTcore</cite> class will return a list with the index of the reactions to be keept in the model.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the index of the reaction of the CORE reaction set</span>
@@ -233,7 +235,7 @@ For the <cite>FastCORE</cite> method the most adequate integration strategy is t
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="tutorial_gimme.html" class="btn btn-neutral float-left" title="GIMME tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="tutorial_imat.html" class="btn btn-neutral float-right" title="iMAT tutorial" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="tutorial_tinit.html" class="btn btn-neutral float-right" title="tINIT tutorial" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
