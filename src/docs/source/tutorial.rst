@@ -28,5 +28,9 @@ Moreover, gene-level thresholding can be applied to the omics data before integr
    :maxdepth: 2
 
    tutorial_gimme
+   tutorial_fastcore
+   tutorial_tinit
+   tutorial_imat
    tutorial_batch_run
+   tutorial_gene_level_thresholding
    tutorial_task_eval

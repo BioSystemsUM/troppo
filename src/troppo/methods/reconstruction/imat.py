@@ -16,8 +16,6 @@ class IMATProperties(PropertiesReconstruction):
     ----------
     exp_vector : np.ndarray or list
         The vector of expression values
-    objectives : list
-        The list of objectives
     exp_thresholds : tuple
         The thresholds for the expression values
     core : list, optional
@@ -31,7 +29,6 @@ class IMATProperties(PropertiesReconstruction):
                  core: ndarray or list or tuple = None, tolerance: float = 1e-8, epsilon: int or float = 1):
         new_mandatory = {
             'exp_vector': lambda x: isinstance(x, list) and len(x) > 0 or isinstance(x, ndarray),
-            'objectives': lambda x: type(x) in [list, ndarray],
             'exp_thresholds': lambda x: type(x) in (tuple, list, ndarray) and type(x[0]) in [float, int] and type(
                 x[1]) in [float, int]
         }

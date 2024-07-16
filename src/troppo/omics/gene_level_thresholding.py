@@ -20,7 +20,7 @@ class GeneLevelThresholding:
     threshold (LT).
     Thresholds are selected in accordance with the distribution of the data. The numbers in the thresholding options
     represent the position of the value to use. Currently, the options are: [0.1, 0.25, 0.5, 0.75, 0.9];
-    the threshold value will then be value of the dataset at that corresponding quantile.'
+    the threshold value will then be the value on the dataset that corresponds to that quantile.
 
     Parameters
     ----------
@@ -186,7 +186,7 @@ class GeneLevelThresholding:
             sample = self.omics_dataframe.loc[sample_id, :]
 
             name = '_'.join(map(str, [self.thresholding_strat, self.global_threshold_lower,
-                                      self.global_threshold_upper, self]))
+                                      self.global_threshold_upper, self.local_threshold]))
 
             filter_results[sample.name + '_' + name] = self.threshold_strategy(sample)
 
