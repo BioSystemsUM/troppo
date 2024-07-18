@@ -40,6 +40,11 @@ class GeneLevelThresholding:
                  global_threshold_lower: int = None, global_threshold_upper: int = None, local_threshold: int = None):
         self.omics_dataframe = omics_dataframe
 
+        self.filter_name = '_'.join(map(str, [thresholding_strat, global_threshold_lower,
+                                              global_threshold_upper, local_threshold]))
+
+        self.filter_name = self.filter_name.replace(' ', '_')
+
         if thresholding_strat not in ['global', 'local t1', 'local t2']:
             raise ValueError('Invalid thresholding strategy. Must be one of: global, local t1, local t2')
         self.thresholding_strat = thresholding_strat
@@ -111,7 +116,8 @@ class GeneLevelThresholding:
         return activity.to_dict()
 
     @staticmethod
-    def local_t2_thresholding(sample_series: pd.Series, gtlow: float, gtup: float, lt: pd.Series, maxexp: float) -> dict:
+    def local_t2_thresholding(sample_series: pd.Series, gtlow: float, gtup: float, lt: pd.Series,
+                              maxexp: float) -> dict:
         """
         Local T2 thresholding strategy for the omics data. Processes a single sample at the time.
 
@@ -185,10 +191,7 @@ class GeneLevelThresholding:
         for sample_id in self.omics_dataframe.index:
             sample = self.omics_dataframe.loc[sample_id, :]
 
-            name = '_'.join(map(str, [self.thresholding_strat, self.global_threshold_lower,
-                                      self.global_threshold_upper, self.local_threshold]))
-
-            filter_results[sample.name + '_' + name] = self.threshold_strategy(sample)
+            filter_results[sample.name + '_' + self.filter_name] = self.threshold_strategy(sample)
 
         filtered_dataset = pd.DataFrame(filter_results).T
 
