@@ -130,18 +130,18 @@ Moreover, through this function we also want the output to be a list with reacti
 Run FASTcore
 --------------------------------------------------
 
-The `FastcoreProperties` class is used to create the properties for the GIMME algorithm. This class contains the following arguments:
+The `FastcoreProperties` class is used to create the properties for the `FASTcore` algorithm. This class contains the following arguments:
 
 - `core`: List of indexes of the reactions that are considered core, as determined by the integrated scores.
 - `flux_threshold`: Flux threshold for the algorithm.
 - `solver`: Solver to be used.
 
-The `FASTcore` class is used to run the GIMME algorithm. This class contains the following arguments:
+The `FASTcore` class is used to run the `FASTcore` algorithm. This class contains the following arguments:
 
 - `S`: the stoichiometric matrix of the model. It can be accessed through the `model_wrapper.S`.
 - `lb`: the lower bounds of the reactions in the model. It can be accessed through the `model_wrapper.lb`.
 - `ub`: the upper bounds of the reactions in the model. It can be accessed through the `model_wrapper.ub`.
-- `properties`: a `FastcoreProperties` instance containing the properties for the GIMME algorithm.
+- `properties`: a `FastcoreProperties` instance containing the properties for the `FASTcore` algorithm.
 
 In the end, the `run()` method of the `FASTcore` class will return a list with the index of the reactions to be keept in the model.
 
