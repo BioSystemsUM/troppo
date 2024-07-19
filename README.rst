@@ -11,7 +11,7 @@ or cameo whose already provide generic data structures to interpret metabolic mo
 A (MI)LP solver is required to use most of the present methods. The current methods support optlang, which in turn allow
 the use of solvers like CPLEX or Gurobi.
 
-*Troppo*'s documentation is available at [http://troppo-bisbi.readthedocs.io/](http://troppo-bisbi.readthedocs.io/)
+*Troppo*'s documentation is available at http://troppo-bisbi.readthedocs.io/.
 
 The current methods implemented are:
     - FastCORE
