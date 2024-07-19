@@ -153,7 +153,7 @@ In the end, the `run()` method of the `tINIT` class will return a list with inde
     properties = tINITProperties(reactions_scores=[v for k, v in scores.items()], solver='CPLEX')
 
     # Run the GIMME algorithm.
-    gimme = tINIT(S=model_wrapper.S, lb=model_wrapper.lb, ub=model_wrapper.ub, properties=properties)
+    tinit = tINIT(S=model_wrapper.S, lb=model_wrapper.lb, ub=model_wrapper.ub, properties=properties)
 
-    model_gimme = gimme.run()
+    model_gimme = tinit.run()
 ..
