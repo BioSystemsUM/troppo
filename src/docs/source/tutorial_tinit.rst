@@ -129,7 +129,7 @@ Hence, if you use this strategy, *tINIT* will not be able to run.
 Run tINIT
 --------------------------------------------------
 
-The `tINITProperties` class is used to create the properties for the GIMME algorithm. This class contains the following arguments:
+The `tINITProperties` class is used to create the properties for the `tINIT` algorithm. This class contains the following arguments:
 
 - `reactions_scores`: a list of scores for each reaction in the model. This can be obtained from the `integrate()` method of the `ContinuousScoreIntegrationStrategy` class.
 - `present_metabolites`: The metabolites that are present in the model.
@@ -138,12 +138,12 @@ The `tINITProperties` class is used to create the properties for the GIMME algor
 - `no_reverse_loops`: Whether to allow reverse loops.
 - `solver`: The solver to be used.
 
-The `tINIT` class is used to run the GIMME algorithm. This class contains the following arguments:
+The `tINIT` class is used to run the `tINIT` algorithm. This class contains the following arguments:
 
 - `S`: the stoichiometric matrix of the model. It can be accessed through the `model_wrapper.S`.
 - `lb`: the lower bounds of the reactions in the model. It can be accessed through the `model_wrapper.lb`.
 - `ub`: the upper bounds of the reactions in the model. It can be accessed through the `model_wrapper.ub`.
-- `properties`: a `tINITProperties` instance containing the properties for the GIMME algorithm.
+- `properties`: a `tINITProperties` instance containing the properties for the `tINIT` algorithm.
 
 In the end, the `run()` method of the `tINIT` class will return a list with indexes of the reactions to be kept in the final model.
 
