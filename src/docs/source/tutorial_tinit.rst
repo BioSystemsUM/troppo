@@ -155,5 +155,5 @@ In the end, the `run()` method of the `tINIT` class will return a list with inde
     # Run the GIMME algorithm.
     tinit = tINIT(S=model_wrapper.S, lb=model_wrapper.lb, ub=model_wrapper.ub, properties=properties)
 
-    model_gimme = tinit.run()
+    model_tinit = tinit.run()
 ..
