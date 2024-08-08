@@ -3,10 +3,10 @@ from setuptools import setup, find_packages
 setup(
 
   name = 'troppo',
-    version = '0.0.7',
+    version = '0.1.0',
     package_dir = {'':'src'},
     packages = find_packages('src'),
-    install_requires = ["cobamp==0.2.1", "cobra==0.26.2"],
+    install_requires = ["cobamp==0.2.1", "cobra==0.24.0", "xlrd==1.2.0"],
 
     author='Jorge Ferreira & Vítor Vieira',
     author_email='jorge.ferreira@ceb.uminho.pt',
