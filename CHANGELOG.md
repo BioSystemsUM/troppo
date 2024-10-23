@@ -1,3 +1,15 @@
+# v 0.1.0'
+
+Minor bug fixes to algorithms (gapfill, reconstruction methods).
+
+Added docstrings to the entire repository.
+
+Build documentation.
+
+Created tutorial notebooks to help users.
+
+Created case study examples.
+
 # v 0.0.4
 
 Changes to optimize the algorithms and correct some bugs.

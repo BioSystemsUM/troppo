@@ -3,6 +3,7 @@ from io import TextIOBase
 from json import JSONDecoder, JSONEncoder
 import warnings
 from troppo.tasks.core import Task
+import pandas as pd
 
 
 class TaskIO(object):
@@ -275,4 +276,3 @@ if __name__ == '__main__':
 
 	etio = ExcelTaskIO()
 	tasks = etio.read_task('shared/task_sets/metabolicTasks_Essential.xlsx')
-	import pandas as pd

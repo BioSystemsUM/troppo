@@ -1,0 +1,7 @@
+/build/
+/dist/
+/examples/mcf7_case_study/.ipynb_checkpoints/
+/tests/.ipynb_checkpoints/
+/examples/mcf7_case_study/tINIT_test.lp
+
+/src/troppo.egg-info/
