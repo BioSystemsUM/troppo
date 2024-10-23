@@ -1,0 +1,11 @@
+[project]
+name = "troppo"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.rst"
+requires-python = ">=3.9"
+dependencies = [
+    "cobamp>=0.2.1",
+    "cobra>=0.24.0",
+    "xlrd>=1.2.0"
+]
