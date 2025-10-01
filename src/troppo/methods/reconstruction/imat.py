@@ -26,11 +26,12 @@ class IMATProperties(PropertiesReconstruction):
         The epsilon, by default 1
     """
     def __init__(self, exp_vector: np.ndarray or list, exp_thresholds: tuple or list or ndarray,
-                 core: ndarray or list or tuple = None, tolerance: float = 1e-8, epsilon: int or float = 1):
+                 core: ndarray or list or tuple = None, tolerance: float = 1e-8, epsilon: int or float = 1, solver: str = None):
         new_mandatory = {
             'exp_vector': lambda x: isinstance(x, list) and len(x) > 0 or isinstance(x, ndarray),
             'exp_thresholds': lambda x: type(x) in (tuple, list, ndarray) and type(x[0]) in [float, int] and type(
-                x[1]) in [float, int]
+                x[1]) in [float, int],
+            "solver": solver
         }
         new_optional = {
             'core': lambda x: type(x) in [ndarray, list, tuple],
@@ -213,7 +214,7 @@ class IMAT(ContextSpecificModelReconstructionAlgorithm):
         prefix_maker = lambda cd: list([cd[0] + str(i) for i in range(cd[1])])
         A_names = list(chain(*list(map(prefix_maker, [('V', n), ('Hpos', nh), ('Hneg', nh), ('L', nl)]))))
 
-        lsystem = GenericLinearSystem(S=A, var_types=A_vt, lb=A_lb, ub=A_ub, b_lb=b_lb, b_ub=b_ub, var_names=A_names)
+        lsystem = GenericLinearSystem(S=A, var_types=A_vt, lb=A_lb, ub=A_ub, b_lb=b_lb, b_ub=b_ub, var_names=A_names, solver=self.properties["solver"])
         lso = LinearSystemOptimizer(lsystem)
 
         A_f = np.zeros((A.shape[1]))

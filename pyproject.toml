@@ -1,0 +1,36 @@
+[project]
+name = "troppo"
+version = "0.1.0"
+description = "Reconstruction algorithms for Python"
+authors = [
+    { name = "Jorge Ferreira", email = "jorge.ferreira@ceb.uminho.pt" },
+    { name = "Vítor Vieira" }
+]
+readme = "README.rst"
+license = { file = "LICENSE.txt" }
+requires-python = ">=3.9"
+dependencies = [
+    "cobamp>=0.2.1",
+    "cobra>=0.24.0",
+    "xlrd>=1.2.0",
+    "numpy>=1.20"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.5",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)"
+]
+
+
+[project.urls]
+Homepage = "https://github.com/BioSystemsUM/troppo"
+Documentation = "http://troppo-bisbi.readthedocs.io/"
+Repository = "https://github.com/BioSystemsUM/troppo/"
+Issues = "https://github.com/BioSystemsUM/troppo/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
